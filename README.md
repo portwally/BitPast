@@ -8,7 +8,8 @@
 
 It acts as a powerful GUI wrapper around the legendary [b2d](https://www.appleoldies.ca/bmp2dhr/) tool by Bill Buckels, bringing drag-and-drop simplicity, live previews, and batch processing to retro graphics conversion.
 
-![App Screenshot](screenshots/main_app.png)
+<img width="1478" height="881" alt="main_app" src="https://github.com/user-attachments/assets/097cc7cf-c1c2-4699-9fde-8f8b4d70fd44" />
+
 
 ## ✨ Features
 
