@@ -1,4 +1,5 @@
 # BitPast - Apple II Graphics Converter
+(still in beta phase, some things are not fully functional yet)
 
 ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey)
 ![Language](https://img.shields.io/badge/language-Swift%20%7C%20C-orange)
