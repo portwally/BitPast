@@ -25,14 +25,29 @@ class ConverterViewModel: ObservableObject {
     @Published var isConverting: Bool = false
     @Published var errorMessage: String?
     
-    @Published var selectedExportFormat: ExportFormat = .png
-    
-    private var previewTask: Task<Void, Never>?
-    
-    enum ExportFormat: String, CaseIterable, Identifiable {
-        case png = "PNG", jpg = "JPG", appleII = "Apple II Binary", gif = "GIF", bmp = "BMP"
+    // ProDOS Optionen
+    enum DiskFormat: String, CaseIterable, Identifiable {
+        case po = "po", hdv = "hdv", twoMG = "2mg"
         var id: String { self.rawValue }
     }
+    
+    enum DiskSize: String, CaseIterable, Identifiable {
+            case kb140 = "140 KB (5.25\")"
+            case kb800 = "800 KB (3.5\")"
+            case mb32 = "32 MB (Hard Disk)"
+            
+            var id: String { self.rawValue }
+            
+            var cadiusSize: String {
+                switch self {
+                case .kb140: return "143KB" // <--- FIX: 143KB statt 140KB
+                case .kb800: return "800KB"
+                case .mb32: return "32MB"
+                }
+            }
+        }
+    
+    private var previewTask: Task<Void, Never>?
     
     var convertedImage: NSImage? { currentResult?.previewImage }
     var currentOriginalImage: NSImage? {
@@ -43,6 +58,8 @@ class ConverterViewModel: ObservableObject {
         get { machines[selectedMachineIndex] }
         set { machines[selectedMachineIndex] = newValue }
     }
+    
+    // MARK: - File Loading
     
     func selectImagesFromFinder() {
         let panel = NSOpenPanel(); panel.allowedContentTypes = [.image]; panel.allowsMultipleSelection = true
@@ -106,6 +123,8 @@ class ConverterViewModel: ObservableObject {
         }
     }
     
+    // MARK: - Conversion
+    
     func triggerLivePreview() {
         guard currentOriginalImage != nil else { return }
         previewTask?.cancel()
@@ -135,56 +154,205 @@ class ConverterViewModel: ObservableObject {
         if !Task.isCancelled { self.isConverting = false }
     }
     
-    func saveResult() {
+    // MARK: - Export Logic
+    
+    enum ImageExportType: String {
+        case png = "PNG", jpg = "JPG", gif = "GIF", tiff = "TIFF"
+    }
+    
+    func saveImage(as type: ImageExportType) {
         guard let result = currentResult else { return }
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            let panel = NSSavePanel()
-            let type = self.selectedExportFormat
-            switch type {
-            case .png:  panel.allowedContentTypes = [.png]
-            case .jpg:  panel.allowedContentTypes = [.jpeg]
-            case .gif:  panel.allowedContentTypes = [.gif]
-            case .bmp:  panel.allowedContentTypes = [.bmp]
-            case .appleII: panel.allowedContentTypes = [UTType.data]
+        
+        let panel = NSSavePanel()
+        switch type {
+        case .png:  panel.allowedContentTypes = [.png]
+        case .jpg:  panel.allowedContentTypes = [.jpeg]
+        case .gif:  panel.allowedContentTypes = [.gif]
+        case .tiff: panel.allowedContentTypes = [.tiff]
+        }
+        
+        let baseName = getBaseName()
+        panel.nameFieldStringValue = "\(baseName).\(type.rawValue.lowercased())"
+        panel.canCreateDirectories = true
+        panel.title = "Save Image as \(type.rawValue)"
+        
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                DispatchQueue.global(qos: .userInitiated).async {
+                    var props: [NSBitmapImageRep.PropertyKey : Any] = [:]
+                    var fileType: NSBitmapImageRep.FileType = .png
+                    
+                    switch type {
+                    case .png: fileType = .png
+                    case .jpg: fileType = .jpeg; props[.compressionFactor] = 0.9
+                    case .gif: fileType = .gif
+                    case .tiff: fileType = .tiff
+                    }
+                    
+                    if let tiffData = result.previewImage.tiffRepresentation,
+                       let bitmap = NSBitmapImageRep(data: tiffData),
+                       let fileData = bitmap.representation(using: fileType, properties: props) {
+                        try? fileData.write(to: targetUrl)
+                    }
+                }
             }
-            var baseName = "retro_output"
+        }
+    }
+    
+    func createProDOSDisk(size: DiskSize, format: DiskFormat, volumeName: String) {
+            guard let result = currentResult else { return }
+            
+            guard let cadiusUrl = Bundle.main.url(forResource: "cadius", withExtension: nil) else {
+                self.errorMessage = "Cadius tool not found in Bundle."
+                return
+            }
+            
+            // Name für das Save-Panel (Host Computer)
+            var outputBaseName = "retro_output"
+            var originalFileNameRaw = "IMAGE"
+            
             if let id = self.selectedImageId, let item = self.inputImages.first(where: {$0.id == id}) {
-                baseName = item.name.replacingOccurrences(of: ".[^.]+$", with: "", options: .regularExpression).replacingOccurrences(of: " ", with: "_")
+                outputBaseName = item.name.replacingOccurrences(of: ".[^.]+$", with: "", options: .regularExpression)
+                originalFileNameRaw = item.name
             }
-            let fileExt = type == .appleII ? "BIN" : type.rawValue.lowercased()
-            panel.nameFieldStringValue = "\(baseName).\(fileExt)"
-            panel.canCreateDirectories = true
-            panel.title = type == .appleII ? "Save Apple II Binary Files" : "Export Image"
+            
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [UTType(filenameExtension: format.rawValue) ?? .data]
+            panel.nameFieldStringValue = "\(outputBaseName).\(format.rawValue)"
+            panel.title = "Create ProDOS Disk Image"
+            
             panel.begin { response in
                 if response == .OK, let targetUrl = panel.url {
-                    DispatchQueue.global(qos: .userInitiated).async {
-                        if type == .appleII {
-                            let fileManager = FileManager.default
-                            let targetFolder = targetUrl.deletingLastPathComponent()
-                            let targetBaseName = targetUrl.deletingPathExtension().lastPathComponent
-                            for assetUrl in result.fileAssets {
-                                let assetExt = assetUrl.pathExtension.uppercased()
-                                let newFileName = "\(targetBaseName).\(assetExt)"
-                                let destination = targetFolder.appendingPathComponent(newFileName)
-                                try? fileManager.removeItem(at: destination)
-                                try? fileManager.copyItem(at: assetUrl, to: destination)
+                    Task {
+                        self.isConverting = true
+                        defer { self.isConverting = false }
+                        
+                        if result.fileAssets.isEmpty {
+                            DispatchQueue.main.async { self.errorMessage = "Error: No assets found to write to disk." }
+                            return
+                        }
+                        
+                        let fileManager = FileManager.default
+                        
+                        // 1. Volume Name reinigen
+                        var safeVolume = volumeName.uppercased().replacingOccurrences(of: "[^A-Z0-9]", with: "", options: .regularExpression)
+                        if safeVolume.isEmpty { safeVolume = "BITPAST" }
+                        if let first = safeVolume.first, !first.isLetter { safeVolume = "V" + safeVolume }
+                        safeVolume = String(safeVolume.prefix(15))
+                        
+                        print("💾 CREATING DISK: \(targetUrl.lastPathComponent)")
+                        
+                        // 2. Create Volume
+                        // Cadius 1.4 ist strikter, wir löschen die Zieldatei vorher definitiv
+                        try? fileManager.removeItem(at: targetUrl)
+                        
+                        let createArgs = ["CREATEVOLUME", targetUrl.path, safeVolume, size.cadiusSize]
+                        
+                        do {
+                            try self.runCadius(url: cadiusUrl, args: createArgs)
+                            
+                            // 3. Process & Add Files
+                            for (index, assetUrl) in result.fileAssets.enumerated() {
+                                
+                                // A. ZIEL-NAME (Der schöne Name)
+                                let rawName = originalFileNameRaw.uppercased()
+                                var finalBaseName = rawName.replacingOccurrences(of: ".[^.]+$", with: "", options: .regularExpression)
+                                finalBaseName = finalBaseName.replacingOccurrences(of: "[^A-Z0-9]", with: "", options: .regularExpression)
+                                if finalBaseName.isEmpty { finalBaseName = "IMG" }
+                                if let first = finalBaseName.first, !first.isLetter { finalBaseName = "F" + finalBaseName }
+                                if result.fileAssets.count > 1 && index > 0 { finalBaseName += "\(index)" }
+                                
+                                // Max 11 Zeichen + .BIN
+                                finalBaseName = String(finalBaseName.prefix(11))
+                                let finalProDOSName = "\(finalBaseName).BIN"
+                                
+                                // B. IMPORT-NAME (Kurz, um Fehler zu vermeiden)
+                                // TMP + Index + Suffix (#062000 -> BIN Type, $2000 Address)
+                                let shortNameOnDisk = "TMP\(index)"
+                                let importFilename = "\(shortNameOnDisk)#062000"
+                                
+                                print("➡️ PROCESSING FILE \(index+1):")
+                                print("   Importing as: \(importFilename)")
+                                print("   Renaming to:  \(finalProDOSName)")
+                                
+                                // C. Temp Datei vorbereiten
+                                let tempFolder = fileManager.temporaryDirectory
+                                let tempFileUrl = tempFolder.appendingPathComponent(importFilename)
+                                
+                                try? fileManager.removeItem(at: tempFileUrl)
+                                try fileManager.copyItem(at: assetUrl, to: tempFileUrl)
+                                
+                                // D. ADDFILE (in Root: /VOLNAME/)
+                                let targetFolderOnDisk = "/\(safeVolume)/"
+                                let addArgs = ["ADDFILE", targetUrl.path, targetFolderOnDisk, tempFileUrl.path]
+                                
+                                try self.runCadius(url: cadiusUrl, args: addArgs)
+                                
+                                // Aufräumen
+                                try? fileManager.removeItem(at: tempFileUrl)
+                                
+                                // E. RENAMEFILE
+                                // Pfad zur Datei auf der Disk: /VOLNAME/TMP0
+                                let fullPathToTempFile = "/\(safeVolume)/\(shortNameOnDisk)"
+                                let renameArgs = ["RENAMEFILE", targetUrl.path, fullPathToTempFile, finalProDOSName]
+                                
+                                try self.runCadius(url: cadiusUrl, args: renameArgs)
                             }
-                        } else {
-                            var props: [NSBitmapImageRep.PropertyKey : Any] = [:]
-                            var fileType: NSBitmapImageRep.FileType = .png
-                            switch type {
-                            case .png: fileType = .png
-                            case .jpg: fileType = .jpeg; props[.compressionFactor] = 0.9
-                            case .gif: fileType = .gif
-                            case .bmp: fileType = .bmp
-                            default: break
+                            
+                            print("✅ DISK CREATION SUCCESSFUL")
+                            
+                        } catch {
+                            print("❌ DISK ERROR: \(error)")
+                            DispatchQueue.main.async {
+                                self.errorMessage = "Disk creation failed: \(error.localizedDescription)"
                             }
-                            if let tiffData = result.previewImage.tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiffData), let fileData = bitmap.representation(using: fileType, properties: props) { try? fileData.write(to: targetUrl) }
                         }
                     }
                 }
             }
         }
+    
+    private func runCadius(url: URL, args: [String]) throws {
+            // 1. Debugging: Was rufen wir genau auf?
+            print("🛠️ CADIUS RUNNING: \(url.path)")
+            print("   ARGS: \(args.joined(separator: " "))")
+
+            let process = Process()
+            process.executableURL = url
+            process.arguments = args
+            
+            let pipe = Pipe()
+            process.standardOutput = pipe
+            process.standardError = pipe
+            
+            do {
+                try process.run()
+            } catch {
+                print("❌ CADIUS START FAILED: \(error)")
+                throw error
+            }
+            
+            process.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            let output = String(data: data, encoding: .utf8) ?? ""
+            
+            // 2. Debugging: Was sagt Cadius?
+            if !output.isEmpty {
+                print("📝 CADIUS OUTPUT:\n\(output)")
+            }
+
+            if process.terminationStatus != 0 {
+                print("❌ CADIUS EXIT CODE: \(process.terminationStatus)")
+                // Wir packen den Output in den Fehler, damit er in der UI angezeigt wird (oder im Log)
+                throw NSError(domain: "CadiusError", code: Int(process.terminationStatus), userInfo: [NSLocalizedDescriptionKey: "Cadius Error (\(process.terminationStatus)): \(output)"])
+            }
+        }
+    
+    private func getBaseName() -> String {
+        if let id = self.selectedImageId, let item = self.inputImages.first(where: {$0.id == id}) {
+            return item.name.replacingOccurrences(of: ".[^.]+$", with: "", options: .regularExpression).replacingOccurrences(of: " ", with: "_")
+        }
+        return "retro_output"
     }
 }

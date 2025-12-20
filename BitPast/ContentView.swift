@@ -6,6 +6,12 @@ struct ContentView: View {
     @State private var isDropTarget = false
     @State private var zoomLevel: CGFloat = 1.0
     
+    // ProDOS Sheet State
+    @State private var showDiskSheet = false
+    @State private var selectedDiskSize: ConverterViewModel.DiskSize = .kb140
+    @State private var selectedDiskFormat: ConverterViewModel.DiskFormat = .po
+    @State private var diskVolumeName: String = "BITPAST" // Standard-Name
+    
     let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
     let topRowKeys = ["mode", "colortype", "dither", "palette"]
     let bottomRowKeys = ["resolution", "crosshatch", "bleed"]
@@ -96,7 +102,7 @@ struct ContentView: View {
             }
             Divider()
             
-            // BOTTOM: OPTIONS
+            // BOTTOM: OPTIONS & EXPORT
             VStack(spacing: 0) {
                 if let error = viewModel.errorMessage { Text(error).foregroundColor(.red).font(.caption).frame(maxWidth: .infinity).padding(.top, 4) }
                 VStack(alignment: .leading, spacing: 12) {
@@ -145,13 +151,41 @@ struct ContentView: View {
                             }
                         }
                         Divider().frame(height: 20)
+                        
+                        // NEW EXPORT UI
                         VStack(alignment: .leading, spacing: 8) {
                             Text("EXPORT").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
                             HStack {
-                                Picker("", selection: $viewModel.selectedExportFormat) {
-                                    ForEach(ConverterViewModel.ExportFormat.allCases) { fmt in Text(fmt.rawValue).tag(fmt) }
-                                }.frame(width: 120)
-                                Button(action: { viewModel.saveResult() }) { Label("Save", systemImage: "square.and.arrow.up") }.disabled(viewModel.convertedImage == nil)
+                                Menu {
+                                    Button("PNG") { viewModel.saveImage(as: .png) }
+                                    Button("JPG") { viewModel.saveImage(as: .jpg) }
+                                    Button("GIF") { viewModel.saveImage(as: .gif) }
+                                    Button("TIFF") { viewModel.saveImage(as: .tiff) }
+                                } label: {
+                                    Label("Save Image...", systemImage: "photo")
+                                }
+                                .fixedSize()
+                                .disabled(viewModel.convertedImage == nil)
+
+                                Button(action: { showDiskSheet = true }) {
+                                    Label("Create ProDOS Disk", systemImage: "externaldrive")
+                                }
+                                .disabled(viewModel.convertedImage == nil)
+                                .sheet(isPresented: $showDiskSheet) {
+                                    DiskExportSheet(
+                                        isPresented: $showDiskSheet,
+                                        selectedSize: $selectedDiskSize,
+                                        selectedFormat: $selectedDiskFormat,
+                                        volumeName: $diskVolumeName // Bind to State
+                                    ) {
+                                        // Pass the volume name to ViewModel
+                                        viewModel.createProDOSDisk(
+                                            size: selectedDiskSize,
+                                            format: selectedDiskFormat,
+                                            volumeName: diskVolumeName
+                                        )
+                                    }
+                                }
                             }
                         }
                         Spacer()
@@ -159,6 +193,53 @@ struct ContentView: View {
                 }.padding(15)
             }.background(Color(NSColor.windowBackgroundColor)).frame(height: 130)
         }.frame(minWidth: 1000, minHeight: 700)
+    }
+}
+
+// Updated Sheet with Text Field
+struct DiskExportSheet: View {
+    @Binding var isPresented: Bool
+    @Binding var selectedSize: ConverterViewModel.DiskSize
+    @Binding var selectedFormat: ConverterViewModel.DiskFormat
+    @Binding var volumeName: String
+    
+    let onExport: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Create ProDOS Disk").font(.headline)
+            
+            Form {
+                TextField("Volume Name:", text: $volumeName)
+                    .frame(width: 200)
+                    .help("Max 15 characters, A-Z, 0-9")
+                
+                Picker("Disk Size:", selection: $selectedSize) {
+                    ForEach(ConverterViewModel.DiskSize.allCases) { size in
+                        Text(size.rawValue).tag(size)
+                    }
+                }
+                
+                Picker("Format:", selection: $selectedFormat) {
+                    ForEach(ConverterViewModel.DiskFormat.allCases) { format in
+                        Text(format.rawValue.uppercased()).tag(format)
+                    }
+                }
+            }
+            .padding(.horizontal)
+            
+            HStack {
+                Button("Cancel") { isPresented = false }
+                    .keyboardShortcut(.cancelAction)
+                Button("Create Disk Image") {
+                    isPresented = false
+                    onExport()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding()
+        .frame(width: 350) // Etwas breiter für das Textfeld
     }
 }
 
