@@ -5,9 +5,9 @@
 ![Language](https://img.shields.io/badge/language-Swift%20%7C%20C-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**BitPast** is a modern, native macOS application for converting images into authentic **Apple II** graphic formats.
+**BitPast** is a modern, native macOS application for converting images into authentic **Apple II** and **Apple IIgs** graphic formats.
 
-It acts as a powerful GUI wrapper around the legendary [b2d](https://www.appleoldies.ca/bmp2dhr/) tool by Bill Buckels, bringing drag-and-drop simplicity, live previews, and batch processing to retro graphics conversion.
+It acts as a powerful GUI wrapper around the legendary [b2d](https://www.appleoldies.ca/bmp2dhr/) tool by Bill Buckels for 8-bit systems, while utilizing a custom-built native Swift engine for 16-bit Apple IIgs graphics.
 
 <img width="1478" height="881" alt="main_app" src="https://github.com/user-attachments/assets/097cc7cf-c1c2-4699-9fde-8f8b4d70fd44" />
 
@@ -20,54 +20,75 @@ It acts as a powerful GUI wrapper around the legendary [b2d](https://www.appleol
 - **Live Preview:** See changes instantly as you adjust sliders for dithering, crosshatch, or color bleed.
 - **Zoom & Pan:** Inspect every single pixel with a high-performance zoomable preview.
 
-### 🎨 Powerful Conversion Engine
-Powered by `b2d`, BitPast supports the full range of Apple II graphics modes:
+### 🎨 Powerful Conversion Engines
+
+#### 🍏 Apple II (8-Bit)
+Powered by `b2d`, supporting the full range of classic graphics modes:
 - **DHGR** (Double Hi-Res): 140x192 (16 colors) or 560x192 (Monochrome).
 - **HGR** (Hi-Res): 280x192 (6 colors).
 - **LGR / DLGR**: Lo-Res and Double Lo-Res block graphics.
 - **Color & Monochrome**: Fully supported with optimized rendering.
 
+#### 🌈 Apple IIgs (16-Bit)
+Powered by a **native Swift engine** featuring advanced color quantization:
+- **3200 Mode (Smart Scanlines):** Uses **Median Cut Quantization** and intelligent scanline clustering to utilize all 16 palettes simultaneously. This allows for near-photorealistic images by dynamically assigning specific palettes to different vertical sections of the image.
+- **Standard Modes:** 320x200 (16 colors) and 640x200 (4 colors).
+- **Color Accuracy:** Full utilization of the Apple IIgs 12-bit RGB color space (4096 colors).
+
 ### 🎛️ Fine-Tuning Control
-- **Dithering Algorithms:** Floyd-Steinberg, Atkinson (MacPaint style), Jarvis, Stucki, Sierra-Lite.
-- **Palettes:** Includes over 15 palettes (Standard, NTSC simulation, RGB, Greyscale, etc.).
-- **Smart Scaling:** Automatically maps input resolutions (like 640x480 VGA) to Apple II safe resolutions to prevent artifacts.
-- **Effects:**
-  - **Crosshatch Threshold:** Simulate monitor scanline effects.
-  - **Color Bleed Reduction:** Clean up artifacts for sharper images.
+
+**General:**
+- **Dithering Algorithms:** Floyd-Steinberg, Atkinson, Jarvis-Judice-Ninke, Stucki, Burkes, and Ordered (Bayer 4x4).
+- **Smart Scaling:** Automatically maps input resolutions (like 640x480 VGA) to safe resolutions to prevent artifacts.
+
+**Apple II Specific:**
+- **Crosshatch Threshold:** Simulate monitor scanline effects.
+- **Color Bleed Reduction:** Clean up NTSC artifacts for sharper images.
+- **Palettes:** Over 15 historic palettes (Standard, NTSC simulation, RGB, Greyscale, etc.).
+
+**Apple IIgs Specific:**
+- **Merge Tolerance:** Controls how aggressively scanlines are clustered in 3200 mode.
+- **Saturation Boost:** Compensates for the limited 4-bit color depth to make images "pop".
+- **Gamma Correction:** Adjust brightness distribution for retro CRTs.
 
 ### 💾 Export Formats
-- **Modern Previews:** Export as PNG, JPG, GIF, or BMP for web use.
-- **Native Binaries:** Exports actual Apple II files (`.BIN`, `.AUX`, `.A2FC`) ready to be loaded onto real hardware or emulators (like AppleWin or Virtual II).
+- **Modern Previews:** Export as PNG, JPG, GIF, or TIFF for web use.
+- **Native Binaries:** - **Apple II:** `.BIN` (binary dumps) ready for hardware.
+  - **Apple IIgs:** `.SHR` (Super Hi-Res, Type $C1) compatible with GS Paint and generic loaders.
+- **ProDOS Disk Images:** Create bootable `.PO`, `.2MG`, or `.HDV` disk images directly from the app (requires `cadius`).
 
 ## 🚀 How to Use
 
 1. **Drag Images** into the left "Image Browser" panel.
 2. Select an image to preview it.
-3. Choose your **Target System** (Apple II) and **Format** (e.g., DHGR).
-4. Tweak the **Dither**, **Palette**, and **Sliders** until the Live Preview looks perfect.
+3. Choose your **System** (Apple II or Apple IIgs).
+4. Tweak the **Mode**, **Dither**, and **Sliders** until the Live Preview looks perfect.
 5. Click **Export** in the bottom right corner.
-   - Choose **PNG** for a visual preview.
-   - Choose **Apple II Binary** to generate the raw files for your retro hardware.
+   - Choose **PNG/JPG** for a visual preview.
+   - Choose **Native Format** to save the raw file (`.BIN` / `.SHR`).
+   - Choose **Create ProDOS Disk** to package the file onto a disk image.
 
 ## 🛠️ Technical Details
 
-BitPast is built with **Swift** and **SwiftUI** for macOS. It embeds a compiled version of the C-based `b2d` tool.
+BitPast is built with **Swift** and **SwiftUI** for macOS.
 
 - **Frontend:** SwiftUI (Grid Views, HSplitView, Combine for debounced live previews).
-- **Backend:** `b2d` (modified build with struct packing fixes for modern macOS ARM64/x86_64 architecture).
-- **Pipeline:** BitPast handles high-quality pre-scaling using CoreGraphics before passing the data to `b2d` for the final retro conversion.
+- **Backend (Apple II):** `b2d` (modified build with struct packing fixes for modern macOS ARM64/x86_64 architecture).
+- **Backend (Apple IIgs):** Native Swift implementation using Median Cut algorithm and Euclidean distance scanline clustering.
+- **Disk Operations:** Integrated wrapper for `cadius` (by BrutalDeluxe) to manage ProDOS volumes.
 
 ## 📦 Installation
 
 ### From Source
 1. Clone the repository.
 2. Open `BitPast.xcodeproj` in Xcode.
-3. Ensure the `b2d` binary is present in the project bundle resources.
+3. Ensure the `b2d` and `cadius` binaries are present in the project bundle resources.
 4. Build and Run (Requires macOS 12.0+).
 
 ## 👏 Credits
 
-- **Bill Buckels**: For creating the original **b2d** (Bmp2DHR) command-line tool, which performs the core conversion magic. [Visit AppleOldies.ca](https://www.appleoldies.ca/bmp2dhr/).
+- **Bill Buckels**: For creating the original **b2d** (Bmp2DHR) command-line tool. [Visit AppleOldies.ca](https://www.appleoldies.ca/bmp2dhr/).
+- **Brutal Deluxe**: For the **Cadius** tool used for ProDOS disk management.
 - **Digarok**: For **Buckshot**, which served as inspiration for the resolution handling logic.
 
 ## 📄 License
