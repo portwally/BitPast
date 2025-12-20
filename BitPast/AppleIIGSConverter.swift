@@ -1,7 +1,7 @@
 import Cocoa
 
 class AppleIIGSConverter: RetroMachine {
-    var name: String = "Apple IIgs (Native)"
+    var name: String = "Apple IIgs"
     
     var options: [ConversionOption] = [
         // 1. MODUS
