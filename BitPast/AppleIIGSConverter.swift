@@ -4,34 +4,70 @@ class AppleIIGSConverter: RetroMachine {
     var name: String = "Apple IIgs (Native)"
     
     var options: [ConversionOption] = [
-        // MODUS AUSWAHL
+        // 1. MODUS
         ConversionOption(
             label: "Display Mode",
             key: "mode",
             values: [
-                "3200 Mode (Smart Scanlines)", // NEU: Clustert ähnliche Zeilen
-                "3200 Mode (Vertical Strips)", // Klassisch: 16 horizontale Balken
-                "320x200 (16 Colors)",         // Standard
-                "640x200 (4 Colors)"           // Hi-Res
+                "3200 Mode (Smart Scanlines)",
+                "3200 Mode (Vertical Strips)",
+                "320x200 (16 Colors)",
+                "640x200 (4 Colors)"
             ],
             selectedValue: "3200 Mode (Smart Scanlines)"
         ),
         
+        // 2. DITHERING ALGO
         ConversionOption(
-            label: "Dithering",
+            label: "Dithering Algo",
             key: "dither",
-            values: ["Floyd-Steinberg", "None"],
+            values: [
+                "Floyd-Steinberg",
+                "Atkinson",
+                "Jarvis-Judice-Ninke",
+                "Stucki",
+                "Burkes",
+                "Ordered (Bayer 4x4)",
+                "None"
+            ],
             selectedValue: "Floyd-Steinberg"
         ),
         
+        // 3. DITHER STÄRKE
+        // FIX: Maximal 1.0, sonst explodiert die Mathematik (Feedback Loop)
+        ConversionOption(
+            label: "Dither Strength",
+            key: "dither_amount",
+            range: 0.0...1.0, // <--- HIER von 1.5 auf 1.0 ändern
+            defaultValue: 1.0
+        ),
+        
+        // 4. ERROR THRESHOLD
+        ConversionOption(
+            label: "Merge Tolerance (3200 Mode)",
+            key: "threshold",
+            range: 0.0...50.0,
+            defaultValue: 10.0
+        ),
+        
+        // 5. SATURATION BOOST
+        ConversionOption(
+            label: "Saturation Boost",
+            key: "saturation",
+            range: 0.0...2.0,
+            defaultValue: 1.1
+        ),
+        
+        // 6. GAMMA (FIX: Jetzt als Double initilisiert)
         ConversionOption(
             label: "Gamma / Brightness",
             key: "gamma",
             range: 0.5...2.5,
-            defaultValue: 1
+            defaultValue: 1.0
         )
     ]
     
+    // MARK: - Constants
     private let defaultPalette: [UInt16] = [
         0x0000, 0x0777, 0x0841, 0x072C, 0x000F, 0x0080, 0x0F70, 0x0D00,
         0x0FA2, 0x0F80, 0x0BBB, 0x0F9B, 0x03D0, 0x0DD0, 0x0CCC, 0x0FFF
@@ -40,13 +76,27 @@ class AppleIIGSConverter: RetroMachine {
     private let palette640: [UInt16] = [
         0x0000, 0x0F00, 0x0FFF, 0x000F, 0,0,0,0,0,0,0,0,0,0,0,0
     ]
+    
+    private let bayerMatrix: [Double] = [
+         0,  8,  2, 10,
+        12,  4, 14,  6,
+         3, 11,  1,  9,
+        15,  7, 13,  5
+    ]
 
+    // MARK: - Main Conversion
+    
     func convert(sourceImage: NSImage) async throws -> ConversionResult {
         
         // --- CONFIG ---
         let modeStr = options.first(where: {$0.key == "mode"})?.selectedValue ?? ""
-        let useDither = options.first(where: {$0.key == "dither"})?.selectedValue.contains("Floyd") ?? false
+        let ditherName = options.first(where: {$0.key == "dither"})?.selectedValue ?? "None"
+        let ditherAmount = Double(options.first(where: {$0.key == "dither_amount"})?.selectedValue ?? "1") ?? 1.0
+        let thresholdVal = Double(options.first(where: {$0.key == "threshold"})?.selectedValue ?? "10") ?? 10.0
+        let saturation = Double(options.first(where: {$0.key == "saturation"})?.selectedValue ?? "1") ?? 1.0
         let gamma = Double(options.first(where: {$0.key == "gamma"})?.selectedValue ?? "1") ?? 1.0
+        
+        let threshold = thresholdVal * 4.0
         
         let is640 = modeStr.contains("640")
         let isSmart3200 = modeStr.contains("Smart")
@@ -55,87 +105,66 @@ class AppleIIGSConverter: RetroMachine {
         let targetW = is640 ? 640 : 320
         let targetH = 200
         
-        // --- INPUT ---
+        // --- PREPARE IMAGE ---
         let resized = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
         guard let cgImage = resized.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw NSError(domain: "IIGS", code: 1, userInfo: [NSLocalizedDescriptionKey: "No CGImage"])
         }
-        var rawInput = getRGBData(from: cgImage, width: targetW, height: targetH)
         
-        // --- OUTPUT BUFFERS ---
+        var rawInput = getRGBData(from: cgImage, width: targetW, height: targetH)
+        if saturation != 1.0 { applySaturation(&rawInput, amount: saturation) }
+        
+        let ditherKernel = getDitherKernel(name: ditherName)
+        let isOrderedDither = ditherName.contains("Ordered")
+        let isNoDither = ditherName == "None"
+        
+        // --- BUFFERS ---
         var pixelData = [UInt8](repeating: 0, count: 32000)
         var scbData = [UInt8](repeating: 0, count: 256)
         var palettes: [[UInt16]] = Array(repeating: defaultPalette, count: 16)
         var previewRawData = [UInt8](repeating: 255, count: targetW * targetH * 4)
         
-        // --- PALETTEN-GENERIERUNG ---
+        // --- PALETTE GENERATION (MEDIAN CUT) ---
         
         if is640 {
-            // --- 640 MODE ---
             palettes[0] = palette640
-            for i in 0..<200 { scbData[i] = 0x80 } // Bit 7 gesetzt
-            
+            for i in 0..<200 { scbData[i] = 0x80 }
         } else if isStrip3200 {
-            // --- CLASSIC 3200 (Strips) ---
-            // Einfach das Bild in 16 Streifen schneiden
             for pIndex in 0..<16 {
                 let startY = (pIndex * targetH) / 16
                 let endY = ((pIndex + 1) * targetH) / 16
-                
-                // Wir sammeln Pixel nur aus diesem Bereich
-                var stripPixels: [PixelFloat] = []
+                var sectionPixels: [PixelFloat] = []
+                sectionPixels.reserveCapacity(targetW * (endY - startY))
                 for y in startY..<endY {
-                    for x in 0..<targetW {
-                        stripPixels.append(rawInput[(y * targetW) + x])
-                    }
+                    let rowStart = y * targetW
+                    sectionPixels.append(contentsOf: rawInput[rowStart..<(rowStart + targetW)])
                 }
-                
-                palettes[pIndex] = quantizePixels(pixels: stripPixels, maxColors: 16)
+                palettes[pIndex] = generatePaletteMedianCut(pixels: sectionPixels, maxColors: 16)
                 for y in startY..<endY { if y < 200 { scbData[y] = UInt8(pIndex) } }
             }
-            
         } else if isSmart3200 {
-            // --- SMART 3200 (Clustered Scanlines) ---
-            // 1. Scanlines analysieren (Durchschnittsfarbe berechnen)
             var scanlines: [ScanlineInfo] = []
             for y in 0..<targetH {
                 scanlines.append(ScanlineInfo(y: y, avg: calculateAverageColor(rawInput, y: y, w: targetW)))
             }
-            
-            // 2. Scanlines in 16 Gruppen clustern (Median Cut Prinzip auf Scanline-Level)
-            // Das sorgt dafür, dass rote Zeilen in Gruppe A landen, blaue in Gruppe B usw.
-            let groups = clusterScanlines(scanlines, depth: 0, maxDepth: 4) // 2^4 = 16 Gruppen
-            
-            // 3. Für jede Gruppe eine Palette generieren
+            let groups = clusterScanlines(scanlines, depth: 0, maxDepth: 4, threshold: threshold)
             for (pIndex, group) in groups.enumerated() {
                 if pIndex >= 16 { break }
-                
-                // Alle Pixel aller Zeilen in dieser Gruppe sammeln
                 var groupPixels: [PixelFloat] = []
                 for line in group {
-                    let y = line.y
-                    for x in 0..<targetW {
-                        groupPixels.append(rawInput[(y * targetW) + x])
-                    }
+                    let rowStart = line.y * targetW
+                    for x in stride(from: 0, to: targetW, by: 2) { groupPixels.append(rawInput[rowStart + x]) }
                 }
-                
-                // Palette generieren
-                palettes[pIndex] = quantizePixels(pixels: groupPixels, maxColors: 16)
-                
-                // SCBs setzen: Jede Zeile in dieser Gruppe zeigt auf diese Palette
-                for line in group {
-                    scbData[line.y] = UInt8(pIndex)
-                }
+                palettes[pIndex] = generatePaletteMedianCut(pixels: groupPixels, maxColors: 16)
+                for line in group { scbData[line.y] = UInt8(pIndex) }
             }
-            
         } else {
-            // --- 320 STANDARD ---
-            // Eine Palette für das ganze Bild
-            palettes[0] = quantizePixels(pixels: rawInput, maxColors: 16)
-            // SCB bleibt 0
+            var samplePixels: [PixelFloat] = []
+            for i in stride(from: 0, to: rawInput.count, by: 4) { samplePixels.append(rawInput[i]) }
+            palettes[0] = generatePaletteMedianCut(pixels: samplePixels, maxColors: 16)
         }
         
-        // --- RENDERING ---
+        // --- RENDERING LOOP ---
         
         for y in 0..<targetH {
             let paletteIndex = Int(scbData[y] & 0x0F)
@@ -145,30 +174,46 @@ class AppleIIGSConverter: RetroMachine {
             for x in 0..<targetW {
                 let index = (y * targetW) + x
                 
-                // Gamma
-                var r = rawInput[index].r
-                var g = rawInput[index].g
-                var b = rawInput[index].b
+                // --- FIX GEGEN VERZERRUNG ---
+                // Wir holen den Pixel und CLAMPEN ihn sofort.
+                // Das verhindert, dass aufaddierte Fehler (durch Dither) zu Werten wie -500 oder +800 führen.
+                var p = rawInput[index]
+                p.r = p.r.clamped(to: 0...255)
+                p.g = p.g.clamped(to: 0...255)
+                p.b = p.b.clamped(to: 0...255)
                 
+                // GAMMA (optional auch hier clampen)
                 if gamma != 1.0 {
-                    r = pow(r / 255.0, 1.0/gamma) * 255.0
-                    g = pow(g / 255.0, 1.0/gamma) * 255.0
-                    b = pow(b / 255.0, 1.0/gamma) * 255.0
+                    p.r = (pow(p.r / 255.0, 1.0/gamma) * 255.0).clamped(to: 0...255)
+                    p.g = (pow(p.g / 255.0, 1.0/gamma) * 255.0).clamped(to: 0...255)
+                    p.b = (pow(p.b / 255.0, 1.0/gamma) * 255.0).clamped(to: 0...255)
+                }
+                
+                if isOrderedDither {
+                    let bayerVal = bayerMatrix[(y % 4) * 4 + (x % 4)] / 16.0
+                    let spread = 32.0 * ditherAmount
+                    let offset = (bayerVal - 0.5) * spread
+                    p.r = (p.r + offset).clamped(to: 0...255)
+                    p.g = (p.g + offset).clamped(to: 0...255)
+                    p.b = (p.b + offset).clamped(to: 0...255)
                 }
                 
                 // Matching
-                let match = findNearestColor(r: r, g: g, b: b, palette: currentPaletteRGB)
+                let match = findNearestColor(pixel: p, palette: currentPaletteRGB)
                 let colorIdx = match.index
                 
-                // Dithering
-                if useDither {
-                    let errR = r - Double(match.rgb.r)
-                    let errG = g - Double(match.rgb.g)
-                    let errB = b - Double(match.rgb.b)
-                    distributeError(source: &rawInput, x: x, y: y, w: targetW, h: targetH, errR: errR, errG: errG, errB: errB)
+                // Error Diffusion
+                if !isNoDither && !isOrderedDither {
+                    let errR = (p.r - Double(match.rgb.r)) * ditherAmount
+                    let errG = (p.g - Double(match.rgb.g)) * ditherAmount
+                    let errB = (p.b - Double(match.rgb.b)) * ditherAmount
+                    
+                    distributeError(source: &rawInput, x: x, y: y, w: targetW, h: targetH,
+                                    errR: errR, errG: errG, errB: errB,
+                                    kernel: ditherKernel)
                 }
                 
-                // Pixel speichern
+                // Store
                 if is640 {
                     let bytePos = (y * 160) + (x / 4)
                     let bitShift = (3 - (x % 4)) * 2
@@ -188,8 +233,7 @@ class AppleIIGSConverter: RetroMachine {
             }
         }
         
-        // --- FINISH ---
-        
+        // --- FINALIZE ---
         var finalPreview: NSImage?
         let colorSpace = CGColorSpace(name: CGColorSpace.genericRGBLinear)!
         let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
@@ -221,84 +265,100 @@ class AppleIIGSConverter: RetroMachine {
         return ConversionResult(previewImage: finalPreview!, fileAssets: [outputUrl])
     }
     
-    // MARK: - SCANLINE CLUSTERING LOGIC
-    
-    struct ScanlineInfo {
-        let y: Int
-        let avg: PixelFloat
+    // MARK: - MEDIAN CUT QUANTIZER
+    struct ColorBox {
+        var pixels: [PixelFloat]
+        func getLongestAxis() -> Int {
+            var minR=999.0, maxR = -1.0, minG=999.0, maxG = -1.0, minB=999.0, maxB = -1.0
+            for p in pixels {
+                minR=min(minR, p.r); maxR=max(maxR, p.r)
+                minG=min(minG, p.g); maxG=max(maxG, p.g)
+                minB=min(minB, p.b); maxB=max(maxB, p.b)
+            }
+            let dR = maxR-minR, dG = maxG-minG, dB = maxB-minB
+            if dR >= dG && dR >= dB { return 0 }
+            if dG >= dR && dG >= dB { return 1 }
+            return 2
+        }
+        func getAverageColor() -> RGB {
+            var r: Double=0, g: Double=0, b: Double=0
+            if pixels.isEmpty { return RGB(r:0,g:0,b:0) }
+            for p in pixels { r+=p.r; g+=p.g; b+=p.b }
+            let c = Double(pixels.count)
+            return RGB(r: UInt8(r/c), g: UInt8(g/c), b: UInt8(b/c))
+        }
     }
     
+    func generatePaletteMedianCut(pixels: [PixelFloat], maxColors: Int) -> [UInt16] {
+        if pixels.isEmpty { return Array(repeating: 0x0000, count: maxColors) }
+        var boxes = [ColorBox(pixels: pixels)]
+        while boxes.count < maxColors {
+            guard let splitIndex = boxes.firstIndex(where: { $0.pixels.count > 1 }) else { break }
+            let boxToSplit = boxes.remove(at: splitIndex)
+            let axis = boxToSplit.getLongestAxis()
+            let sortedPixels: [PixelFloat]
+            if axis == 0 { sortedPixels = boxToSplit.pixels.sorted { $0.r < $1.r } }
+            else if axis == 1 { sortedPixels = boxToSplit.pixels.sorted { $0.g < $1.g } }
+            else { sortedPixels = boxToSplit.pixels.sorted { $0.b < $1.b } }
+            let mid = sortedPixels.count / 2
+            boxes.append(ColorBox(pixels: Array(sortedPixels[0..<mid])))
+            boxes.append(ColorBox(pixels: Array(sortedPixels[mid..<sortedPixels.count])))
+        }
+        var iigsPalette = boxes.map { rgbToIIGS($0.getAverageColor()) }
+        while iigsPalette.count < maxColors { iigsPalette.append(0x0000) }
+        return iigsPalette
+    }
+
+    // MARK: - Helper Methods
+    func applySaturation(_ pixels: inout [PixelFloat], amount: Double) {
+        for i in 0..<pixels.count {
+            let p = pixels[i]
+            let gray = 0.299 * p.r + 0.587 * p.g + 0.114 * p.b
+            pixels[i].r = (gray + (p.r - gray) * amount).clamped(to: 0...255)
+            pixels[i].g = (gray + (p.g - gray) * amount).clamped(to: 0...255)
+            pixels[i].b = (gray + (p.b - gray) * amount).clamped(to: 0...255)
+        }
+    }
+    
+    struct ScanlineInfo { let y: Int; let avg: PixelFloat }
     func calculateAverageColor(_ pixels: [PixelFloat], y: Int, w: Int) -> PixelFloat {
         var r: Double = 0, g: Double = 0, b: Double = 0
         let start = y * w
-        for i in 0..<w {
-            r += pixels[start+i].r
-            g += pixels[start+i].g
-            b += pixels[start+i].b
-        }
+        for i in 0..<w { r += pixels[start+i].r; g += pixels[start+i].g; b += pixels[start+i].b }
         let count = Double(w)
         return PixelFloat(r: r/count, g: g/count, b: b/count)
     }
     
-    // Rekursives Clustern der Zeilen (Median Cut Style)
-    func clusterScanlines(_ lines: [ScanlineInfo], depth: Int, maxDepth: Int) -> [[ScanlineInfo]] {
-        if depth >= maxDepth || lines.isEmpty {
-            return [lines]
-        }
-        
-        // Finde Kanal mit größter Varianz (R, G oder B)
-        var minR = Double.greatestFiniteMagnitude, maxR = -1.0
-        var minG = Double.greatestFiniteMagnitude, maxG = -1.0
-        var minB = Double.greatestFiniteMagnitude, maxB = -1.0
-        
+    func clusterScanlines(_ lines: [ScanlineInfo], depth: Int, maxDepth: Int, threshold: Double) -> [[ScanlineInfo]] {
+        if lines.isEmpty { return [] }
+        var minR=999.0, maxR = -1.0, minG=999.0, maxG = -1.0, minB=999.0, maxB = -1.0
         for l in lines {
-            minR = min(minR, l.avg.r); maxR = max(maxR, l.avg.r)
-            minG = min(minG, l.avg.g); maxG = max(maxG, l.avg.g)
-            minB = min(minB, l.avg.b); maxB = max(maxB, l.avg.b)
+            minR=min(minR, l.avg.r); maxR=max(maxR, l.avg.r)
+            minG=min(minG, l.avg.g); maxG=max(maxG, l.avg.g)
+            minB=min(minB, l.avg.b); maxB=max(maxB, l.avg.b)
         }
-        
-        let diffR = maxR - minR
-        let diffG = maxG - minG
-        let diffB = maxB - minB
-        
-        // Sortieren nach stärkstem Kanal
-        let sortedLines: [ScanlineInfo]
-        if diffR >= diffG && diffR >= diffB {
-            sortedLines = lines.sorted { $0.avg.r < $1.avg.r }
-        } else if diffG >= diffR && diffG >= diffB {
-            sortedLines = lines.sorted { $0.avg.g < $1.avg.g }
-        } else {
-            sortedLines = lines.sorted { $0.avg.b < $1.avg.b }
-        }
-        
-        // Splitten
-        let mid = sortedLines.count / 2
-        let left = Array(sortedLines[0..<mid])
-        let right = Array(sortedLines[mid..<sortedLines.count])
-        
-        return clusterScanlines(left, depth: depth + 1, maxDepth: maxDepth) +
-               clusterScanlines(right, depth: depth + 1, maxDepth: maxDepth)
+        let dR = maxR-minR, dG = maxG-minG, dB = maxB-minB
+        let err = sqrt(dR*dR + dG*dG + dB*dB)
+        if depth >= maxDepth || err <= threshold { return [lines] }
+        let sorted: [ScanlineInfo]
+        if dR >= dG && dR >= dB { sorted = lines.sorted { $0.avg.r < $1.avg.r } }
+        else if dG >= dR && dG >= dB { sorted = lines.sorted { $0.avg.g < $1.avg.g } }
+        else { sorted = lines.sorted { $0.avg.b < $1.avg.b } }
+        let mid = sorted.count / 2
+        return clusterScanlines(Array(sorted[0..<mid]), depth: depth+1, maxDepth: maxDepth, threshold: threshold) +
+               clusterScanlines(Array(sorted[mid..<sorted.count]), depth: depth+1, maxDepth: maxDepth, threshold: threshold)
     }
     
-    // MARK: - QUANTIZER (Freq based)
-    
-    func quantizePixels(pixels: [PixelFloat], maxColors: Int) -> [UInt16] {
-        var counts: [RGB: Int] = [:]
-        for p in pixels {
-            // 5-Bit Quantisierung für Häufigkeitsanalyse
-            let r = UInt8(p.r) & 0xF8
-            let g = UInt8(p.g) & 0xF8
-            let b = UInt8(p.b) & 0xF8
-            counts[RGB(r: r, g: g, b: b), default: 0] += 1
+    struct DitherError { let dx: Int; let dy: Int; let factor: Double }
+    func getDitherKernel(name: String) -> [DitherError] {
+        switch name {
+        case "Atkinson": return [DitherError(dx: 1, dy: 0, factor: 1/8), DitherError(dx: 2, dy: 0, factor: 1/8), DitherError(dx: -1, dy: 1, factor: 1/8), DitherError(dx: 0, dy: 1, factor: 1/8), DitherError(dx: 1, dy: 1, factor: 1/8), DitherError(dx: 0, dy: 2, factor: 1/8)]
+        case "Jarvis-Judice-Ninke": return [DitherError(dx: 1, dy: 0, factor: 7/48), DitherError(dx: 2, dy: 0, factor: 5/48), DitherError(dx: -2, dy: 1, factor: 3/48), DitherError(dx: -1, dy: 1, factor: 5/48), DitherError(dx: 0, dy: 1, factor: 7/48), DitherError(dx: 1, dy: 1, factor: 5/48), DitherError(dx: 2, dy: 1, factor: 3/48), DitherError(dx: -2, dy: 2, factor: 1/48), DitherError(dx: -1, dy: 2, factor: 3/48), DitherError(dx: 0, dy: 2, factor: 5/48), DitherError(dx: 1, dy: 2, factor: 3/48), DitherError(dx: 2, dy: 2, factor: 1/48)]
+        case "Stucki": return [DitherError(dx: 1, dy: 0, factor: 8/42), DitherError(dx: 2, dy: 0, factor: 4/42), DitherError(dx: -2, dy: 1, factor: 2/42), DitherError(dx: -1, dy: 1, factor: 4/42), DitherError(dx: 0, dy: 1, factor: 8/42), DitherError(dx: 1, dy: 1, factor: 4/42), DitherError(dx: 2, dy: 1, factor: 2/42), DitherError(dx: -2, dy: 2, factor: 1/42), DitherError(dx: -1, dy: 2, factor: 2/42), DitherError(dx: 0, dy: 2, factor: 4/42), DitherError(dx: 1, dy: 2, factor: 2/42), DitherError(dx: 2, dy: 2, factor: 1/42)]
+        case "Burkes": return [DitherError(dx: 1, dy: 0, factor: 8/32), DitherError(dx: 2, dy: 0, factor: 4/32), DitherError(dx: -2, dy: 1, factor: 2/32), DitherError(dx: -1, dy: 1, factor: 4/32), DitherError(dx: 0, dy: 1, factor: 8/32), DitherError(dx: 1, dy: 1, factor: 4/32), DitherError(dx: 2, dy: 1, factor: 2/32)]
+        default: return [DitherError(dx: 1, dy: 0, factor: 7/16), DitherError(dx: -1, dy: 1, factor: 3/16), DitherError(dx: 0, dy: 1, factor: 5/16), DitherError(dx: 1, dy: 1, factor: 1/16)]
         }
-        
-        let sorted = counts.sorted { $0.value > $1.value }.prefix(maxColors).map { $0.key }
-        var iigsPalette = sorted.map { rgbToIIGS($0) }
-        while iigsPalette.count < maxColors { iigsPalette.append(0x0000) }
-        return iigsPalette
     }
-    
-    // MARK: - UTILS
     
     struct RGB: Hashable { var r: UInt8; var g: UInt8; var b: UInt8 }
     struct PixelFloat { var r: Double; var g: Double; var b: Double }
@@ -311,37 +371,31 @@ class AppleIIGSConverter: RetroMachine {
         var rawBytes = [UInt8](repeating: 0, count: width * height * 4)
         guard let ctx = CGContext(data: &rawBytes, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4, space: colorSpace, bitmapInfo: bitmapInfo) else { return pixels }
         ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-        for i in 0..<(width*height) {
-            pixels[i] = PixelFloat(r: Double(rawBytes[i*4]), g: Double(rawBytes[i*4+1]), b: Double(rawBytes[i*4+2]))
-        }
+        for i in 0..<(width*height) { pixels[i] = PixelFloat(r: Double(rawBytes[i*4]), g: Double(rawBytes[i*4+1]), b: Double(rawBytes[i*4+2])) }
         return pixels
     }
     
-    func findNearestColor(r: Double, g: Double, b: Double, palette: [RGB]) -> ColorMatch {
-        var minDiv: Double = Double.greatestFiniteMagnitude
+    func findNearestColor(pixel: PixelFloat, palette: [RGB]) -> ColorMatch {
+        var minDiv = Double.greatestFiniteMagnitude
         var bestIdx = 0
         for (i, p) in palette.enumerated() {
-            let dr = r - Double(p.r); let dg = g - Double(p.g); let db = b - Double(p.b)
+            let dr = pixel.r - Double(p.r); let dg = pixel.g - Double(p.g); let db = pixel.b - Double(p.b)
             let dist = dr*dr + dg*dg + db*db
             if dist < minDiv { minDiv = dist; bestIdx = i }
         }
         return ColorMatch(index: bestIdx, rgb: palette[bestIdx])
     }
     
-    func distributeError(source: inout [PixelFloat], x: Int, y: Int, w: Int, h: Int, errR: Double, errG: Double, errB: Double) {
-        func addErr(dx: Int, dy: Int, factor: Double) {
-            let nx = x+dx; let ny = y+dy
-            if nx>=0 && nx<w && ny>=0 && ny<h {
-                let idx = (ny*w)+nx
-                source[idx].r += errR * factor
-                source[idx].g += errG * factor
-                source[idx].b += errB * factor
+    func distributeError(source: inout [PixelFloat], x: Int, y: Int, w: Int, h: Int, errR: Double, errG: Double, errB: Double, kernel: [DitherError]) {
+        for k in kernel {
+            let nx = x + k.dx, ny = y + k.dy
+            if nx >= 0 && nx < w && ny >= 0 && ny < h {
+                let idx = (ny * w) + nx
+                source[idx].r += errR * k.factor
+                source[idx].g += errG * k.factor
+                source[idx].b += errB * k.factor
             }
         }
-        addErr(dx: 1, dy: 0, factor: 7.0/16.0)
-        addErr(dx: -1, dy: 1, factor: 3.0/16.0)
-        addErr(dx: 0, dy: 1, factor: 5.0/16.0)
-        addErr(dx: 1, dy: 1, factor: 1.0/16.0)
     }
     
     func rgbToIIGS(_ rgb: RGB) -> UInt16 {
@@ -357,4 +411,8 @@ class AppleIIGSConverter: RetroMachine {
         let b4 = iigs & 0x0F
         return RGB(r: UInt8(r4*17), g: UInt8(g4*17), b: UInt8(b4*17))
     }
+}
+
+extension Comparable {
+    func clamped(to limits: ClosedRange<Self>) -> Self { return min(max(self, limits.lowerBound), limits.upperBound) }
 }

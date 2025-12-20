@@ -70,16 +70,16 @@ class AppleIIConverter: RetroMachine {
         ConversionOption(
             label: "Crosshatch Threshold",
             key: "crosshatch",
-            range: 0...50,
-            defaultValue: 0
+            range: 0.0...50.0,
+            defaultValue: 0.0
         ),
         
         // 7. COLOR BLEED (Slider)
         ConversionOption(
             label: "Color Bleed Reduction",
             key: "bleed",
-            range: 0...99,
-            defaultValue: 0
+            range: 0.0...99.0,
+            defaultValue: 0.0
         )
     ]
     
@@ -101,10 +101,10 @@ class AppleIIConverter: RetroMachine {
             var targetW = 280
             var targetH = 192
             if resString.contains("320") { targetW = 320; targetH = 200 }
-            else if resString.contains("640") { targetW = 320; targetH = resString.contains("480") ? 240 : 200; targetH = 200 }
+            else if resString.contains("640") { targetW = 320; targetH = 200 }
             else { targetW = 280; targetH = 192 }
             
-            // --- SAVE BMP ---
+            // --- SAVE BMP (Legacy Format) ---
             let readyImage = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
             try readyImage.saveAsStrict24BitBMP(to: inputUrl)
             
@@ -135,12 +135,17 @@ class AppleIIConverter: RetroMachine {
                 args.append("-P5")
             }
             
-            if let xStr = options.first(where: {$0.key == "crosshatch"})?.selectedValue, let xVal = Int(xStr), xVal > 0 {
-                args.append("-X\(xVal)")
+            // Slider Parsing (String -> Double -> Int)
+            if let xStr = options.first(where: {$0.key == "crosshatch"})?.selectedValue,
+               let xDouble = Double(xStr),
+               xDouble > 0 {
+                args.append("-X\(Int(xDouble))")
             }
             
-            if let cStr = options.first(where: {$0.key == "bleed"})?.selectedValue, let cVal = Int(cStr), cVal > 0 {
-                args.append("-C\(cVal)")
+            if let cStr = options.first(where: {$0.key == "bleed"})?.selectedValue,
+               let cDouble = Double(cStr),
+               cDouble > 0 {
+                args.append("-C\(Int(cDouble))")
             }
             
             args.append("-V") // Preview
@@ -176,3 +181,87 @@ class AppleIIConverter: RetroMachine {
             throw NSError(domain: "BitPast", code: 500, userInfo: [NSLocalizedDescriptionKey: "Conversion failed. No preview generated."])
         }
     }
+
+// MARK: - Extensions für AppleIIConverter
+
+extension NSImage {
+    func saveAsStrict24BitBMP(to url: URL) throws {
+        let width = Int(self.size.width)
+        let height = Int(self.size.height)
+        
+        guard let cgImage = self.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
+            throw NSError(domain: "BMPError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No CGImage"])
+        }
+        
+        let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
+        let bytesPerPixel = 4
+        let bytesPerRow = width * bytesPerPixel
+        var rawData = [UInt8](repeating: 0, count: height * bytesPerRow)
+        
+        let context = CGContext(
+            data: &rawData,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+        )
+        
+        context?.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        
+        // BMP Setup
+        let rowSize = ((width * 3) + 3) & ~3
+        let pixelDataSize = rowSize * height
+        let fileSize = 54 + pixelDataSize
+        
+        var bmpData = Data()
+        bmpData.reserveCapacity(fileSize)
+        
+        // HEADER (FIX: "contentsOf:" Label hinzugefügt)
+        bmpData.append(contentsOf: [0x42, 0x4D]) // "BM"
+        bmpData.append(contentsOf: uInt32ToBytes(UInt32(fileSize)))
+        bmpData.append(contentsOf: [0, 0, 0, 0])
+        bmpData.append(contentsOf: uInt32ToBytes(54))
+        
+        // INFO HEADER
+        bmpData.append(contentsOf: uInt32ToBytes(40))
+        bmpData.append(contentsOf: uInt32ToBytes(UInt32(width)))
+        bmpData.append(contentsOf: uInt32ToBytes(UInt32(height)))
+        bmpData.append(contentsOf: [1, 0])
+        bmpData.append(contentsOf: [24, 0])
+        bmpData.append(contentsOf: [0, 0, 0, 0])
+        bmpData.append(contentsOf: uInt32ToBytes(UInt32(pixelDataSize)))
+        bmpData.append(contentsOf: [0, 0, 0, 0])
+        bmpData.append(contentsOf: [0, 0, 0, 0])
+        bmpData.append(contentsOf: [0, 0, 0, 0])
+        bmpData.append(contentsOf: [0, 0, 0, 0])
+        
+        // PIXELS
+        let paddingBytes = [UInt8](repeating: 0, count: rowSize - (width * 3))
+        
+        for y in (0..<height).reversed() {
+            let rowStart = y * bytesPerRow
+            for x in 0..<width {
+                let pixelIdx = rowStart + (x * 4)
+                let r = rawData[pixelIdx]
+                let g = rawData[pixelIdx + 1]
+                let b = rawData[pixelIdx + 2]
+                
+                bmpData.append(b)
+                bmpData.append(g)
+                bmpData.append(r)
+            }
+            if !paddingBytes.isEmpty {
+                bmpData.append(contentsOf: paddingBytes)
+            }
+        }
+        
+        try bmpData.write(to: url)
+    }
+    
+    private func uInt32ToBytes(_ val: UInt32) -> [UInt8] {
+        var v = val
+        return withUnsafeBytes(of: &v) { Array($0) }
+    }
+}

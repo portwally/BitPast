@@ -10,11 +10,13 @@ struct ContentView: View {
     @State private var showDiskSheet = false
     @State private var selectedDiskSize: ConverterViewModel.DiskSize = .kb140
     @State private var selectedDiskFormat: ConverterViewModel.DiskFormat = .po
-    @State private var diskVolumeName: String = "BITPAST" // Standard-Name
+    @State private var diskVolumeName: String = "BITPAST"
     
     let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
-    let topRowKeys = ["mode", "colortype", "dither", "palette"]
-    let bottomRowKeys = ["resolution", "crosshatch", "bleed"]
+    
+    // Keys für die Anzeige
+    let topRowKeys = ["mode", "colortype", "dither", "palette", "saturation"]
+    let bottomRowKeys = ["resolution", "crosshatch", "bleed", "gamma", "dither_amount", "threshold"]
     
     func binding(for index: Int) -> Binding<String> {
         Binding(
@@ -36,7 +38,7 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 0) {
             HSplitView {
-                // LEFT: BROWSER
+                // LINKER BEREICH: IMAGE BROWSER
                 VStack(spacing: 0) {
                     HStack {
                         Text("Image Browser").font(.headline).foregroundColor(.secondary)
@@ -73,7 +75,7 @@ struct ContentView: View {
                 .frame(minWidth: 220, maxWidth: 500)
                 .onDrop(of: [.fileURL], isTargeted: $isDropTarget) { providers in return viewModel.handleDrop(providers: providers) }
                 
-                // RIGHT: PREVIEW
+                // RECHTER BEREICH: VORSCHAU
                 VStack(spacing: 0) {
                     HStack {
                         Text("Preview").font(.headline).foregroundColor(.secondary)
@@ -102,57 +104,96 @@ struct ContentView: View {
             }
             Divider()
             
-            // BOTTOM: OPTIONS & EXPORT
+            // UNTERER BEREICH: OPTIONEN & EXPORT
             VStack(spacing: 0) {
                 if let error = viewModel.errorMessage { Text(error).foregroundColor(.red).font(.caption).frame(maxWidth: .infinity).padding(.top, 4) }
+                
                 VStack(alignment: .leading, spacing: 12) {
-                    // ROW 1
+                    
+                    // ZEILE 1: System + Top Keys
                     HStack(spacing: 20) {
+                        // SYSTEM AUSWAHL
                         VStack(alignment: .leading, spacing: 8) {
                             Text("SYSTEM").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
                             Picker("", selection: $viewModel.selectedMachineIndex) {
                                 ForEach(0..<viewModel.machines.count, id: \.self) { i in Text(viewModel.machines[i].name) }
-                            }.frame(width: 120).onChange(of: viewModel.selectedMachineIndex) { _ in viewModel.triggerLivePreview() }
+                            }.frame(width: 140).onChange(of: viewModel.selectedMachineIndex) { _ in viewModel.triggerLivePreview() }
                         }
                         Divider().frame(height: 20)
+                        
+                        // OBERE REIHE OPTIONEN
                         ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                             let opt = viewModel.currentMachine.options[index]
+                            
                             if topRowKeys.contains(opt.key) {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(opt.label.uppercased()).font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
-                                    if opt.type == .picker {
+                                    
+                                    if opt.type == .slider {
+                                        HStack {
+                                            Slider(
+                                                value: Binding(
+                                                    get: { Double(opt.selectedValue) ?? 0.0 },
+                                                    set: {
+                                                        let fmt = String(format: "%.2f", $0)
+                                                        viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = fmt
+                                                        viewModel.triggerLivePreview()
+                                                    }
+                                                ),
+                                                in: opt.range
+                                            ).frame(width: 100)
+                                            Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
+                                        }
+                                    } else if opt.type == .picker { // FIX: Strikte Prüfung statt "else"
                                         Picker("", selection: binding(for: index)) {
                                             ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
                                         }.frame(minWidth: 110)
                                     }
                                 }
+                                .id(opt.key) // FIX: Zwingt SwiftUI zum Neubau bei Wechsel
                             }
                         }
                         Spacer()
                     }
-                    // ROW 2
+                    
+                    // ZEILE 2: Bottom Keys + Export
                     HStack(spacing: 20) {
+                        // UNTERE REIHE OPTIONEN
                         ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                             let opt = viewModel.currentMachine.options[index]
+                            
                             if bottomRowKeys.contains(opt.key) {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text(opt.label.uppercased()).font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
-                                    if opt.type == .picker {
+                                    
+                                    if opt.type == .slider {
+                                        HStack {
+                                            Slider(
+                                                value: Binding(
+                                                    get: { Double(opt.selectedValue) ?? 0.0 },
+                                                    set: {
+                                                        let fmt = String(format: "%.2f", $0)
+                                                        viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = fmt
+                                                        viewModel.triggerLivePreview()
+                                                    }
+                                                ),
+                                                in: opt.range
+                                            ).frame(width: 100)
+                                            Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
+                                        }
+                                    } else if opt.type == .picker { // FIX: Strikte Prüfung
                                         Picker("", selection: binding(for: index)) {
                                             ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
                                         }.frame(width: 150)
-                                    } else {
-                                        HStack {
-                                            Slider(value: Binding(get: { Double(opt.selectedValue) ?? 0.0 }, set: { viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = String(Int($0)); viewModel.triggerLivePreview() }), in: opt.range).frame(width: 100)
-                                            Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 25, alignment: .trailing)
-                                        }
                                     }
                                 }
+                                .id(opt.key) // FIX: Unique Identity
                             }
                         }
+                        
                         Divider().frame(height: 20)
                         
-                        // NEW EXPORT UI
+                        // EXPORT BUTTONS
                         VStack(alignment: .leading, spacing: 8) {
                             Text("EXPORT").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
                             HStack {
@@ -166,7 +207,7 @@ struct ContentView: View {
                                 }
                                 .fixedSize()
                                 .disabled(viewModel.convertedImage == nil)
-
+                                
                                 Button(action: { showDiskSheet = true }) {
                                     Label("Create ProDOS Disk", systemImage: "externaldrive")
                                 }
@@ -176,9 +217,8 @@ struct ContentView: View {
                                         isPresented: $showDiskSheet,
                                         selectedSize: $selectedDiskSize,
                                         selectedFormat: $selectedDiskFormat,
-                                        volumeName: $diskVolumeName // Bind to State
+                                        volumeName: $diskVolumeName
                                     ) {
-                                        // Pass the volume name to ViewModel
                                         viewModel.createProDOSDisk(
                                             size: selectedDiskSize,
                                             format: selectedDiskFormat,
@@ -191,55 +231,31 @@ struct ContentView: View {
                         Spacer()
                     }
                 }.padding(15)
-            }.background(Color(NSColor.windowBackgroundColor)).frame(height: 130)
+            }.background(Color(NSColor.windowBackgroundColor)).frame(height: 140)
         }.frame(minWidth: 1000, minHeight: 700)
     }
 }
 
-// Updated Sheet with Text Field
+// Sub-Views bleiben gleich
 struct DiskExportSheet: View {
     @Binding var isPresented: Bool
     @Binding var selectedSize: ConverterViewModel.DiskSize
     @Binding var selectedFormat: ConverterViewModel.DiskFormat
     @Binding var volumeName: String
-    
     let onExport: () -> Void
-    
     var body: some View {
         VStack(spacing: 20) {
             Text("Create ProDOS Disk").font(.headline)
-            
             Form {
-                TextField("Volume Name:", text: $volumeName)
-                    .frame(width: 200)
-                    .help("Max 15 characters, A-Z, 0-9")
-                
-                Picker("Disk Size:", selection: $selectedSize) {
-                    ForEach(ConverterViewModel.DiskSize.allCases) { size in
-                        Text(size.rawValue).tag(size)
-                    }
-                }
-                
-                Picker("Format:", selection: $selectedFormat) {
-                    ForEach(ConverterViewModel.DiskFormat.allCases) { format in
-                        Text(format.rawValue.uppercased()).tag(format)
-                    }
-                }
-            }
-            .padding(.horizontal)
-            
+                TextField("Volume Name:", text: $volumeName).frame(width: 200).help("Max 15 characters")
+                Picker("Disk Size:", selection: $selectedSize) { ForEach(ConverterViewModel.DiskSize.allCases) { size in Text(size.rawValue).tag(size) } }
+                Picker("Format:", selection: $selectedFormat) { ForEach(ConverterViewModel.DiskFormat.allCases) { format in Text(format.rawValue.uppercased()).tag(format) } }
+            }.padding(.horizontal)
             HStack {
-                Button("Cancel") { isPresented = false }
-                    .keyboardShortcut(.cancelAction)
-                Button("Create Disk Image") {
-                    isPresented = false
-                    onExport()
-                }
-                .keyboardShortcut(.defaultAction)
+                Button("Cancel") { isPresented = false }.keyboardShortcut(.cancelAction)
+                Button("Create Disk Image") { isPresented = false; onExport() }.keyboardShortcut(.defaultAction)
             }
-        }
-        .padding()
-        .frame(width: 350) // Etwas breiter für das Textfeld
+        }.padding().frame(width: 350)
     }
 }
 
