@@ -15,7 +15,7 @@ struct InputImage: Identifiable, Hashable {
 
 @MainActor
 class ConverterViewModel: ObservableObject {
-    @Published var machines: [RetroMachine] = [AppleIIConverter()]
+    @Published var machines: [RetroMachine] = [AppleIIConverter(),AppleIIGSConverter()]
     @Published var selectedMachineIndex: Int = 0
     
     @Published var inputImages: [InputImage] = []
@@ -24,6 +24,7 @@ class ConverterViewModel: ObservableObject {
     @Published var currentResult: ConversionResult?
     @Published var isConverting: Bool = false
     @Published var errorMessage: String?
+    
     
     // ProDOS Optionen
     enum DiskFormat: String, CaseIterable, Identifiable {
@@ -207,7 +208,7 @@ class ConverterViewModel: ObservableObject {
                 return
             }
             
-            // Name für das Save-Panel (Host Computer)
+            // Name für das Save-Panel
             var outputBaseName = "retro_output"
             var originalFileNameRaw = "IMAGE"
             
@@ -242,8 +243,7 @@ class ConverterViewModel: ObservableObject {
                         
                         print("💾 CREATING DISK: \(targetUrl.lastPathComponent)")
                         
-                        // 2. Create Volume
-                        // Cadius 1.4 ist strikter, wir löschen die Zieldatei vorher definitiv
+                        // 2. Create Volume (Cadius 1.4+ needs clean target)
                         try? fileManager.removeItem(at: targetUrl)
                         
                         let createArgs = ["CREATEVOLUME", targetUrl.path, safeVolume, size.cadiusSize]
@@ -254,7 +254,7 @@ class ConverterViewModel: ObservableObject {
                             // 3. Process & Add Files
                             for (index, assetUrl) in result.fileAssets.enumerated() {
                                 
-                                // A. ZIEL-NAME (Der schöne Name)
+                                // A. ZIEL-NAME
                                 let rawName = originalFileNameRaw.uppercased()
                                 var finalBaseName = rawName.replacingOccurrences(of: ".[^.]+$", with: "", options: .regularExpression)
                                 finalBaseName = finalBaseName.replacingOccurrences(of: "[^A-Z0-9]", with: "", options: .regularExpression)
@@ -262,40 +262,54 @@ class ConverterViewModel: ObservableObject {
                                 if let first = finalBaseName.first, !first.isLetter { finalBaseName = "F" + finalBaseName }
                                 if result.fileAssets.count > 1 && index > 0 { finalBaseName += "\(index)" }
                                 
-                                // Max 11 Zeichen + .BIN
+                                // Max 11 Zeichen, damit Platz für Extension bleibt (Total 15)
                                 finalBaseName = String(finalBaseName.prefix(11))
-                                let finalProDOSName = "\(finalBaseName).BIN"
                                 
-                                // B. IMPORT-NAME (Kurz, um Fehler zu vermeiden)
-                                // TMP + Index + Suffix (#062000 -> BIN Type, $2000 Address)
+                                // --- INTELLIGENTE SUFFIX LOGIK ---
+                                let fileExt = assetUrl.pathExtension.uppercased()
+                                var magicSuffix = "#062000" // Default: BINary, $2000 (Apple II HGR)
+                                var proDOSExt = "BIN"
+                                
+                                // Entscheidung basierend auf Dateiendung vom Converter
+                                if fileExt == "SHR" || fileExt == "A2GS" {
+                                    // Apple IIgs Super Hi-Res
+                                    // Type: $C1 (PIC - Picture)
+                                    // Aux:  $0000
+                                    magicSuffix = "#C10000"
+                                    proDOSExt = "PIC" // Oder "SHR", aber PIC ist üblicher für Type $C1
+                                } else if fileExt == "BIN" {
+                                    // Apple II Standard
+                                    magicSuffix = "#062000"
+                                    proDOSExt = "BIN"
+                                }
+                                
+                                let finalProDOSName = "\(finalBaseName).\(proDOSExt)"
+                                
+                                // B. IMPORT-NAME
                                 let shortNameOnDisk = "TMP\(index)"
-                                let importFilename = "\(shortNameOnDisk)#062000"
+                                let importFilename = "\(shortNameOnDisk)\(magicSuffix)"
                                 
-                                print("➡️ PROCESSING FILE \(index+1):")
-                                print("   Importing as: \(importFilename)")
-                                print("   Renaming to:  \(finalProDOSName)")
+                                print("➡️ FILE \(index+1) (\(fileExt)):")
+                                print("   Suffix: \(magicSuffix)")
+                                print("   Final:  \(finalProDOSName)")
                                 
-                                // C. Temp Datei vorbereiten
+                                // C. Temp Datei
                                 let tempFolder = fileManager.temporaryDirectory
                                 let tempFileUrl = tempFolder.appendingPathComponent(importFilename)
                                 
                                 try? fileManager.removeItem(at: tempFileUrl)
                                 try fileManager.copyItem(at: assetUrl, to: tempFileUrl)
                                 
-                                // D. ADDFILE (in Root: /VOLNAME/)
+                                // D. ADDFILE
                                 let targetFolderOnDisk = "/\(safeVolume)/"
                                 let addArgs = ["ADDFILE", targetUrl.path, targetFolderOnDisk, tempFileUrl.path]
-                                
                                 try self.runCadius(url: cadiusUrl, args: addArgs)
                                 
-                                // Aufräumen
                                 try? fileManager.removeItem(at: tempFileUrl)
                                 
                                 // E. RENAMEFILE
-                                // Pfad zur Datei auf der Disk: /VOLNAME/TMP0
                                 let fullPathToTempFile = "/\(safeVolume)/\(shortNameOnDisk)"
                                 let renameArgs = ["RENAMEFILE", targetUrl.path, fullPathToTempFile, finalProDOSName]
-                                
                                 try self.runCadius(url: cadiusUrl, args: renameArgs)
                             }
                             
