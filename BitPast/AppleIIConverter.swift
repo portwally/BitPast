@@ -37,83 +37,67 @@ class AppleIIConverter: RetroMachine {
             selectedValue: "560x384 (DHGR Best)"
         ),
         
-        // 4. DITHER (Alle 8 Algorithmen)
+        // 4. DITHER (Clean Names)
         ConversionOption(
-            label: "Dither",
+            label: "Dither Algo",
             key: "dither",
             values: [
-                "Floyd-Steinberg (D1)",
-                "Jarvis (D2)",
-                "Stucki (D3)",
-                "Atkinson (D4)",
-                "Burkes (D5)",
-                "Sierra (D6)",
-                "Sierra-2 (D7)",
-                "Sierra-Lite (D8)",
+                "Floyd-Steinberg",
+                "Jarvis, Judice, Ninke",
+                "Stucki",
+                "Atkinson",
+                "Burkes",
+                "Sierra",
+                "Sierra-2",
+                "Sierra-Lite",
                 "None"
             ],
-            selectedValue: "Floyd-Steinberg (D1)"
+            selectedValue: "Floyd-Steinberg"
         ),
         
-        // 5. PALETTE
+        // 5. PALETTE (Clean Names)
         ConversionOption(
             label: "Palette",
             key: "palette",
             values: [
-                "Apple IIgs RGB (P0)",
-                "Wikipedia NTSC (P4)",
-                "VBMP NTSC (P3)",
-                "RGB Palette (P9)",
-                "Palette Clipping (P13)",
+                "Apple IIgs RGB",
+                "Wikipedia NTSC",
+                "VBMP NTSC",
+                "RGB Palette",
+                "Palette Clipping",
                 "-----------------",
-                "Standard (tohgr) (P5)",
-                "CiderPress (P1)",
-                "AppleWin Old (P2)",
-                "Greyscale (P5 Mono)",
-                "Virtu (P8)",
-                "MAME (P11)"
+                "Standard (tohgr)",
+                "CiderPress",
+                "AppleWin Old",
+                "Greyscale",
+                "Virtu",
+                "MAME"
             ],
-            selectedValue: "Apple IIgs RGB (P0)"
+            selectedValue: "Apple IIgs RGB"
         ),
         
-        // 6. CROSS-HATCH PATTERN (Parameter X)
+        // 6. CROSS-HATCH PATTERN (X)
         ConversionOption(
-            label: "Cross-hatch Pattern (X)",
+            label: "Cross-hatch Pattern",
             key: "crosshatch",
             range: 0.0...10.0,
             defaultValue: 3.0
         ),
         
-        // 7. THRESHOLD FOR CROSS-HATCH (Parameter Z)
+        // 7. THRESHOLD FOR CROSS-HATCH (Z)
         ConversionOption(
-            label: "Cross-hatch Threshold (Z)",
+            label: "Cross-hatch Threshold",
             key: "z_threshold",
             range: 0.0...40.0,
             defaultValue: 20.0
         ),
         
-        // 8. ERROR-DIFFUSION MATRIX (Parameter E)
+        // 8. ERROR-DIFFUSION MATRIX (E)
         ConversionOption(
-            label: "Error-Diffusion Matrix (E)",
+            label: "Error Matrix Index",
             key: "error_matrix",
             range: 0.0...10.0,
             defaultValue: 1.0
-        ),
-        
-        // 9. HUE TWEAK (Parameter Y)
-        ConversionOption(
-            label: "Hue Tweak (Y)",
-            key: "hue_tweak",
-            range: -4.0...4.0,
-            defaultValue: 0.0
-        ),
-        
-        // 10. COLOR BLEED (Parameter C)
-        ConversionOption(
-            label: "Color Bleed Reduction (C)",
-            key: "bleed",
-            range: 0.0...99.0,
-            defaultValue: 0.0
         )
     ]
     
@@ -135,11 +119,9 @@ class AppleIIConverter: RetroMachine {
         var targetW = 280
         var targetH = 192
         
-        if mode.contains("DLGR") {
-            targetW = 80; targetH = 48
-        } else if mode.contains("LGR") {
-            targetW = 40; targetH = 48
-        } else {
+        if mode.contains("DLGR") { targetW = 80; targetH = 48 }
+        else if mode.contains("LGR") { targetW = 40; targetH = 48 }
+        else {
             if resString.contains("640x480") { targetW = 640; targetH = 480 }
             else if resString.contains("640") { targetW = 640; targetH = 400 }
             else if resString.contains("560x384") { targetW = 560; targetH = 384 }
@@ -149,7 +131,6 @@ class AppleIIConverter: RetroMachine {
         }
         
         // --- SAVE BMP ---
-        // Hinweis: fitToStandardSize kommt aus RetroMachine.swift, saveAsStrict24BitBMP aus der Extension unten
         let readyImage = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
         try readyImage.saveAsStrict24BitBMP(to: inputUrl)
         
@@ -160,21 +141,25 @@ class AppleIIConverter: RetroMachine {
         
         var args: [String] = [inputFilename]
         
+        // Mode Flags
         if mode.contains("DHGR") { if colorType == "Monochrome" { args.append("MONO") } }
         else if mode.contains("HGR") { args.append("HGR"); if colorType == "Monochrome" { args.append("MONO") } }
         else if mode.contains("DLGR") { args.append("DL") }
         else if mode.contains("LGR") { args.append("L") }
         
-        // --- DITHER ---
-        let dither = options.first(where: {$0.key == "dither"})?.selectedValue ?? ""
-        if dither.contains("Floyd") { args.append("-D1") }
-        else if dither.contains("Jarvis") { args.append("-D2") }
-        else if dither.contains("Stucki") { args.append("-D3") }
-        else if dither.contains("Atkinson") { args.append("-D4") }
-        else if dither.contains("Burkes") { args.append("-D5") }
-        else if dither.contains("Sierra-2") { args.append("-D7") }
-        else if dither.contains("Sierra-Lite") { args.append("-D8") }
-        else if dither.contains("Sierra") { args.append("-D6") }
+        // --- DITHER MAPPING (Internal ID) ---
+        let ditherName = options.first(where: {$0.key == "dither"})?.selectedValue ?? ""
+        switch ditherName {
+        case "Floyd-Steinberg":       args.append("-D1")
+        case "Jarvis, Judice, Ninke": args.append("-D2")
+        case "Stucki":                args.append("-D3")
+        case "Atkinson":              args.append("-D4")
+        case "Burkes":                args.append("-D5")
+        case "Sierra":                args.append("-D6")
+        case "Sierra-2":              args.append("-D7")
+        case "Sierra-Lite":           args.append("-D8")
+        default: break
+        }
         
         // --- ERROR MATRIX (E) ---
         if let eStr = options.first(where: {$0.key == "error_matrix"})?.selectedValue,
@@ -183,30 +168,30 @@ class AppleIIConverter: RetroMachine {
             args.append("-E\(Int(eVal))")
         }
         
-        // --- PALETTE ---
-        let palStr = options.first(where: {$0.key == "palette"})?.selectedValue ?? ""
-        if let range = palStr.range(of: "P\\d+", options: .regularExpression) {
-            let pTag = String(palStr[range])
-            args.append("-\(pTag)")
-        } else {
-            args.append("-P5")
-        }
+        // --- PALETTE MAPPING (Internal ID) ---
+        let palName = options.first(where: {$0.key == "palette"})?.selectedValue ?? ""
+        if palName.contains("Apple IIgs RGB") { args.append("-P0") }
+        else if palName.contains("CiderPress") { args.append("-P1") }
+        else if palName.contains("AppleWin Old") { args.append("-P2") }
+        else if palName.contains("VBMP NTSC") { args.append("-P3") }
+        else if palName.contains("Wikipedia NTSC") { args.append("-P4") }
+        else if palName.contains("Greyscale") { args.append("-P5") }
+        else if palName.contains("Standard (tohgr)") { args.append("-P5") }
+        else if palName.contains("Virtu") { args.append("-P8") }
+        else if palName.contains("RGB Palette") { args.append("-P9") }
+        else if palName.contains("MAME") { args.append("-P11") }
+        else if palName.contains("Clipping") { args.append("-P13") }
+        else { args.append("-P5") } // Fallback
         
-        // --- SLIDERS ---
-        if let valStr = options.first(where: {$0.key == "crosshatch"})?.selectedValue, let val = Double(valStr) {
+        // --- SLIDERS (X, Z) ---
+        if let valStr = options.first(where: {$0.key == "crosshatch"})?.selectedValue, let val = Double(valStr), val > 0 {
             args.append("-X\(Int(val))")
         }
-        if let valStr = options.first(where: {$0.key == "z_threshold"})?.selectedValue, let val = Double(valStr) {
+        if let valStr = options.first(where: {$0.key == "z_threshold"})?.selectedValue, let val = Double(valStr), val > 0 {
             args.append("-Z\(Int(val))")
         }
-        if let valStr = options.first(where: {$0.key == "hue_tweak"})?.selectedValue, let val = Double(valStr) {
-            args.append("-Y\(Int(val))")
-        }
-        if let cStr = options.first(where: {$0.key == "bleed"})?.selectedValue, let cDouble = Double(cStr), cDouble > 0 {
-            args.append("-C\(Int(cDouble))")
-        }
         
-        args.append("-V")
+        args.append("-V") // Preview
         
         // --- DEBUG PRINT ---
         print("\n---------- B2D DEBUG ----------")
@@ -245,86 +230,44 @@ class AppleIIConverter: RetroMachine {
     }
 }
 
-// MARK: - Extensions für AppleIIConverter
-
 extension NSImage {
     func saveAsStrict24BitBMP(to url: URL) throws {
         let width = Int(self.size.width)
         let height = Int(self.size.height)
-        
         guard let cgImage = self.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw NSError(domain: "BMPError", code: 1, userInfo: [NSLocalizedDescriptionKey: "No CGImage"])
         }
-        
         let colorSpace = CGColorSpace(name: CGColorSpace.sRGB)!
-        let bytesPerPixel = 4
-        let bytesPerRow = width * bytesPerPixel
+        let bytesPerRow = width * 4
         var rawData = [UInt8](repeating: 0, count: height * bytesPerRow)
-        
-        let context = CGContext(
-            data: &rawData,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: bytesPerRow,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
-        )
-        
+        let context = CGContext(data: &rawData, width: width, height: height, bitsPerComponent: 8, bytesPerRow: bytesPerRow, space: colorSpace, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue)
         context?.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
         
-        // BMP Setup
         let rowSize = ((width * 3) + 3) & ~3
-        let pixelDataSize = rowSize * height
-        let fileSize = 54 + pixelDataSize
+        let fileSize = 54 + (rowSize * height)
+        var bmpData = Data(); bmpData.reserveCapacity(fileSize)
         
-        var bmpData = Data()
-        bmpData.reserveCapacity(fileSize)
-        
-        // HEADER
-        bmpData.append(contentsOf: [0x42, 0x4D]) // "BM"
+        bmpData.append(contentsOf: [0x42, 0x4D])
         bmpData.append(contentsOf: uInt32ToBytes(UInt32(fileSize)))
         bmpData.append(contentsOf: [0, 0, 0, 0])
         bmpData.append(contentsOf: uInt32ToBytes(54))
-        
-        // INFO HEADER
         bmpData.append(contentsOf: uInt32ToBytes(40))
         bmpData.append(contentsOf: uInt32ToBytes(UInt32(width)))
         bmpData.append(contentsOf: uInt32ToBytes(UInt32(height)))
-        bmpData.append(contentsOf: [1, 0])
-        bmpData.append(contentsOf: [24, 0])
-        bmpData.append(contentsOf: [0, 0, 0, 0])
-        bmpData.append(contentsOf: uInt32ToBytes(UInt32(pixelDataSize)))
-        bmpData.append(contentsOf: [0, 0, 0, 0])
-        bmpData.append(contentsOf: [0, 0, 0, 0])
-        bmpData.append(contentsOf: [0, 0, 0, 0])
-        bmpData.append(contentsOf: [0, 0, 0, 0])
+        bmpData.append(contentsOf: [1, 0, 24, 0, 0, 0, 0, 0])
+        bmpData.append(contentsOf: uInt32ToBytes(UInt32(rowSize * height)))
+        bmpData.append(contentsOf: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
         
-        // PIXELS
         let paddingBytes = [UInt8](repeating: 0, count: rowSize - (width * 3))
-        
         for y in (0..<height).reversed() {
             let rowStart = y * bytesPerRow
             for x in 0..<width {
-                let pixelIdx = rowStart + (x * 4)
-                let r = rawData[pixelIdx]
-                let g = rawData[pixelIdx + 1]
-                let b = rawData[pixelIdx + 2]
-                
-                bmpData.append(b)
-                bmpData.append(g)
-                bmpData.append(r)
+                let i = rowStart + (x * 4)
+                bmpData.append(contentsOf: [rawData[i+2], rawData[i+1], rawData[i]])
             }
-            if !paddingBytes.isEmpty {
-                bmpData.append(contentsOf: paddingBytes)
-            }
+            bmpData.append(contentsOf: paddingBytes)
         }
-        
         try bmpData.write(to: url)
     }
-    
-    private func uInt32ToBytes(_ val: UInt32) -> [UInt8] {
-        var v = val
-        return withUnsafeBytes(of: &v) { Array($0) }
-    }
+    private func uInt32ToBytes(_ val: UInt32) -> [UInt8] { var v = val; return withUnsafeBytes(of: &v) { Array($0) } }
 }

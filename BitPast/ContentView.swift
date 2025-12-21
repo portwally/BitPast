@@ -17,8 +17,8 @@ struct ContentView: View {
     // Keys für die Anzeige
     let topRowKeys = ["mode", "colortype", "dither", "palette", "saturation"]
     
-    // UPDATE: Neue Keys hinzugefügt und sortiert
-    let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "hue_tweak", "bleed", "gamma", "dither_amount", "threshold"]
+    // UPDATE: Nur noch funktionierende Regler
+        let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "gamma", "dither_amount", "threshold"]
     
     var body: some View {
         VStack(spacing: 0) {
