@@ -14,8 +14,8 @@ struct ContentView: View {
     
     let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
     
-    // Layout Konstante für Symmetrie
-    let sideColumnWidth: CGFloat = 170
+    // Layout Konstante: Von 190 auf 195 erhöht (+5px)
+    let sideColumnWidth: CGFloat = 195
     
     // Keys für die Anzeige
     let topRowKeys = ["mode", "colortype", "dither", "palette", "saturation"]
@@ -110,8 +110,9 @@ struct ContentView: View {
                         Text("SYSTEM").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                         
                         VStack(spacing: 8) {
+                            // BUTTON 1: Apple II
                             SystemSelectButton(
-                                iconName: "cpu",
+                                iconName: "icon_apple2",
                                 machineName: viewModel.machines[0].name,
                                 isSelected: viewModel.selectedMachineIndex == 0
                             ) {
@@ -121,9 +122,10 @@ struct ContentView: View {
                                 }
                             }
                             
+                            // BUTTON 2: Apple IIGS
                             if viewModel.machines.count > 1 {
                                 SystemSelectButton(
-                                    iconName: "display.2",
+                                    iconName: "icon_iigs",
                                     machineName: viewModel.machines[1].name,
                                     isSelected: viewModel.selectedMachineIndex == 1
                                 ) {
@@ -133,20 +135,34 @@ struct ContentView: View {
                                     }
                                 }
                             }
+                            
+                            // BUTTON 3: C64
+                            if viewModel.machines.count > 2 {
+                                SystemSelectButton(
+                                    iconName: "gamecontroller.fill",
+                                    machineName: viewModel.machines[2].name,
+                                    isSelected: viewModel.selectedMachineIndex == 2
+                                ) {
+                                    if viewModel.selectedMachineIndex != 2 {
+                                        viewModel.selectedMachineIndex = 2
+                                        viewModel.triggerLivePreview()
+                                    }
+                                }
+                            }
                         }
                         Spacer()
                     }
                     .padding(12)
-                    .frame(width: sideColumnWidth) // SYMMETRIE LINKS
+                    .frame(width: sideColumnWidth) // Breite erhöht
                     .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
                     
                     Divider()
                     
                     // B. MITTE: SLIDER (Scrollbar)
                     ScrollView(.horizontal, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .center, spacing: 15) {
                             // OBERE REIHE
-                            HStack(spacing: 15) {
+                            HStack(spacing: 20) {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if topRowKeys.contains(opt.key) {
@@ -158,7 +174,7 @@ struct ContentView: View {
                             Divider()
                             
                             // UNTERE REIHE
-                            HStack(spacing: 15) {
+                            HStack(spacing: 20) {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if bottomRowKeys.contains(opt.key) {
@@ -168,6 +184,7 @@ struct ContentView: View {
                             }
                         }
                         .padding(12)
+                        .frame(minWidth: 300, maxWidth: .infinity)
                     }
                     
                     Divider()
@@ -217,12 +234,12 @@ struct ContentView: View {
                         Spacer()
                     }
                     .padding(12)
-                    .frame(width: sideColumnWidth) // SYMMETRIE RECHTS
+                    .frame(width: sideColumnWidth) // Breite erhöht
                     .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
                 }
             }
             .background(Color(NSColor.windowBackgroundColor))
-            .frame(height: 150)
+            .frame(height: 180)
             
         }.frame(minWidth: 1000, minHeight: 650)
     }
@@ -271,41 +288,71 @@ struct ControlView: View {
     @ObservedObject var viewModel: ConverterViewModel
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(opt.label.uppercased()).font(.system(size: 9, weight: .bold)).foregroundColor(.secondary)
+        VStack(alignment: .center, spacing: 4) {
+            Text(opt.label.uppercased())
+                .font(.system(size: 14, weight: .bold))
+                .foregroundColor(.secondary)
             
             if opt.type == .slider {
                 HStack(spacing: 4) {
                     Slider(
                         value: Binding(
-                            get: { Double(opt.selectedValue) ?? 0.0 },
+                            get: {
+                                let currentOptions = viewModel.machines[viewModel.selectedMachineIndex].options
+                                if index < currentOptions.count {
+                                    return Double(currentOptions[index].selectedValue) ?? 0.0
+                                }
+                                return 0.0
+                            },
                             set: { val in
-                                let isFloat = ["gamma", "saturation", "dither_amount"].contains(opt.key)
-                                viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = isFloat ? String(format: "%.2f", val) : String(format: "%.0f", val)
-                                viewModel.triggerLivePreview()
+                                if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
+                                    let isFloat = ["gamma", "saturation", "dither_amount"].contains(opt.key)
+                                    viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = isFloat ? String(format: "%.2f", val) : String(format: "%.0f", val)
+                                    viewModel.triggerLivePreview()
+                                }
                             }
                         ),
                         in: opt.range
                     ).frame(width: 90)
-                    Text(opt.selectedValue).monospacedDigit().font(.caption2).frame(width: 30, alignment: .trailing)
+                    Text(safeValueDisplay)
+                        .monospacedDigit()
+                        .font(.system(size: 14))
+                        .frame(width: 40, alignment: .trailing)
                 }
             } else if opt.type == .picker {
                 Picker("", selection: Binding(
-                    get: { viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue },
+                    get: {
+                        let currentOptions = viewModel.machines[viewModel.selectedMachineIndex].options
+                        if index < currentOptions.count {
+                            return currentOptions[index].selectedValue
+                        }
+                        return ""
+                    },
                     set: { val in
-                        viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = val
-                        viewModel.triggerLivePreview()
+                        if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
+                            viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = val
+                            viewModel.triggerLivePreview()
+                        }
                     }
                 )) {
                     ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
-                }.frame(minWidth: 100).controlSize(.small)
+                }
+                .frame(minWidth: 100)
+                .controlSize(.small)
             }
         }
-        .id(opt.key)
+        .id(opt.id)
+    }
+    
+    var safeValueDisplay: String {
+        let currentOptions = viewModel.machines[viewModel.selectedMachineIndex].options
+        if index < currentOptions.count {
+            return currentOptions[index].selectedValue
+        }
+        return "-"
     }
 }
 
-// System Button - angepasst auf variable Breite
 struct SystemSelectButton: View {
     let iconName: String
     let machineName: String
@@ -314,27 +361,34 @@ struct SystemSelectButton: View {
     
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 12) { // HStack statt VStack für breiteres Layout
-                Image(systemName: iconName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(height: 18)
-                    .foregroundColor(isSelected ? .accentColor : .secondary)
+            HStack(spacing: 16) {
+                if iconName.starts(with: "icon_") {
+                    Image(iconName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 42) // <--- NEUE GRÖSSE 42
+                } else {
+                    Image(systemName: iconName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 42) // <--- NEUE GRÖSSE 42
+                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                }
                 
                 Text(machineName)
-                    .font(.system(size: 11))
+                    .font(.system(size: 14))
                     .fontWeight(isSelected ? .bold : .medium)
                     .foregroundColor(isSelected ? .primary : .secondary)
                 
-                Spacer() // Schiebt Inhalt nach links
+                Spacer()
             }
-            .padding(.horizontal, 10) // Innenabstand
-            .frame(maxWidth: .infinity) // Nimmt die ganze Breite der Spalte ein
-            .frame(height: 36) // Feste Höhe pro Button
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity)
+            .frame(height: 62) // <--- ETWAS HÖHER GEMACHT (war 54)
             .background(isSelected ? Color.accentColor.opacity(0.15) : Color(NSColor.controlBackgroundColor))
-            .cornerRadius(6)
+            .cornerRadius(8)
             .overlay(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 8)
                     .stroke(isSelected ? Color.accentColor : Color(NSColor.separatorColor), lineWidth: isSelected ? 2 : 1)
             )
         }
