@@ -14,14 +14,17 @@ struct ContentView: View {
     
     let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
     
+    // Layout Konstante für Symmetrie
+    let sideColumnWidth: CGFloat = 170
+    
     // Keys für die Anzeige
     let topRowKeys = ["mode", "colortype", "dither", "palette", "saturation"]
-    
-    // UPDATE: Nur noch funktionierende Regler
-        let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "gamma", "dither_amount", "threshold"]
+    let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "gamma", "dither_amount", "threshold"]
     
     var body: some View {
         VStack(spacing: 0) {
+            
+            // 1. OBERER BEREICH: SPLIT VIEW
             HSplitView {
                 // LINKER BEREICH: IMAGE BROWSER
                 VStack(spacing: 0) {
@@ -33,19 +36,19 @@ struct ContentView: View {
                         }
                         Button(action: { viewModel.selectImagesFromFinder() }) { Image(systemName: "plus") }
                     }
-                    .padding(10).background(Color(NSColor.controlBackgroundColor))
+                    .padding(8).background(Color(NSColor.controlBackgroundColor))
                     
                     if viewModel.inputImages.isEmpty {
                         ZStack {
                             Color(NSColor.controlBackgroundColor)
                             VStack(spacing: 15) {
-                                Image(systemName: "photo.stack").resizable().aspectRatio(contentMode: .fit).frame(width: 60, height: 60).symbolRenderingMode(.hierarchical).foregroundColor(.secondary)
+                                Image(systemName: "photo.stack").resizable().aspectRatio(contentMode: .fit).frame(width: 50, height: 50).symbolRenderingMode(.hierarchical).foregroundColor(.secondary)
                                 Text("Drag Images Here").font(.headline).foregroundColor(.secondary)
                             }
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         ScrollView {
-                            LazyVGrid(columns: columns, spacing: 15) {
+                            LazyVGrid(columns: columns, spacing: 10) {
                                 ForEach(viewModel.inputImages) { item in
                                     ImageGridItem(item: item, isSelected: viewModel.selectedImageId == item.id)
                                         .onTapGesture {
@@ -53,11 +56,11 @@ struct ContentView: View {
                                             viewModel.convertImmediately()
                                         }
                                 }
-                            }.padding()
+                            }.padding(10)
                         }.background(Color(NSColor.controlBackgroundColor))
                     }
                 }
-                .frame(minWidth: 220, maxWidth: 500)
+                .frame(minWidth: 200, maxWidth: 450)
                 .onDrop(of: [.fileURL], isTargeted: $isDropTarget) { providers in return viewModel.handleDrop(providers: providers) }
                 
                 // RECHTER BEREICH: VORSCHAU
@@ -70,7 +73,10 @@ struct ContentView: View {
                             Text("\(Int(zoomLevel * 100))%").monospacedDigit().font(.caption).frame(width: 45)
                             Button(action: { if zoomLevel < 5.0 { zoomLevel += 0.2 } }) { Image(systemName: "plus.magnifyingglass") }.buttonStyle(.bordered)
                         }
-                    }.padding(8).background(Color(NSColor.controlBackgroundColor)).border(Color(NSColor.separatorColor), width: 0.5)
+                    }
+                    .padding(8)
+                    .background(Color(NSColor.controlBackgroundColor))
+                    .border(Color(NSColor.separatorColor), width: 0.5)
                     
                     ZStack {
                         Color.black
@@ -85,65 +91,91 @@ struct ContentView: View {
                             Text("Ready").foregroundColor(.gray)
                         }
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
-                }.frame(minWidth: 400)
+                }.frame(minWidth: 350)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
             Divider()
             
-            // UNTERER BEREICH: OPTIONEN & EXPORT (NEUES LAYOUT)
+            // 2. UNTERER BEREICH: FIXED HEIGHT
             VStack(spacing: 0) {
                 if let error = viewModel.errorMessage {
-                    Text(error).foregroundColor(.red).font(.caption).frame(maxWidth: .infinity).padding(.top, 4)
+                    Text(error).foregroundColor(.red).font(.caption).frame(maxWidth: .infinity).background(Color.black.opacity(0.1))
                 }
                 
                 HStack(spacing: 0) {
-                    // LINKER TEIL: CONTROLS (Scrollbar falls Fenster zu klein)
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 12) {
-                            
-                            // ZEILE 1: System + Top Keys
-                            HStack(spacing: 20) {
-                                // SYSTEM AUSWAHL
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("SYSTEM").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
-                                    Picker("", selection: $viewModel.selectedMachineIndex) {
-                                        ForEach(0..<viewModel.machines.count, id: \.self) { i in Text(viewModel.machines[i].name) }
-                                    }.frame(width: 140).onChange(of: viewModel.selectedMachineIndex) { _ in viewModel.triggerLivePreview() }
+                    
+                    // A. LINKS: SYSTEM (Feste Breite, Symmetrisch zu Rechts)
+                    VStack(alignment: .leading, spacing: 10) {
+                        Text("SYSTEM").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        VStack(spacing: 8) {
+                            SystemSelectButton(
+                                iconName: "cpu",
+                                machineName: viewModel.machines[0].name,
+                                isSelected: viewModel.selectedMachineIndex == 0
+                            ) {
+                                if viewModel.selectedMachineIndex != 0 {
+                                    viewModel.selectedMachineIndex = 0
+                                    viewModel.triggerLivePreview()
                                 }
-                                Divider().frame(height: 30)
-                                
-                                // OBERE REIHE OPTIONEN
+                            }
+                            
+                            if viewModel.machines.count > 1 {
+                                SystemSelectButton(
+                                    iconName: "display.2",
+                                    machineName: viewModel.machines[1].name,
+                                    isSelected: viewModel.selectedMachineIndex == 1
+                                ) {
+                                    if viewModel.selectedMachineIndex != 1 {
+                                        viewModel.selectedMachineIndex = 1
+                                        viewModel.triggerLivePreview()
+                                    }
+                                }
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding(12)
+                    .frame(width: sideColumnWidth) // SYMMETRIE LINKS
+                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    
+                    Divider()
+                    
+                    // B. MITTE: SLIDER (Scrollbar)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            // OBERE REIHE
+                            HStack(spacing: 15) {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if topRowKeys.contains(opt.key) {
                                         ControlView(opt: opt, index: index, viewModel: viewModel)
                                     }
                                 }
-                                Spacer()
                             }
                             
-                            // ZEILE 2: Bottom Keys
-                            HStack(spacing: 20) {
-                                // Spacer um unter System zu bleiben (optisch)
-                                Color.clear.frame(width: 140 + 20 + 1) // Breite von System + Divider
-                                
+                            Divider()
+                            
+                            // UNTERE REIHE
+                            HStack(spacing: 15) {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if bottomRowKeys.contains(opt.key) {
                                         ControlView(opt: opt, index: index, viewModel: viewModel)
                                     }
                                 }
-                                Spacer()
                             }
-                        }.padding(15)
+                        }
+                        .padding(12)
                     }
                     
                     Divider()
                     
-                    // RECHTER TEIL: ACTIONS (Feste Breite)
-                    VStack(spacing: 12) {
+                    // C. RECHTS: ACTIONS (Feste Breite, Symmetrisch zu Links)
+                    VStack(spacing: 10) {
                         Text("ACTIONS").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary).frame(maxWidth: .infinity, alignment: .leading)
                         
-                        // 1. SAVE IMAGE
                         Menu {
                             Button("PNG") { viewModel.saveImage(as: .png) }
                             Button("JPG") { viewModel.saveImage(as: .jpg) }
@@ -163,11 +195,10 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity)
                         .disabled(viewModel.convertedImage == nil)
                         
-                        // 2. PRODOS DISK
                         Button(action: { showDiskSheet = true }) {
                             Label("ProDOS Disk", systemImage: "externaldrive")
                         }
-                        .frame(maxWidth: .infinity) // Volle Breite
+                        .frame(maxWidth: .infinity)
                         .disabled(viewModel.convertedImage == nil)
                         .sheet(isPresented: $showDiskSheet) {
                             DiskExportSheet(
@@ -183,21 +214,22 @@ struct ContentView: View {
                                 )
                             }
                         }
-                        
                         Spacer()
                     }
-                    .padding(15)
-                    .frame(width: 160) // Feste Breite für die Action Spalte
+                    .padding(12)
+                    .frame(width: sideColumnWidth) // SYMMETRIE RECHTS
                     .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
                 }
             }
             .background(Color(NSColor.windowBackgroundColor))
-            .frame(height: 160) // Etwas mehr Höhe für das neue Layout
-        }.frame(minWidth: 1000, minHeight: 700)
+            .frame(height: 150)
+            
+        }.frame(minWidth: 1000, minHeight: 650)
     }
 }
 
-// Sub-Views
+// MARK: - SUB VIEWS
+
 struct DiskExportSheet: View {
     @Binding var isPresented: Bool
     @Binding var selectedSize: ConverterViewModel.DiskSize
@@ -223,42 +255,39 @@ struct DiskExportSheet: View {
 struct ImageGridItem: View {
     let item: InputImage; let isSelected: Bool
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             ZStack {
                 Color(NSColor.controlBackgroundColor)
-                Image(nsImage: item.image).resizable().aspectRatio(contentMode: .fit).frame(height: 80)
-            }.frame(height: 90).cornerRadius(6).padding(4).overlay(RoundedRectangle(cornerRadius: 10).stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 3))
-            Text(item.name).font(.subheadline).lineLimit(1).truncationMode(.middle)
-            Text(item.details).font(.caption2).foregroundColor(.secondary)
-        }.padding(6).background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear).cornerRadius(8)
+                Image(nsImage: item.image).resizable().aspectRatio(contentMode: .fit).frame(height: 70)
+            }.frame(height: 80).cornerRadius(6).padding(4).overlay(RoundedRectangle(cornerRadius: 10).stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 3))
+            Text(item.name).font(.caption).lineLimit(1).truncationMode(.middle)
+        }.padding(4).background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear).cornerRadius(8)
     }
 }
 
-// Hilfs-View für Slider und Picker
 struct ControlView: View {
     let opt: ConversionOption
     let index: Int
     @ObservedObject var viewModel: ConverterViewModel
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(opt.label.uppercased()).font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(opt.label.uppercased()).font(.system(size: 9, weight: .bold)).foregroundColor(.secondary)
             
             if opt.type == .slider {
-                HStack {
+                HStack(spacing: 4) {
                     Slider(
                         value: Binding(
                             get: { Double(opt.selectedValue) ?? 0.0 },
                             set: { val in
-                                // Intelligente Formatierung: Float vs Integer
                                 let isFloat = ["gamma", "saturation", "dither_amount"].contains(opt.key)
                                 viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = isFloat ? String(format: "%.2f", val) : String(format: "%.0f", val)
                                 viewModel.triggerLivePreview()
                             }
                         ),
                         in: opt.range
-                    ).frame(width: 100)
-                    Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
+                    ).frame(width: 90)
+                    Text(opt.selectedValue).monospacedDigit().font(.caption2).frame(width: 30, alignment: .trailing)
                 }
             } else if opt.type == .picker {
                 Picker("", selection: Binding(
@@ -269,9 +298,46 @@ struct ControlView: View {
                     }
                 )) {
                     ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
-                }.frame(minWidth: 110)
+                }.frame(minWidth: 100).controlSize(.small)
             }
         }
         .id(opt.key)
+    }
+}
+
+// System Button - angepasst auf variable Breite
+struct SystemSelectButton: View {
+    let iconName: String
+    let machineName: String
+    let isSelected: Bool
+    let action: () -> Void
+    
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) { // HStack statt VStack für breiteres Layout
+                Image(systemName: iconName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 18)
+                    .foregroundColor(isSelected ? .accentColor : .secondary)
+                
+                Text(machineName)
+                    .font(.system(size: 11))
+                    .fontWeight(isSelected ? .bold : .medium)
+                    .foregroundColor(isSelected ? .primary : .secondary)
+                
+                Spacer() // Schiebt Inhalt nach links
+            }
+            .padding(.horizontal, 10) // Innenabstand
+            .frame(maxWidth: .infinity) // Nimmt die ganze Breite der Spalte ein
+            .frame(height: 36) // Feste Höhe pro Button
+            .background(isSelected ? Color.accentColor.opacity(0.15) : Color(NSColor.controlBackgroundColor))
+            .cornerRadius(6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(isSelected ? Color.accentColor : Color(NSColor.separatorColor), lineWidth: isSelected ? 2 : 1)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
