@@ -7,7 +7,6 @@
 
 **BitPast** is a modern, native macOS application for converting images into authentic **Apple II** and **Apple IIgs** graphic formats.
 
-Screen:
 
 <img width="1309" height="876" alt="Bildschirmfoto 2025-12-21 um 04 02 10" src="https://github.com/user-attachments/assets/09703f9b-8439-4207-8cbb-4a5495b6b18a" />
 
