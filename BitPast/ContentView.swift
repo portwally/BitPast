@@ -15,28 +15,10 @@ struct ContentView: View {
     let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
     
     // Keys für die Anzeige
-    // Keys für die Anzeige
-        let topRowKeys = ["mode", "colortype", "dither", "palette", "saturation"]
-        
-        // UPDATE HIER: Neue Keys hinzufügen (z_threshold, error_matrix, hue_tweak)
-        let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "hue_tweak", "bleed", "gamma", "dither_amount", "threshold"]
+    let topRowKeys = ["mode", "colortype", "dither", "palette", "saturation"]
     
-    func binding(for index: Int) -> Binding<String> {
-        Binding(
-            get: {
-                if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
-                    return viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue
-                }
-                return ""
-            },
-            set: { newValue in
-                if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
-                    viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = newValue
-                    viewModel.triggerLivePreview()
-                }
-            }
-        )
-    }
+    // UPDATE: Neue Keys hinzugefügt und sortiert
+    let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "hue_tweak", "bleed", "gamma", "dither_amount", "threshold"]
     
     var body: some View {
         VStack(spacing: 0) {
@@ -107,162 +89,115 @@ struct ContentView: View {
             }
             Divider()
             
-            // UNTERER BEREICH: OPTIONEN & EXPORT
+            // UNTERER BEREICH: OPTIONEN & EXPORT (NEUES LAYOUT)
             VStack(spacing: 0) {
-                if let error = viewModel.errorMessage { Text(error).foregroundColor(.red).font(.caption).frame(maxWidth: .infinity).padding(.top, 4) }
+                if let error = viewModel.errorMessage {
+                    Text(error).foregroundColor(.red).font(.caption).frame(maxWidth: .infinity).padding(.top, 4)
+                }
                 
-                VStack(alignment: .leading, spacing: 12) {
-                    
-                    // ZEILE 1: System + Top Keys
-                    HStack(spacing: 20) {
-                        // SYSTEM AUSWAHL
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("SYSTEM").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
-                            Picker("", selection: $viewModel.selectedMachineIndex) {
-                                ForEach(0..<viewModel.machines.count, id: \.self) { i in Text(viewModel.machines[i].name) }
-                            }.frame(width: 140).onChange(of: viewModel.selectedMachineIndex) { _ in viewModel.triggerLivePreview() }
-                        }
-                        Divider().frame(height: 20)
-                        
-                        // OBERE REIHE OPTIONEN
-                        ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
-                            let opt = viewModel.currentMachine.options[index]
+                HStack(spacing: 0) {
+                    // LINKER TEIL: CONTROLS (Scrollbar falls Fenster zu klein)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 12) {
                             
-                            if topRowKeys.contains(opt.key) {
+                            // ZEILE 1: System + Top Keys
+                            HStack(spacing: 20) {
+                                // SYSTEM AUSWAHL
                                 VStack(alignment: .leading, spacing: 8) {
-                                    Text(opt.label.uppercased()).font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
-                                    
-                                    if opt.type == .slider {
-                                                                            HStack {
-                                                                                Slider(
-                                                                                    value: Binding(
-                                                                                        get: { Double(opt.selectedValue) ?? 0.0 },
-                                                                                        set: { newValue in
-                                                                                            // HIER: Intelligente Formatierung
-                                                                                            let isFloatParams = ["gamma", "saturation", "dither_amount"].contains(opt.key)
-                                                                                            let fmt = isFloatParams ? String(format: "%.2f", newValue) : String(format: "%.0f", newValue)
-                                                                                            
-                                                                                            viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = fmt
-                                                                                            viewModel.triggerLivePreview()
-                                                                                        }
-                                                                                    ),
-                                                                                    in: opt.range
-                                                                                ).frame(width: 100)
-                                                                                Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
-                                                                            }
-                                    } else if opt.type == .picker { // FIX: Strikte Prüfung statt "else"
-                                        Picker("", selection: binding(for: index)) {
-                                            ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
-                                        }.frame(minWidth: 110)
-                                    }
+                                    Text("SYSTEM").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
+                                    Picker("", selection: $viewModel.selectedMachineIndex) {
+                                        ForEach(0..<viewModel.machines.count, id: \.self) { i in Text(viewModel.machines[i].name) }
+                                    }.frame(width: 140).onChange(of: viewModel.selectedMachineIndex) { _ in viewModel.triggerLivePreview() }
                                 }
-                                .id(opt.key) // FIX: Zwingt SwiftUI zum Neubau bei Wechsel
-                            }
-                        }
-                        Spacer()
-                    }
-                    
-                    // ZEILE 2: Bottom Keys + Export
-                    HStack(spacing: 20) {
-                        // UNTERE REIHE OPTIONEN
-                        ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
-                            let opt = viewModel.currentMachine.options[index]
-                            
-                            if bottomRowKeys.contains(opt.key) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(opt.label.uppercased()).font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
-                                    
-                                    if opt.type == .slider {
-                                                                            HStack {
-                                                                                Slider(
-                                                                                    value: Binding(
-                                                                                        get: { Double(opt.selectedValue) ?? 0.0 },
-                                                                                        set: { newValue in
-                                                                                            // HIER: Intelligente Formatierung
-                                                                                            let isFloatParams = ["gamma", "saturation", "dither_amount"].contains(opt.key)
-                                                                                            let fmt = isFloatParams ? String(format: "%.2f", newValue) : String(format: "%.0f", newValue)
-                                                                                            
-                                                                                            viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = fmt
-                                                                                            viewModel.triggerLivePreview()
-                                                                                        }
-                                                                                    ),
-                                                                                    in: opt.range
-                                                                                ).frame(width: 100)
-                                                                                Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
-                                                                            }
-                                    } else if opt.type == .picker { // FIX: Strikte Prüfung
-                                        Picker("", selection: binding(for: index)) {
-                                            ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
-                                        }.frame(width: 150)
-                                    }
-                                }
-                                .id(opt.key) // FIX: Unique Identity
-                            }
-                        }
-                        
-                        Divider().frame(height: 20)
-                        
-                        // EXPORT BUTTONS
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("EXPORT").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
-                            HStack {
-                                Menu {
-                                                                    // Standard Bild-Formate
-                                                                    Button("PNG") { viewModel.saveImage(as: .png) }
-                                                                    Button("JPG") { viewModel.saveImage(as: .jpg) }
-                                                                    Button("GIF") { viewModel.saveImage(as: .gif) }
-                                                                    Button("TIFF") { viewModel.saveImage(as: .tiff) }
-                                                                    
-                                                                    Divider()
-                                                                    
-                                                                    // Native Retro-Formate
-                                                                    // Wir prüfen dynamisch, welche Datei verfügbar ist
-                                                                    if let asset = viewModel.currentResult?.fileAssets.first {
-                                                                        let ext = asset.pathExtension.uppercased()
-                                                                        Button("Native Apple II (.\(ext))") {
-                                                                            viewModel.saveNativeFile()
-                                                                        }
-                                                                    } else {
-                                                                        Button("Native Format") { }.disabled(true)
-                                                                    }
-                                                                    
-                                                                } label: {
-                                                                    Label("Save Image...", systemImage: "photo")
-                                                                }
-                                                                .fixedSize()
-                                                                .disabled(viewModel.convertedImage == nil)
-                                .fixedSize()
-                                .disabled(viewModel.convertedImage == nil)
+                                Divider().frame(height: 30)
                                 
-                                Button(action: { showDiskSheet = true }) {
-                                    Label("Create ProDOS Disk", systemImage: "externaldrive")
-                                }
-                                .disabled(viewModel.convertedImage == nil)
-                                .sheet(isPresented: $showDiskSheet) {
-                                    DiskExportSheet(
-                                        isPresented: $showDiskSheet,
-                                        selectedSize: $selectedDiskSize,
-                                        selectedFormat: $selectedDiskFormat,
-                                        volumeName: $diskVolumeName
-                                    ) {
-                                        viewModel.createProDOSDisk(
-                                            size: selectedDiskSize,
-                                            format: selectedDiskFormat,
-                                            volumeName: diskVolumeName
-                                        )
+                                // OBERE REIHE OPTIONEN
+                                ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
+                                    let opt = viewModel.currentMachine.options[index]
+                                    if topRowKeys.contains(opt.key) {
+                                        ControlView(opt: opt, index: index, viewModel: viewModel)
                                     }
                                 }
+                                Spacer()
+                            }
+                            
+                            // ZEILE 2: Bottom Keys
+                            HStack(spacing: 20) {
+                                // Spacer um unter System zu bleiben (optisch)
+                                Color.clear.frame(width: 140 + 20 + 1) // Breite von System + Divider
+                                
+                                ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
+                                    let opt = viewModel.currentMachine.options[index]
+                                    if bottomRowKeys.contains(opt.key) {
+                                        ControlView(opt: opt, index: index, viewModel: viewModel)
+                                    }
+                                }
+                                Spacer()
+                            }
+                        }.padding(15)
+                    }
+                    
+                    Divider()
+                    
+                    // RECHTER TEIL: ACTIONS (Feste Breite)
+                    VStack(spacing: 12) {
+                        Text("ACTIONS").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        // 1. SAVE IMAGE
+                        Menu {
+                            Button("PNG") { viewModel.saveImage(as: .png) }
+                            Button("JPG") { viewModel.saveImage(as: .jpg) }
+                            Button("GIF") { viewModel.saveImage(as: .gif) }
+                            Button("TIFF") { viewModel.saveImage(as: .tiff) }
+                            Divider()
+                            if let asset = viewModel.currentResult?.fileAssets.first {
+                                let ext = asset.pathExtension.uppercased()
+                                Button("Native Apple II (.\(ext))") { viewModel.saveNativeFile() }
+                            } else {
+                                Button("Native Format") { }.disabled(true)
+                            }
+                        } label: {
+                            Label("Save Image...", systemImage: "square.and.arrow.down")
+                        }
+                        .menuStyle(.borderedButton)
+                        .frame(maxWidth: .infinity)
+                        .disabled(viewModel.convertedImage == nil)
+                        
+                        // 2. PRODOS DISK
+                        Button(action: { showDiskSheet = true }) {
+                            Label("ProDOS Disk", systemImage: "externaldrive")
+                        }
+                        .frame(maxWidth: .infinity) // Volle Breite
+                        .disabled(viewModel.convertedImage == nil)
+                        .sheet(isPresented: $showDiskSheet) {
+                            DiskExportSheet(
+                                isPresented: $showDiskSheet,
+                                selectedSize: $selectedDiskSize,
+                                selectedFormat: $selectedDiskFormat,
+                                volumeName: $diskVolumeName
+                            ) {
+                                viewModel.createProDOSDisk(
+                                    size: selectedDiskSize,
+                                    format: selectedDiskFormat,
+                                    volumeName: diskVolumeName
+                                )
                             }
                         }
+                        
                         Spacer()
                     }
-                }.padding(15)
-            }.background(Color(NSColor.windowBackgroundColor)).frame(height: 140)
+                    .padding(15)
+                    .frame(width: 160) // Feste Breite für die Action Spalte
+                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                }
+            }
+            .background(Color(NSColor.windowBackgroundColor))
+            .frame(height: 160) // Etwas mehr Höhe für das neue Layout
         }.frame(minWidth: 1000, minHeight: 700)
     }
 }
 
-// Sub-Views bleiben gleich
+// Sub-Views
 struct DiskExportSheet: View {
     @Binding var isPresented: Bool
     @Binding var selectedSize: ConverterViewModel.DiskSize
@@ -296,5 +231,47 @@ struct ImageGridItem: View {
             Text(item.name).font(.subheadline).lineLimit(1).truncationMode(.middle)
             Text(item.details).font(.caption2).foregroundColor(.secondary)
         }.padding(6).background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear).cornerRadius(8)
+    }
+}
+
+// Hilfs-View für Slider und Picker
+struct ControlView: View {
+    let opt: ConversionOption
+    let index: Int
+    @ObservedObject var viewModel: ConverterViewModel
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(opt.label.uppercased()).font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
+            
+            if opt.type == .slider {
+                HStack {
+                    Slider(
+                        value: Binding(
+                            get: { Double(opt.selectedValue) ?? 0.0 },
+                            set: { val in
+                                // Intelligente Formatierung: Float vs Integer
+                                let isFloat = ["gamma", "saturation", "dither_amount"].contains(opt.key)
+                                viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = isFloat ? String(format: "%.2f", val) : String(format: "%.0f", val)
+                                viewModel.triggerLivePreview()
+                            }
+                        ),
+                        in: opt.range
+                    ).frame(width: 100)
+                    Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
+                }
+            } else if opt.type == .picker {
+                Picker("", selection: Binding(
+                    get: { viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue },
+                    set: { val in
+                        viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = val
+                        viewModel.triggerLivePreview()
+                    }
+                )) {
+                    ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
+                }.frame(minWidth: 110)
+            }
+        }
+        .id(opt.key)
     }
 }
