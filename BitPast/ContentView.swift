@@ -15,8 +15,11 @@ struct ContentView: View {
     let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
     
     // Keys für die Anzeige
-    let topRowKeys = ["mode", "colortype", "dither", "palette", "saturation"]
-    let bottomRowKeys = ["resolution", "crosshatch", "bleed", "gamma", "dither_amount", "threshold"]
+    // Keys für die Anzeige
+        let topRowKeys = ["mode", "colortype", "dither", "palette", "saturation"]
+        
+        // UPDATE HIER: Neue Keys hinzufügen (z_threshold, error_matrix, hue_tweak)
+        let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "hue_tweak", "bleed", "gamma", "dither_amount", "threshold"]
     
     func binding(for index: Int) -> Binding<String> {
         Binding(
@@ -130,20 +133,23 @@ struct ContentView: View {
                                     Text(opt.label.uppercased()).font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
                                     
                                     if opt.type == .slider {
-                                        HStack {
-                                            Slider(
-                                                value: Binding(
-                                                    get: { Double(opt.selectedValue) ?? 0.0 },
-                                                    set: {
-                                                        let fmt = String(format: "%.2f", $0)
-                                                        viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = fmt
-                                                        viewModel.triggerLivePreview()
-                                                    }
-                                                ),
-                                                in: opt.range
-                                            ).frame(width: 100)
-                                            Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
-                                        }
+                                                                            HStack {
+                                                                                Slider(
+                                                                                    value: Binding(
+                                                                                        get: { Double(opt.selectedValue) ?? 0.0 },
+                                                                                        set: { newValue in
+                                                                                            // HIER: Intelligente Formatierung
+                                                                                            let isFloatParams = ["gamma", "saturation", "dither_amount"].contains(opt.key)
+                                                                                            let fmt = isFloatParams ? String(format: "%.2f", newValue) : String(format: "%.0f", newValue)
+                                                                                            
+                                                                                            viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = fmt
+                                                                                            viewModel.triggerLivePreview()
+                                                                                        }
+                                                                                    ),
+                                                                                    in: opt.range
+                                                                                ).frame(width: 100)
+                                                                                Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
+                                                                            }
                                     } else if opt.type == .picker { // FIX: Strikte Prüfung statt "else"
                                         Picker("", selection: binding(for: index)) {
                                             ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
@@ -167,20 +173,23 @@ struct ContentView: View {
                                     Text(opt.label.uppercased()).font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
                                     
                                     if opt.type == .slider {
-                                        HStack {
-                                            Slider(
-                                                value: Binding(
-                                                    get: { Double(opt.selectedValue) ?? 0.0 },
-                                                    set: {
-                                                        let fmt = String(format: "%.2f", $0)
-                                                        viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = fmt
-                                                        viewModel.triggerLivePreview()
-                                                    }
-                                                ),
-                                                in: opt.range
-                                            ).frame(width: 100)
-                                            Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
-                                        }
+                                                                            HStack {
+                                                                                Slider(
+                                                                                    value: Binding(
+                                                                                        get: { Double(opt.selectedValue) ?? 0.0 },
+                                                                                        set: { newValue in
+                                                                                            // HIER: Intelligente Formatierung
+                                                                                            let isFloatParams = ["gamma", "saturation", "dither_amount"].contains(opt.key)
+                                                                                            let fmt = isFloatParams ? String(format: "%.2f", newValue) : String(format: "%.0f", newValue)
+                                                                                            
+                                                                                            viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = fmt
+                                                                                            viewModel.triggerLivePreview()
+                                                                                        }
+                                                                                    ),
+                                                                                    in: opt.range
+                                                                                ).frame(width: 100)
+                                                                                Text(opt.selectedValue).monospacedDigit().font(.caption).frame(width: 35, alignment: .trailing)
+                                                                            }
                                     } else if opt.type == .picker { // FIX: Strikte Prüfung
                                         Picker("", selection: binding(for: index)) {
                                             ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
@@ -198,13 +207,30 @@ struct ContentView: View {
                             Text("EXPORT").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary)
                             HStack {
                                 Menu {
-                                    Button("PNG") { viewModel.saveImage(as: .png) }
-                                    Button("JPG") { viewModel.saveImage(as: .jpg) }
-                                    Button("GIF") { viewModel.saveImage(as: .gif) }
-                                    Button("TIFF") { viewModel.saveImage(as: .tiff) }
-                                } label: {
-                                    Label("Save Image...", systemImage: "photo")
-                                }
+                                                                    // Standard Bild-Formate
+                                                                    Button("PNG") { viewModel.saveImage(as: .png) }
+                                                                    Button("JPG") { viewModel.saveImage(as: .jpg) }
+                                                                    Button("GIF") { viewModel.saveImage(as: .gif) }
+                                                                    Button("TIFF") { viewModel.saveImage(as: .tiff) }
+                                                                    
+                                                                    Divider()
+                                                                    
+                                                                    // Native Retro-Formate
+                                                                    // Wir prüfen dynamisch, welche Datei verfügbar ist
+                                                                    if let asset = viewModel.currentResult?.fileAssets.first {
+                                                                        let ext = asset.pathExtension.uppercased()
+                                                                        Button("Native Apple II (.\(ext))") {
+                                                                            viewModel.saveNativeFile()
+                                                                        }
+                                                                    } else {
+                                                                        Button("Native Format") { }.disabled(true)
+                                                                    }
+                                                                    
+                                                                } label: {
+                                                                    Label("Save Image...", systemImage: "photo")
+                                                                }
+                                                                .fixedSize()
+                                                                .disabled(viewModel.convertedImage == nil)
                                 .fixedSize()
                                 .disabled(viewModel.convertedImage == nil)
                                 

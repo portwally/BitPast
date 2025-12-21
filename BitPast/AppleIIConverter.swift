@@ -3,85 +3,102 @@ import Cocoa
 class AppleIIConverter: RetroMachine {
     var name: String = "Apple II"
     
-    var options: [ConversionOption] = [
+   
         
-        // 1. TARGET FORMAT
-        ConversionOption(
-            label: "Target Format",
-            key: "mode",
-            values: ["DHGR (Double Hi-Res)", "HGR (Hi-Res)", "LGR (Lo-Res)", "DLGR (Double Lo-Res)"],
-            selectedValue: "DHGR (Double Hi-Res)"
-        ),
-        
-        // 2. COLOR TYPE
-        ConversionOption(
-            label: "Color Type",
-            key: "colortype",
-            values: ["Color", "Monochrome"],
-            selectedValue: "Color"
-        ),
-        
-        // 3. OUTPUT RESOLUTION
-        ConversionOption(
-            label: "Output Resolution",
-            key: "resolution",
-            values: [
-                "140x192 (DHGR Direct)",
-                "280x192 (HGR Native)",
-                "320x200 (C64/DOS)",
-                "560x192 (DHGR Mono)",
-                "560x384 (DHGR Best)",
-                "640x400 (VGA)",
-                "640x480 (VGA Square)"
-            ],
-            selectedValue: "560x384 (DHGR Best)"
-        ),
-        
-        // 4. DITHER
-        ConversionOption(
-            label: "Dither",
-            key: "dither",
-            values: ["Floyd-Steinberg", "Atkinson", "Jarvis", "Stucki", "Sierra-Lite", "None"],
-            selectedValue: "Floyd-Steinberg"
-        ),
-        
-        // 5. PALETTE
-        ConversionOption(
-            label: "Palette",
-            key: "palette",
-            values: [
-                "Standard (tohgr)",
-                "Kegs RGB (P0)",
-                "CiderPress (P1)",
-                "AppleWin Old (P2)",
-                "AppleWin NTSC (P3)",
-                "Wikipedia (P4)",
-                "Greyscale (P5 Mono)",
-                "Virtu (P8)",
-                "MicroM8 (P9)",
-                "GS (P10)",
-                "MAME (P11)",
-                "Sa70 (P12)"
-            ],
-            selectedValue: "Standard (tohgr)"
-        ),
-        
-        // 6. CROSSHATCH (Slider)
-        ConversionOption(
-            label: "Crosshatch Threshold",
-            key: "crosshatch",
-            range: 0.0...50.0,
-            defaultValue: 0.0
-        ),
-        
-        // 7. COLOR BLEED (Slider)
-        ConversionOption(
-            label: "Color Bleed Reduction",
-            key: "bleed",
-            range: 0.0...99.0,
-            defaultValue: 0.0
-        )
-    ]
+        var options: [ConversionOption] = [
+                
+                // 1. TARGET FORMAT
+                ConversionOption(
+                    label: "Target Format",
+                    key: "mode",
+                    values: ["DHGR (Double Hi-Res)", "HGR (Hi-Res)", "LGR (Lo-Res)", "DLGR (Double Lo-Res)"],
+                    selectedValue: "DHGR (Double Hi-Res)"
+                ),
+                
+                // 2. COLOR TYPE
+                ConversionOption(
+                    label: "Color Type",
+                    key: "colortype",
+                    values: ["Color", "Monochrome"],
+                    selectedValue: "Color"
+                ),
+                
+                // 3. OUTPUT RESOLUTION
+                ConversionOption(
+                    label: "Output Resolution",
+                    key: "resolution",
+                    values: [
+                        "140x192 (DHGR Direct)",
+                        "280x192 (HGR Native)",
+                        "320x200 (C64/DOS)",
+                        "560x192 (DHGR Mono)",
+                        "560x384 (DHGR Best)",
+                        "640x400 (VGA)",
+                        "640x480 (VGA Square)"
+                    ],
+                    selectedValue: "560x384 (DHGR Best)"
+                ),
+                
+                // 4. DITHER
+                ConversionOption(
+                    label: "Dither",
+                    key: "dither",
+                    values: ["Floyd-Steinberg", "Atkinson", "Jarvis", "Stucki", "Sierra-Lite", "None"],
+                    selectedValue: "Floyd-Steinberg"
+                ),
+                
+                // 5. PALETTE
+                ConversionOption(
+                    label: "Palette",
+                    key: "palette",
+                    values: [
+                        "Standard (tohgr)", "Kegs RGB (P0)", "CiderPress (P1)", "AppleWin Old (P2)",
+                        "AppleWin NTSC (P3)", "Wikipedia (P4)", "Greyscale (P5 Mono)", "Virtu (P8)",
+                        "MicroM8 (P9)", "GS (P10)", "MAME (P11)", "Sa70 (P12)"
+                    ],
+                    selectedValue: "Standard (tohgr)"
+                ),
+                
+                // 6. CROSS-HATCH PATTERN (Parameter X) - Range 0-10, Default 3
+                ConversionOption(
+                    label: "Cross-hatch Pattern (X)",
+                    key: "crosshatch",
+                    range: 0.0...10.0,
+                    defaultValue: 3.0
+                ),
+                
+                // 7. THRESHOLD FOR CROSS-HATCH (Parameter Z) - Range 0-40, Default 20
+                ConversionOption(
+                    label: "Cross-hatch Threshold (Z)",
+                    key: "z_threshold",
+                    range: 0.0...40.0,
+                    defaultValue: 20.0
+                ),
+                
+                // 8. ERROR-DIFFUSION MATRIX (Parameter E) - Range 0-10, Default 1
+                ConversionOption(
+                    label: "Error-Diffusion Matrix (E)",
+                    key: "error_matrix",
+                    range: 0.0...10.0,
+                    defaultValue: 1.0
+                ),
+                
+                // 9. HUE TWEAK (Parameter Y) - Range -4 bis +4, Default 0
+                ConversionOption(
+                    label: "Hue Tweak (Y)",
+                    key: "hue_tweak",
+                    range: -4.0...4.0,
+                    defaultValue: 0.0
+                ),
+                
+                // 10. COLOR BLEED (Parameter C) - Bestehend lassen
+                ConversionOption(
+                    label: "Color Bleed Reduction (C)",
+                    key: "bleed",
+                    range: 0.0...99.0,
+                    defaultValue: 0.0
+                )
+            ]
     
     func convert(sourceImage: NSImage) async throws -> ConversionResult {
             let fileManager = FileManager.default
@@ -97,12 +114,29 @@ class AppleIIConverter: RetroMachine {
             let colorType = options.first(where: {$0.key == "colortype"})?.selectedValue ?? ""
             let resString = options.first(where: {$0.key == "resolution"})?.selectedValue ?? ""
             
-            // --- SAFE RESOLUTION MAPPING ---
-            var targetW = 280
-            var targetH = 192
-            if resString.contains("320") { targetW = 320; targetH = 200 }
-            else if resString.contains("640") { targetW = 320; targetH = 200 }
-            else { targetW = 280; targetH = 192 }
+        // --- SAFE RESOLUTION MAPPING ---
+                    var targetW = 280
+                    var targetH = 192
+                    
+                    // PRIORITY 1: Check Mode strict requirements
+                    if mode.contains("DLGR") {
+                        // Double Lo-Res muss zwingend 80x48 sein
+                        targetW = 80
+                        targetH = 48
+                    } else if mode.contains("LGR") { // Prüfen auf LGR (ohne D davor)
+                        // Lo-Res muss zwingend 40x48 sein
+                        targetW = 40
+                        targetH = 48
+                    }
+                    // PRIORITY 2: Standard HGR/DHGR Logic (based on Resolution Dropdown)
+                    else {
+                        if resString.contains("640x480") { targetW = 640; targetH = 480 }
+                        else if resString.contains("640") { targetW = 640; targetH = 400 } // VGA
+                        else if resString.contains("560x384") { targetW = 560; targetH = 384 }
+                        else if resString.contains("560") { targetW = 560; targetH = 192 }
+                        else if resString.contains("320") { targetW = 320; targetH = 200 }
+                        else { targetW = 280; targetH = 192 } // Default HGR
+                    }
             
             // --- SAVE BMP (Legacy Format) ---
             let readyImage = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
@@ -135,21 +169,52 @@ class AppleIIConverter: RetroMachine {
                 args.append("-P5")
             }
             
-            // Slider Parsing (String -> Double -> Int)
-            if let xStr = options.first(where: {$0.key == "crosshatch"})?.selectedValue,
-               let xDouble = Double(xStr),
-               xDouble > 0 {
-                args.append("-X\(Int(xDouble))")
-            }
-            
-            if let cStr = options.first(where: {$0.key == "bleed"})?.selectedValue,
-               let cDouble = Double(cStr),
-               cDouble > 0 {
-                args.append("-C\(Int(cDouble))")
-            }
+        // Slider Parsing (String -> Double -> Int)
+                    
+                    // Parameter X: Cross-hatch Pattern
+                    if let valStr = options.first(where: {$0.key == "crosshatch"})?.selectedValue,
+                       let valDouble = Double(valStr) {
+                        args.append("-X\(Int(valDouble))")
+                    }
+                    
+                    // Parameter Z: Threshold for Cross-hatch
+                    if let valStr = options.first(where: {$0.key == "z_threshold"})?.selectedValue,
+                       let valDouble = Double(valStr) {
+                        args.append("-Z\(Int(valDouble))")
+                    }
+                    
+                    // Parameter E: Error-diffusion matrix
+                    if let valStr = options.first(where: {$0.key == "error_matrix"})?.selectedValue,
+                       let valDouble = Double(valStr) {
+                        args.append("-E\(Int(valDouble))")
+                    }
+                    
+                    // Parameter Y: Hue Tweak
+                    if let valStr = options.first(where: {$0.key == "hue_tweak"})?.selectedValue,
+                       let valDouble = Double(valStr) {
+                        args.append("-Y\(Int(valDouble))")
+                    }
+                    
+                    // Parameter C: Color Bleed
+                    if let cStr = options.first(where: {$0.key == "bleed"})?.selectedValue,
+                       let cDouble = Double(cStr),
+                       cDouble > 0 {
+                        args.append("-C\(Int(cDouble))")
+                    }
             
             args.append("-V") // Preview
-            
+        // --- NEUER DEBUG BLOCK START ---
+                    print("\n---------- B2D DEBUG ----------")
+                    print("Arbeitsverzeichnis: \(tempDir.path)")
+                    print("Input File        : \(inputFilename)")
+                    print("Parameter Liste   : \(args)")
+                    print("Kompletter Befehl :")
+                    // Dieser String kann direkt ins Terminal kopiert werden zum Testen:
+                    print("\"\(toolUrl.path)\" \(args.joined(separator: " "))")
+                    print("-------------------------------\n")
+                    // --- NEUER DEBUG BLOCK ENDE ---
+        
+        
             let process = Process()
             process.executableURL = toolUrl
             process.arguments = args

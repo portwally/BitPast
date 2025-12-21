@@ -199,7 +199,40 @@ class ConverterViewModel: ObservableObject {
             }
         }
     }
-    
+    // MARK: - Native File Export
+        
+        func saveNativeFile() {
+            guard let result = currentResult, let sourceUrl = result.fileAssets.first else { return }
+            
+            let originalExt = sourceUrl.pathExtension.lowercased()
+            let fileTypeLabel = originalExt.uppercased()
+            
+            let panel = NSSavePanel()
+            panel.allowedContentTypes = [UTType(filenameExtension: originalExt) ?? .data]
+            panel.canCreateDirectories = true
+            panel.title = "Save Native \(fileTypeLabel) File"
+            
+            // Basisnamen ermitteln
+            let baseName = getBaseName()
+            panel.nameFieldStringValue = "\(baseName).\(originalExt)"
+            
+            panel.begin { response in
+                if response == .OK, let targetUrl = panel.url {
+                    do {
+                        // Falls Datei schon existiert, löschen
+                        if FileManager.default.fileExists(atPath: targetUrl.path) {
+                            try FileManager.default.removeItem(at: targetUrl)
+                        }
+                        // Kopieren
+                        try FileManager.default.copyItem(at: sourceUrl, to: targetUrl)
+                    } catch {
+                        DispatchQueue.main.async {
+                            self.errorMessage = "Export failed: \(error.localizedDescription)"
+                        }
+                    }
+                }
+            }
+        }
     func createProDOSDisk(size: DiskSize, format: DiskFormat, volumeName: String) {
             guard let result = currentResult else { return }
             
