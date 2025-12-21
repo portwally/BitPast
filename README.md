@@ -96,9 +96,12 @@ BitPast is built with **Swift** and **SwiftUI** for macOS.
 
 This project is open source. The UI code is provided under the MIT License. The bundled `b2d` binary follows the original license by Bill Buckels (Royalty-free use/modification allowed).
 
-![Visitors](https://api.visitorbadge.io/api/combined?path=https%3A%2F%2Fgithub.com%2Fportwally%2FBitPast&label=VISITS&style=flat-square)
-[![Downloads](https://img.shields.io/github/downloads/portwally/BitPast/total?style=flat-square&color=blue)](https://github.com/portwally/BitPast/releases)
-[![Stars](https://img.shields.io/github/stars/portwally/BitPast?style=flat-square&color=yellow)](https://github.com/portwally/BitPast/stargazers)
-[![Forks](https://img.shields.io/github/forks/portwally/BitPast?style=flat-square&color=green)](https://github.com/portwally/BitPast/network/members)
+![Visits](https://api.visitorbadge.io/api/combined?path=https%3A%2F%2Fgithub.com%2Fportwally%2FBitPast&label=visits)
+
+[![Downloads](https://img.shields.io/github/downloads/portwally/BitPast/total?style=flat&color=0d6efd)](https://github.com/portwally/BitPast/releases)
+[![Stars](https://img.shields.io/github/stars/portwally/BitPast?style=flat&color=f1c40f)](https://github.com/portwally/BitPast/stargazers)
+[![Forks](https://img.shields.io/github/forks/portwally/BitPast?style=flat&color=2ecc71)](https://github.com/portwally/BitPast/network/members)
+[![Homepage](https://img.shields.io/badge/homepage-BitPast-8e44ad?style=flat)](https://github.com/portwally/BitPast)
+
 
 
