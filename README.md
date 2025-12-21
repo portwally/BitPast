@@ -96,6 +96,9 @@ BitPast is built with **Swift** and **SwiftUI** for macOS.
 
 This project is open source. The UI code is provided under the MIT License. The bundled `b2d` binary follows the original license by Bill Buckels (Royalty-free use/modification allowed).
 
-[![GitHub Downloads](https://img.shields.io/github/downloads/portwally/BitPast/total.svg)](https://github.com/portwally/BitPast/releases)![Visitors](https://api.visitorbadge.io/api/combined?path=https%3A%2F%2Fgithub.com%2Fportwally%2FBitPast&label=VISITORS)
+![Visitors](https://api.visitorbadge.io/api/combined?path=https%3A%2F%2Fgithub.com%2Fportwally%2FBitPast&label=VISITS&style=flat-square)
+[![Downloads](https://img.shields.io/github/downloads/portwally/BitPast/total?style=flat-square&color=blue)](https://github.com/portwally/BitPast/releases)
+[![Stars](https://img.shields.io/github/stars/portwally/BitPast?style=flat-square&color=yellow)](https://github.com/portwally/BitPast/stargazers)
+[![Forks](https://img.shields.io/github/forks/portwally/BitPast?style=flat-square&color=green)](https://github.com/portwally/BitPast/network/members)
 
 
