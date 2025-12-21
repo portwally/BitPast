@@ -123,7 +123,6 @@ This project is open source. The UI code is provided under the MIT License. The 
 [![Downloads](https://img.shields.io/github/downloads/portwally/BitPast/total?style=flat&color=0d6efd)](https://github.com/portwally/BitPast/releases)
 [![Stars](https://img.shields.io/github/stars/portwally/BitPast?style=flat&color=f1c40f)](https://github.com/portwally/BitPast/stargazers)
 [![Forks](https://img.shields.io/github/forks/portwally/BitPast?style=flat&color=2ecc71)](https://github.com/portwally/BitPast/network/members)
-[![Homepage](https://img.shields.io/badge/homepage-BitPast-8e44ad?style=flat)](https://github.com/portwally/BitPast)
 
 
 
