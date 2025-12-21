@@ -9,7 +9,9 @@
 
 It acts as a powerful GUI wrapper around the legendary [b2d](https://www.appleoldies.ca/bmp2dhr/) tool by Bill Buckels for 8-bit systems, while utilizing a custom-built native Swift engine for 16-bit Apple IIgs graphics.
 
-<img width="1478" height="881" alt="main_app" src="https://github.com/user-attachments/assets/097cc7cf-c1c2-4699-9fde-8f8b4d70fd44" />
+<img width="1309" height="876" alt="Bildschirmfoto 2025-12-21 um 04 02 10" src="https://github.com/user-attachments/assets/09703f9b-8439-4207-8cbb-4a5495b6b18a" />
+
+<img width="1309" height="876" alt="Bildschirmfoto 2025-12-21 um 04 01 44" src="https://github.com/user-attachments/assets/1dc4d534-9914-4349-b0d6-98cd4711dc81" />
 
 
 ## ✨ Features
