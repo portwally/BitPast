@@ -7,7 +7,7 @@
 
 **BitPast** is a modern, native macOS application for converting images into authentic **Apple II** and **Apple IIgs** graphic formats.
 
-It acts as a powerful GUI wrapper around the legendary [b2d](https://www.appleoldies.ca/bmp2dhr/) tool by Bill Buckels for 8-bit systems, while utilizing a custom-built native Swift engine for 16-bit Apple IIgs graphics.
+Screen:
 
 <img width="1309" height="876" alt="Bildschirmfoto 2025-12-21 um 04 02 10" src="https://github.com/user-attachments/assets/09703f9b-8439-4207-8cbb-4a5495b6b18a" />
 
@@ -90,7 +90,7 @@ BitPast is built with **Swift** and **SwiftUI** for macOS.
 ## 👏 Credits
 
 - **Bill Buckels**: For creating the original **b2d** (Bmp2DHR) command-line tool. [Visit AppleOldies.ca](https://www.appleoldies.ca/bmp2dhr/).
-- **Brutal Deluxe**: For the **Cadius** tool used for ProDOS disk management.
+- **Brutal Deluxe**: For the **Cadius** tool used for ProDOS disk management.[Visit https://www.brutaldeluxe.fr/](https://www.brutaldeluxe.fr/products/crossdevtools/cadius/)
 - **Digarok**: For **Buckshot**, which served as inspiration for the resolution handling logic.
 
 ## 📄 License
