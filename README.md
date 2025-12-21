@@ -98,6 +98,7 @@ This project is open source. The UI code is provided under the MIT License. The 
 
 ![Visits](https://api.visitorbadge.io/api/combined?path=https%3A%2F%2Fgithub.com%2Fportwally%2FBitPast&label=visits)
 
+[![Visits](https://img.shields.io/badge/dynamic/json?style=flat&color=6c757d&label=visits&query=value&url=https://api.countapi.xyz/hit/portwally-bitpast/readme)](https://github.com/portwally/BitPast)
 [![Downloads](https://img.shields.io/github/downloads/portwally/BitPast/total?style=flat&color=0d6efd)](https://github.com/portwally/BitPast/releases)
 [![Stars](https://img.shields.io/github/stars/portwally/BitPast?style=flat&color=f1c40f)](https://github.com/portwally/BitPast/stargazers)
 [![Forks](https://img.shields.io/github/forks/portwally/BitPast?style=flat&color=2ecc71)](https://github.com/portwally/BitPast/network/members)
