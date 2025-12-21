@@ -88,7 +88,7 @@ BitPast is built with **Swift** and **SwiftUI** for macOS.
 
 ### From Binary Release
 
-Since this app is not distributed through the official Apple App Store and may not have been Notarized by a paid Apple Developer Account, macOS might display a security warning upon the first launch.
+Since this app is not distributed through the official Apple App Store and may not have been notarized by a paid Apple Developer Account, macOS might display a security warning upon the first launch.
 
 You may see a message stating: "The app cannot be opened because it is from an unverified developer."
 
@@ -105,7 +105,7 @@ If this does not work then
 You can find it in:
 Applications → Utilities → Terminal
 2. Run the following command (in case you installed it in the Applications directory):<br>
-```xattr -cr /Applications/Retro-Graphics-Converter.app```
+```xattr -cr /Applications/BitPast.app```
 
 
 ## 👏 Credits
