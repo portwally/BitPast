@@ -112,7 +112,7 @@ Applications → Utilities → Terminal
 
 - **Bill Buckels**: For creating the original **b2d** (Bmp2DHR) command-line tool. [Visit AppleOldies.ca](https://www.appleoldies.ca/bmp2dhr/).
 - **Brutal Deluxe**: For the **Cadius** tool used for ProDOS disk management.[Visit https://www.brutaldeluxe.fr/](https://www.brutaldeluxe.fr/products/crossdevtools/cadius/)
-- **Digarok**: For **Buckshot**, which served as inspiration for the resolution handling logic.
+
 
 ## 📄 License
 
