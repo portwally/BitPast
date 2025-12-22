@@ -4,7 +4,7 @@ class AppleIIGSConverter: RetroMachine {
     var name: String = "Apple IIgs"
     
     var options: [ConversionOption] = [
-        // 1. MODUS (Vertical Strips entfernt)
+        // 1. MODE (Vertical Strips removed)
         ConversionOption(
             label: "Display Mode",
             key: "mode",
@@ -32,7 +32,7 @@ class AppleIIGSConverter: RetroMachine {
             selectedValue: "Floyd-Steinberg"
         ),
         
-        // 3. DITHER STÄRKE
+        // 3. DITHER STRENGTH
         ConversionOption(
             label: "Dither Strength",
             key: "dither_amount",
@@ -58,7 +58,7 @@ class AppleIIGSConverter: RetroMachine {
     ]
     
     // MARK: - IIGS Fixed Palettes (12-bit RGB: 0-15 scale)
-    // Wir berechnen die Palette dynamisch (3200 Mode) oder nutzen Standard
+    // We calculate the palette dynamically (3200 Mode) or use standard defaults
     
     struct RGB { var r: Double; var g: Double; var b: Double }
     struct PixelFloat { var r: Double; var g: Double; var b: Double }
@@ -67,7 +67,7 @@ class AppleIIGSConverter: RetroMachine {
     // Convert Function
     func convert(sourceImage: NSImage) async throws -> ConversionResult {
         
-        // Optionen lesen
+        // Read options
         let mode = options.first(where: {$0.key == "mode"})?.selectedValue ?? "3200 Mode (Smart Scanlines)"
         let ditherName = options.first(where: {$0.key == "dither"})?.selectedValue ?? "Floyd-Steinberg"
         let ditherAmount = Double(options.first(where: {$0.key == "dither_amount"})?.selectedValue ?? "1.0") ?? 1.0
@@ -78,10 +78,10 @@ class AppleIIGSConverter: RetroMachine {
         var targetW = 320
         var targetH = 200
         
-        // Wenn 3200 Mode gewählt ist, nutzen wir intern 640 Breite für bessere Farbmischung
-        // oder 320 Breite mit spezieller Logik.
-        // Der "Smart Scanlines" Ansatz: Wir generieren SCBs (Scanline Control Bytes).
-        // Für die Vorschau rendern wir es als RGB Bild.
+        // If 3200 Mode is selected, we internally use 640 width for better color mixing
+        // or 320 width with special logic.
+        // The "Smart Scanlines" approach: We generate SCBs (Scanline Control Bytes).
+        // For the preview, we render it as an RGB image.
         
         if mode.contains("640x200") { targetW = 640 }
         
@@ -112,15 +112,15 @@ class AppleIIGSConverter: RetroMachine {
         for y in 0..<targetH {
             
             // A. Create Palette for this line (Quantization)
-            // Hole alle Pixel dieser Zeile
+            // Get all pixels of this row
             let rowStart = y * targetW
             let rowEnd = rowStart + targetW
             let rowPixels = Array(rawPixels[rowStart..<rowEnd])
             
-            // Generiere optimierte 16-Farben Palette für diese Zeile (Simple K-Means oder Median Cut)
-            // Hier vereinfacht: Median Cut / Octree Ersatz -> Wir nehmen die Stats.
-            // Da wir "BitPast" Style sind, machen wir es smart:
-            // Wir suchen die 16 häufigsten Farben oder clustern sie.
+            // Generate optimized 16-color palette for this row (Simple K-Means or Median Cut)
+            // Simplified here: Median Cut / Octree substitute -> We take the stats.
+            // Since we are "BitPast" style, we do it smartly:
+            // We look for the 16 most frequent colors or cluster them.
             
             let linePalette = generateOptimizedPalette(for: rowPixels, maxColors: 16)
             finalPaletteData.append(linePalette)
@@ -158,11 +158,11 @@ class AppleIIGSConverter: RetroMachine {
         let preview = generatePreviewImage(indices: outputIndices, palettes: finalPaletteData, width: targetW, height: targetH)
         
         // 6. Generate IIGS File Data (Type $C1 - PIC)
-        // Format ist komplexer, wir machen ein vereinfachtes "Preferred Format" (APF) oder Raw dump.
-        // Für BitPast reicht oft eine einfache Binary oder wir simulieren es.
-        // Hier: Wir speichern ein simples Format, das Cadius theoretisch packen könnte,
-        // aber echtes APF/SHR ist binär sehr spezifisch (SCBs, Palettes, PixelData).
-        // Wir erzeugen eine valide .BIN Datei die das Speicherabbild $2000-$9D00 simuliert (SHR Memory).
+        // Format is more complex, we do a simplified "Preferred Format" (APF) or Raw dump.
+        // For BitPast, a simple binary often suffices or we simulate it.
+        // Here: We save a simple format that Cadius could theoretically pack,
+        // but real APF/SHR is binary very specific (SCBs, Palettes, PixelData).
+        // We generate a valid .BIN file that simulates the memory image $2000-$9D00 (SHR Memory).
         
         let shrData = generateSHRData(indices: outputIndices, palettes: finalPaletteData, width: targetW, height: targetH)
         
@@ -187,9 +187,9 @@ class AppleIIGSConverter: RetroMachine {
     }
     
     func generateOptimizedPalette(for pixels: [PixelFloat], maxColors: Int) -> [RGB] {
-        // Sehr simpler Quantizer für Performance:
-        // Wir nehmen einfach feste IIGS Farben wenn wir faul sind, oder:
-        // Wir reduzieren auf 12-bit RGB (4-4-4) und zählen.
+        // Very simple quantizer for performance:
+        // We just take fixed IIGS colors if we are lazy, or:
+        // We reduce to 12-bit RGB (4-4-4) and count.
         
         var colorCounts = [UInt16: Int]()
         
@@ -202,14 +202,14 @@ class AppleIIGSConverter: RetroMachine {
             colorCounts[val, default: 0] += 1
         }
         
-        // Sortieren nach Häufigkeit
+        // Sort by frequency
         let sorted = colorCounts.sorted { $0.value > $1.value }
         let topColors = sorted.prefix(maxColors)
         
         var palette = [RGB]()
         
-        // Immer Schwarz an 0 haben (optional, aber gut für Rahmen)
-        // Wir füllen Palette
+        // Always have Black at 0 (optional, but good for borders)
+        // We fill the palette
         for (hex, _) in topColors {
             let r = Double((hex >> 8) & 0xF) * 17
             let g = Double((hex >> 4) & 0xF) * 17
@@ -217,12 +217,12 @@ class AppleIIGSConverter: RetroMachine {
             palette.append(RGB(r: r, g: g, b: b))
         }
         
-        // Auffüllen falls < 16
+        // Fill up if < 16
         while palette.count < 16 {
             palette.append(RGB(r: 0, g: 0, b: 0))
         }
         
-        return palette.sorted { ($0.r+$0.g+$0.b) < ($1.r+$1.g+$1.b) } // Sortieren für Ordnung
+        return palette.sorted { ($0.r+$0.g+$0.b) < ($1.r+$1.g+$1.b) } // Sort for order
     }
     
     struct ColorMatch { let index: Int; let rgb: RGB }
