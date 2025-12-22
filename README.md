@@ -86,22 +86,43 @@ BitPast is built with **Swift** and **SwiftUI** for macOS.
 3. Ensure the `b2d` and `cadius` binaries are present in the project bundle resources.
 4. Build and Run (Requires macOS 12.0+).
 
+### From Binary Release
+
+Since this app is not distributed through the official Apple App Store and may not have been notarized by a paid Apple Developer Account, macOS might display a security warning upon the first launch.
+
+You may see a message stating: "The app cannot be opened because it is from an unverified developer."
+
+How to bypass this warning (one-time process):
+
+Close the warning window.
+Go to the app in Finder (e.g., in your Applications Folder).
+Hold the Control key and click on the app icon (or use the Right-Click menu).
+Select Open from the context menu.
+In the subsequent dialog box, confirm that you want to open the app by clicking Open again.
+The application will now launch and will be trusted by macOS for all future starts.
+If this does not work then
+1. Open Terminal
+You can find it in:
+Applications → Utilities → Terminal
+2. Run the following command (in case you installed it in the Applications directory):<br>
+```xattr -cr /Applications/BitPast.app```
+
+
 ## 👏 Credits
 
 - **Bill Buckels**: For creating the original **b2d** (Bmp2DHR) command-line tool. [Visit AppleOldies.ca](https://www.appleoldies.ca/bmp2dhr/).
 - **Brutal Deluxe**: For the **Cadius** tool used for ProDOS disk management.[Visit https://www.brutaldeluxe.fr/](https://www.brutaldeluxe.fr/products/crossdevtools/cadius/)
-- **Digarok**: For **Buckshot**, which served as inspiration for the resolution handling logic.
+
 
 ## 📄 License
 
 This project is open source. The UI code is provided under the MIT License. The bundled `b2d` binary follows the original license by Bill Buckels (Royalty-free use/modification allowed).
 
-![Visits](https://api.visitorbadge.io/api/combined?path=https%3A%2F%2Fgithub.com%2Fportwally%2FBitPast&label=visits)
+
 
 [![Downloads](https://img.shields.io/github/downloads/portwally/BitPast/total?style=flat&color=0d6efd)](https://github.com/portwally/BitPast/releases)
 [![Stars](https://img.shields.io/github/stars/portwally/BitPast?style=flat&color=f1c40f)](https://github.com/portwally/BitPast/stargazers)
 [![Forks](https://img.shields.io/github/forks/portwally/BitPast?style=flat&color=2ecc71)](https://github.com/portwally/BitPast/network/members)
-[![Homepage](https://img.shields.io/badge/homepage-BitPast-8e44ad?style=flat)](https://github.com/portwally/BitPast)
 
 
 
