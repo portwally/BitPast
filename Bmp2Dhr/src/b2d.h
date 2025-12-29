@@ -1,5 +1,6 @@
 /* ---------------------------------------------------------------------
 Bmp2DHR (C) Copyright Bill Buckels 2014.
+Modified version for 32/64bit compatibility by Walter Tengler
 All Rights Reserved.
 
 Module Name - Description
@@ -117,7 +118,7 @@ typedef short sshort;
 
 /* Bitmap Header structures */
 
-/* FIX: Packing einschalten und 32-Bit Integer erzwingen */
+/* FIX: Switch on Packing and force 32-Bit  */
 #pragma pack(push, 1)
 
 typedef struct tagBITMAPINFOHEADER
@@ -150,7 +151,7 @@ typedef struct tagBMPHEADER
     BITMAPINFOHEADER bmi;
 } BMPHEADER;
 
-/* Packing wieder ausschalten */
+/* Switch of Packing  */
 #pragma pack(pop)
 
 
@@ -939,3 +940,4 @@ uchar dhgr2hgr[16] = {
 	HWHITE};
 
 #endif
+

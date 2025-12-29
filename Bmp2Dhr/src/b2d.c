@@ -2,6 +2,8 @@
 Bmp2DHR (C) Copyright Bill Buckels 2014.
 All Rights Reserved.
 
+Modified versiion to for including ctype.h by Walter Tengler
+
 Module Name - Description
 -------------------------
 
@@ -284,6 +286,8 @@ documentation can be reviewed for additional information.
 #include <math.h>
 
 #include "b2d.h"
+
+// Here is the change for including ctype.h
 #include <ctype.h>
 
 /* ***************************************************************** */
@@ -450,7 +454,7 @@ Photoshop Luminosity Average
 
 Formula for the Luminosity Average:
 
-  AvgLuma = 0.299·AvgRed + 0.587·AvgGreen + 0.114·AvgBlue
+  AvgLuma = 0.299Â·AvgRed + 0.587Â·AvgGreen + 0.114Â·AvgBlue
 
 
 */
@@ -6361,5 +6365,6 @@ int main(int argc, char **argv)
 
 	return SUCCESS;
 }
+
 
 
