@@ -3,6 +3,9 @@ import Cocoa
 class AppleIIGSConverter: RetroMachine {
     var name: String = "Apple IIgs"
     
+    // Store palette mapping for 3200 mode
+    private var paletteSlotMapping: [Int] = []
+    
     var options: [ConversionOption] = [
         // 1. MODE
         ConversionOption(
@@ -11,7 +14,9 @@ class AppleIIGSConverter: RetroMachine {
             values: [
                 "3200 Mode (Smart Scanlines)",
                 "320x200 (16 Colors)",
-                "640x200 (4 Colors)"
+                "640x200 (4 Colors)",
+                "640x200 Enhanced (16 Colors)",
+                "640x200 Desktop (16 Colors)"
             ],
             selectedValue: "3200 Mode (Smart Scanlines)"
         ),
@@ -58,6 +63,26 @@ class AppleIIGSConverter: RetroMachine {
     ]
     
     // MARK: - Global Structs (HIER DEFINIERT DAMIT SIE ÜBERALL SICHTBAR SIND)
+    
+    // Apple IIgs Standard System Palette (16 colors)
+    static let iigsSystemPalette: [RGB] = [
+        RGB(r: 0, g: 0, b: 0),         // 0: Black
+        RGB(r: 221, g: 0, b: 51),      // 1: Deep Red
+        RGB(r: 0, g: 0, b: 153),       // 2: Dark Blue
+        RGB(r: 221, g: 0, b: 221),     // 3: Purple
+        RGB(r: 0, g: 119, b: 0),       // 4: Dark Green
+        RGB(r: 85, g: 85, b: 85),      // 5: Dark Gray
+        RGB(r: 34, g: 34, b: 255),     // 6: Medium Blue
+        RGB(r: 102, g: 170, b: 255),   // 7: Light Blue
+        RGB(r: 136, g: 85, b: 0),      // 8: Brown
+        RGB(r: 255, g: 102, b: 0),     // 9: Orange
+        RGB(r: 170, g: 170, b: 170),   // A: Light Gray
+        RGB(r: 255, g: 153, b: 136),   // B: Pink
+        RGB(r: 17, g: 221, b: 0),      // C: Light Green
+        RGB(r: 255, g: 255, b: 0),     // D: Yellow
+        RGB(r: 68, g: 255, b: 153),    // E: Aqua
+        RGB(r: 255, g: 255, b: 255)    // F: White
+    ]
     
     struct RGB { var r: Double; var g: Double; var b: Double }
     struct PixelFloat { var r: Double; var g: Double; var b: Double }
@@ -108,6 +133,8 @@ class AppleIIGSConverter: RetroMachine {
         
         let is640 = mode.contains("640")
         let is3200 = mode.contains("3200")
+        let isDesktop = mode.contains("Desktop")
+        let isEnhanced = mode.contains("Enhanced")
         
         let targetW = is640 ? 640 : 320
         let targetH = 200
@@ -134,15 +161,86 @@ class AppleIIGSConverter: RetroMachine {
         
         // --- PALETTE LOGIC ---
         
-        if is640 {
-            // A. 640 MODE
+        // Reset palette mapping
+        paletteSlotMapping = []
+        
+        if isDesktop {
+            // DESKTOP WALLPAPER MODE - Use Apple IIgs standard 16-color palette
+            print("=== DESKTOP WALLPAPER MODE ===")
+            print("Using Apple IIgs standard system palette (16 colors)")
+            
+            var expandedPalette = AppleIIGSConverter.iigsSystemPalette
+            for _ in 0..<200 { finalPalettes.append(expandedPalette) }
+            
+        } else if isEnhanced {
+            // ENHANCED 640 MODE - 16 custom colors optimized for the image
+            print("=== ENHANCED 640 MODE ===")
+            print("Generating 16 optimal colors from image")
+            
             var samplePixels: [PixelFloat] = []
             for i in stride(from: 0, to: rawPixels.count, by: 2) {
                 let p = rawPixels[i]
                 samplePixels.append(PixelFloat(r: max(0, min(255, p.r)), g: max(0, min(255, p.g)), b: max(0, min(255, p.b))))
             }
             
-            let best4 = generatePaletteMedianCut(pixels: samplePixels, maxColors: 4)
+            var best16 = generatePaletteMedianCut(pixels: samplePixels, maxColors: 16)
+            
+            // Sort by brightness for better dithering
+            best16.sort { ($0.r + $0.g + $0.b) < ($1.r + $1.g + $1.b) }
+            
+            // DEBUG: Print palette
+            print("Generated 16-color palette:")
+            for (idx, color) in best16.enumerated() {
+                let brightness = (color.r + color.g + color.b) / 3.0
+                print("  \(idx): R=\(Int(color.r)) G=\(Int(color.g)) B=\(Int(color.b)) Brightness=\(Int(brightness))")
+            }
+            
+            for _ in 0..<200 { finalPalettes.append(best16) }
+            
+        } else if is640 {
+            // A. 640 MODE - 4 colors with guaranteed brightness range
+            var samplePixels: [PixelFloat] = []
+            for i in stride(from: 0, to: rawPixels.count, by: 2) {
+                let p = rawPixels[i]
+                samplePixels.append(PixelFloat(r: max(0, min(255, p.r)), g: max(0, min(255, p.g)), b: max(0, min(255, p.b))))
+            }
+            
+            // Find min and max brightness in image
+            var minBrightness = 999.0
+            var maxBrightness = 0.0
+            var darkestPixel = PixelFloat(r: 0, g: 0, b: 0)
+            var brightestPixel = PixelFloat(r: 255, g: 255, b: 255)
+            
+            for p in samplePixels {
+                let brightness = (p.r + p.g + p.b) / 3.0
+                if brightness < minBrightness {
+                    minBrightness = brightness
+                    darkestPixel = p
+                }
+                if brightness > maxBrightness {
+                    maxBrightness = brightness
+                    brightestPixel = p
+                }
+            }
+            
+            // Use median cut to get 4 colors, then force in brightest
+            var best4 = generatePaletteMedianCut(pixels: samplePixels, maxColors: 4)
+            
+            // Replace darkest palette color with image's darkest
+            // Replace brightest palette color with image's brightest
+            best4.sort { ($0.r + $0.g + $0.b) < ($1.r + $1.g + $1.b) }
+            best4[0] = RGB(r: darkestPixel.r, g: darkestPixel.g, b: darkestPixel.b)
+            best4[3] = RGB(r: brightestPixel.r, g: brightestPixel.g, b: brightestPixel.b)
+            
+            // DEBUG: Print palette colors
+            print("=== 640 MODE PALETTE ===")
+            print("Image brightness range: \(Int(minBrightness)) to \(Int(maxBrightness))")
+            for (idx, color) in best4.enumerated() {
+                let brightness = (color.r + color.g + color.b) / 3.0
+                print("Color \(idx): R=\(Int(color.r)) G=\(Int(color.g)) B=\(Int(color.b)) Brightness=\(Int(brightness))")
+            }
+            print("========================")
+            
             var expandedPalette = [RGB]()
             for i in 0..<16 {
                 expandedPalette.append(best4.isEmpty ? RGB(r:0,g:0,b:0) : best4[i % best4.count])
@@ -161,36 +259,78 @@ class AppleIIGSConverter: RetroMachine {
             for _ in 0..<200 { finalPalettes.append(best16) }
             
         } else {
-            // C. 3200 MODE (Palette per Line)
+            // C. TRUE 3200 MODE
+            // Step 1: Generate optimal palette for each scanline
+            var linePalettes = [[RGB]]()
             for y in 0..<targetH {
                 let rowStart = y * targetW
                 let rowEnd = rowStart + targetW
                 
-                var cleanRowPixels: [PixelFloat] = []
-                cleanRowPixels.reserveCapacity(targetW)
-                
+                var rowPixels: [PixelFloat] = []
                 for i in rowStart..<rowEnd {
                     let p = rawPixels[i]
-                    let safeP = PixelFloat(
+                    rowPixels.append(PixelFloat(
                         r: max(0, min(255, p.r)),
                         g: max(0, min(255, p.g)),
                         b: max(0, min(255, p.b))
-                    )
-                    cleanRowPixels.append(safeP)
+                    ))
                 }
                 
-                let linePalette = generatePaletteMedianCut(pixels: cleanRowPixels, maxColors: 16)
-                finalPalettes.append(linePalette)
+                let linePalette = generatePaletteMedianCut(pixels: rowPixels, maxColors: 16)
+                linePalettes.append(linePalette)
+            }
+            
+            // Step 2: Map 200 line palettes to 16 slots
+            // Simple approach: Group consecutive lines
+            paletteSlotMapping = [Int](repeating: 0, count: 200)
+            var slotPalettes = [[RGB]]()
+            
+            for slot in 0..<16 {
+                let startLine = (slot * 200) / 16
+                let endLine = ((slot + 1) * 200) / 16
                 
-                // Dither for this line
-                let currentPalette = linePalette
+                // Collect all unique colors from these lines
+                var slotColors: [RGB] = []
+                for lineIdx in startLine..<endLine {
+                    slotColors.append(contentsOf: linePalettes[lineIdx])
+                }
+                
+                // Convert to PixelFloat for median cut
+                var colorPixels = slotColors.map { PixelFloat(r: $0.r, g: $0.g, b: $0.b) }
+                
+                // Generate merged palette
+                let mergedPalette = generatePaletteMedianCut(pixels: colorPixels, maxColors: 16)
+                slotPalettes.append(mergedPalette)
+                
+                // Map these lines to this slot
+                for lineIdx in startLine..<endLine {
+                    paletteSlotMapping[lineIdx] = slot
+                }
+            }
+            
+            finalPalettes = slotPalettes
+            
+            // Step 3: Quantize pixels using assigned palette slots
+            for y in 0..<targetH {
+                let paletteSlot = paletteSlotMapping[y]
+                let currentPalette = finalPalettes[paletteSlot]
+                
                 for x in 0..<targetW {
-                    let idx = rowStart + x
+                    let idx = y * targetW + x
                     var p = rawPixels[idx]
                     
                     p.r = min(255, max(0, p.r))
                     p.g = min(255, max(0, p.g))
                     p.b = min(255, max(0, p.b))
+                    
+                    if isOrdered {
+                        let bayerVal = bayerMatrix[(y % 4) * 4 + (x % 4)] / 16.0
+                        let spread = 32.0 * ditherAmount
+                        let offset = (bayerVal - 0.5) * spread
+                        p.r = min(255, max(0, p.r + offset))
+                        p.g = min(255, max(0, p.g + offset))
+                        p.b = min(255, max(0, p.b + offset))
+                    }
                     
                     let match = findNearestColor(pixel: p, palette: currentPalette)
                     outputIndices[idx] = match.index
@@ -200,9 +340,21 @@ class AppleIIGSConverter: RetroMachine {
                         let errG = (p.g - match.rgb.g) * ditherAmount
                         let errB = (p.b - match.rgb.b) * ditherAmount
                         
-                        distributeError(source: &rawPixels, x: x, y: y, w: targetW, h: targetH,
-                                        errR: errR, errG: errG, errB: errB,
-                                        kernel: kernel)
+                        // Only distribute within same palette slot group
+                        let nextY = y + 1
+                        if nextY < targetH && paletteSlotMapping[nextY] == paletteSlot {
+                            distributeError(source: &rawPixels, x: x, y: y, w: targetW, h: targetH,
+                                            errR: errR, errG: errG, errB: errB,
+                                            kernel: kernel)
+                        } else {
+                            // Within same line only
+                            let filteredKernel = kernel.filter { $0.dy == 0 }
+                            if !filteredKernel.isEmpty {
+                                distributeError(source: &rawPixels, x: x, y: y, w: targetW, h: targetH,
+                                                errR: errR, errG: errG, errB: errB,
+                                                kernel: filteredKernel)
+                            }
+                        }
                     }
                 }
             }
@@ -245,7 +397,10 @@ class AppleIIGSConverter: RetroMachine {
         
         // 5. Generate Results
         let preview = generatePreviewImage(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH)
-        let shrData = generateSHRData(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH, is640: is640)
+        
+        // Desktop and Enhanced modes use 640 resolution but 320 color mode (16 colors, not 4)
+        let shrIs640Mode = is640 && !isDesktop && !isEnhanced
+        let shrData = generateSHRData(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH, is640: shrIs640Mode)
         
         let fileManager = FileManager.default
         let uuid = UUID().uuidString.prefix(8)
@@ -285,6 +440,10 @@ class AppleIIGSConverter: RetroMachine {
             boxes.append(ColorBox(pixels: Array(sortedPixels[mid..<sortedPixels.count])))
         }
         var palette = boxes.map { $0.getAverageColor() }
+        
+        // DON'T quantize palette - keep full 8-bit precision for preview
+        // Only quantize when writing to SHR file
+        
         while palette.count < maxColors { palette.append(RGB(r:0,g:0,b:0)) }
         return palette
     }
@@ -313,9 +472,10 @@ class AppleIIGSConverter: RetroMachine {
     }
     
     func rgbToIIGS(_ rgb: RGB) -> UInt16 {
-        let r4 = UInt16(min(255, max(0, rgb.r)) / 17) & 0x0F
-        let g4 = UInt16(min(255, max(0, rgb.g)) / 17) & 0x0F
-        let b4 = UInt16(min(255, max(0, rgb.b)) / 17) & 0x0F
+        // Proper 8-bit to 4-bit conversion with rounding to preserve brightness
+        let r4 = UInt16((min(255, max(0, rgb.r)) * 15.0 + 127.5) / 255.0) & 0x0F
+        let g4 = UInt16((min(255, max(0, rgb.g)) * 15.0 + 127.5) / 255.0) & 0x0F
+        let b4 = UInt16((min(255, max(0, rgb.b)) * 15.0 + 127.5) / 255.0) & 0x0F
         return (0 << 12) | (r4 << 8) | (g4 << 4) | b4
     }
     
@@ -324,15 +484,33 @@ class AppleIIGSConverter: RetroMachine {
         let scbOffset = 32000
         let palOffset = 32256
         
+        // SCB (Scan Control Bytes) - assign palette slot to each scanline
         for y in 0..<200 {
-            let palIdx = y % 16
+            let palIdx: Int
+            if !paletteSlotMapping.isEmpty {
+                // 3200 mode with custom mapping
+                palIdx = paletteSlotMapping[y]
+            } else if palettes.count == 16 {
+                // Standard: cycle through available palettes
+                palIdx = y % 16
+            } else if palettes.count == 1 {
+                // Single palette mode
+                palIdx = 0
+            } else {
+                // Fallback
+                palIdx = y % palettes.count
+            }
+            
             var scbByte = UInt8(palIdx & 0x0F)
             if is640 { scbByte |= 0x80 }
             data[scbOffset + y] = scbByte
         }
         
+        // Write palette data (always 16 slots)
+        let numPalettes = min(palettes.count, 16)
         for pIdx in 0..<16 {
-            let sourcePal = (palettes.count > pIdx) ? palettes[pIdx] : palettes[0]
+            let sourcePal = (pIdx < numPalettes) ? palettes[pIdx] : palettes[0]
+            
             for cIdx in 0..<16 {
                 let color = sourcePal[cIdx]
                 let iigsVal = rgbToIIGS(color)
@@ -343,20 +521,24 @@ class AppleIIGSConverter: RetroMachine {
         }
         
         for y in 0..<height {
+            let lineOffset = y * 160
+            
             for x in stride(from: 0, to: width, by: is640 ? 4 : 2) {
-                let bytePos = (y * 160) + (is640 ? x/4 : x/2)
+                let bytePos = lineOffset + (is640 ? x/4 : x/2)
                 if bytePos >= 32000 { continue }
                 if is640 {
                     let p1 = (indices[y*width + x] & 0x03)
                     let p2 = (indices[y*width + x+1] & 0x03)
                     let p3 = (indices[y*width + x+2] & 0x03)
                     let p4 = (indices[y*width + x+3] & 0x03)
-                    let byte = UInt8(p1 | (p2 << 2) | (p3 << 4) | (p4 << 6))
+                    // REVERSED: p4 goes to bits 0-1, p1 goes to bits 6-7
+                    let byte = UInt8(p4 | (p3 << 2) | (p2 << 4) | (p1 << 6))
                     data[bytePos] = byte
                 } else {
                     let p1 = indices[y*width + x] & 0x0F
                     let p2 = indices[y*width + x+1] & 0x0F
-                    let byte = UInt8(p1 | (p2 << 4))
+                    // SWAPPED: Try reversed nibble order
+                    let byte = UInt8(p2 | (p1 << 4))
                     data[bytePos] = byte
                 }
             }
@@ -367,7 +549,21 @@ class AppleIIGSConverter: RetroMachine {
     func generatePreviewImage(indices: [Int], palettes: [[RGB]], width: Int, height: Int) -> NSImage {
         var bytes = [UInt8](repeating: 255, count: width * height * 4)
         for y in 0..<height {
-            let pal = (y < palettes.count) ? palettes[y] : palettes[0]
+            // Determine which palette to use for this line
+            let paletteIndex: Int
+            if !paletteSlotMapping.isEmpty {
+                // 3200 mode with custom mapping
+                paletteIndex = paletteSlotMapping[y]
+            } else if palettes.count > 16 {
+                // Shouldn't happen, but fallback
+                paletteIndex = y % 16
+            } else {
+                // Standard mode
+                paletteIndex = min(y, palettes.count - 1)
+            }
+            
+            let pal = palettes[paletteIndex]
+            
             for x in 0..<width {
                 let idx = y * width + x
                 let cIdx = indices[idx]
@@ -395,7 +591,16 @@ class AppleIIGSConverter: RetroMachine {
         guard let ctx = CGContext(data: &bytes, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width*4, space: cs, bitmapInfo: bi) else { return pixels }
         ctx.draw(cgImage, in: CGRect(x:0, y:0, width: width, height: height))
         for i in 0..<(width*height) {
-            pixels[i] = PixelFloat(r: Double(bytes[i*4]), g: Double(bytes[i*4+1]), b: Double(bytes[i*4+2]))
+            let alpha = Double(bytes[i*4+3])
+            if alpha > 0 {
+                // Unpremultiply to get correct RGB values
+                let r = Double(bytes[i*4]) * 255.0 / alpha
+                let g = Double(bytes[i*4+1]) * 255.0 / alpha
+                let b = Double(bytes[i*4+2]) * 255.0 / alpha
+                pixels[i] = PixelFloat(r: min(255, r), g: min(255, g), b: min(255, b))
+            } else {
+                pixels[i] = PixelFloat(r: Double(bytes[i*4]), g: Double(bytes[i*4+1]), b: Double(bytes[i*4+2]))
+            }
         }
         return pixels
     }

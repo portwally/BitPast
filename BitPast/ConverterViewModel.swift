@@ -41,9 +41,9 @@ class ConverterViewModel: ObservableObject {
             
             var cadiusSize: String {
                 switch self {
-                case .kb140: return "143KB" // <--- FIX: 143KB statt 140KB
-                case .kb800: return "800KB"
-                case .mb32: return "32MB"
+                case .kb140: return "143KB"   // CADIUS minimum is 143KB for 5.25" disks
+                case .kb800: return "800KB"   // 800KB for 3.5" disks
+                case .mb32: return "32MB"     // 32MB for hard disks
                 }
             }
         }
@@ -283,6 +283,22 @@ class ConverterViewModel: ObservableObject {
                         
                         do {
                             try self.runCadius(url: cadiusUrl, args: createArgs)
+                            
+                            // 2b. Fix disk size if needed (CADIUS bug workaround)
+                            if size == .kb140 {
+                                let correctSize: UInt64 = 143360 // 280 blocks × 512 bytes
+                                if let attrs = try? fileManager.attributesOfItem(atPath: targetUrl.path),
+                                   let fileSize = attrs[.size] as? UInt64,
+                                   fileSize != correctSize {
+                                    print("⚠️ Fixing disk size: \(fileSize) → \(correctSize) bytes")
+                                    
+                                    // Truncate to correct size
+                                    if let fileHandle = try? FileHandle(forWritingTo: targetUrl) {
+                                        try? fileHandle.truncate(atOffset: correctSize)
+                                        try? fileHandle.close()
+                                    }
+                                }
+                            }
                             
                             // 3. Process & Add Files
                             for (index, assetUrl) in result.fileAssets.enumerated() {
