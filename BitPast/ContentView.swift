@@ -18,7 +18,7 @@ struct ContentView: View {
     let sideColumnWidth: CGFloat = 195
     
     // Keys für die Anzeige
-    let topRowKeys = ["mode", "colortype", "dither", "palette", "saturation"]
+    let topRowKeys = ["mode", "colortype", "dither", "quantization_method", "palette", "saturation"]
     let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "gamma", "dither_amount", "threshold"]
     
     var body: some View {
