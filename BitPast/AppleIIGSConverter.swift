@@ -37,6 +37,17 @@ class AppleIIGSConverter: RetroMachine {
             selectedValue: "Floyd-Steinberg"
         ),
         
+        // 2b. QUANTIZATION METHOD (for 3200 mode)
+        ConversionOption(
+            label: "3200 Quantization",
+            key: "quantization_method",
+            values: [
+                "Per-Scanline (Default)",
+                "Palette Reuse (Optimized)"
+            ],
+            selectedValue: "Per-Scanline (Default)"
+        ),
+        
         // 3. DITHER STRENGTH
         ConversionOption(
             label: "Dither Strength",
@@ -47,7 +58,7 @@ class AppleIIGSConverter: RetroMachine {
         
         // 4. ERROR THRESHOLD
         ConversionOption(
-            label: "Merge Tolerance",
+            label: "Palette Merge Tolerance",
             key: "threshold",
             range: 0.0...50.0,
             defaultValue: 10.0
@@ -130,12 +141,15 @@ class AppleIIGSConverter: RetroMachine {
         let ditherName = options.first(where: {$0.key == "dither"})?.selectedValue ?? "None"
         let ditherAmount = Double(options.first(where: {$0.key == "dither_amount"})?.selectedValue ?? "1.0") ?? 1.0
         let saturation = Double(options.first(where: {$0.key == "saturation"})?.selectedValue ?? "1.0") ?? 1.0
+        let quantMethod = options.first(where: {$0.key == "quantization_method"})?.selectedValue ?? "Per-Scanline (Default)"
+        let mergeThreshold = Double(options.first(where: {$0.key == "threshold"})?.selectedValue ?? "10.0") ?? 10.0
         
         let is640 = mode.contains("640")
         let is3200 = mode.contains("3200")
         let isDesktop = mode.contains("Desktop")
         let isEnhanced = mode.contains("Enhanced")
         
+        // All 640 modes (including Desktop/Enhanced) use 640 width
         let targetW = is640 ? 640 : 320
         let targetH = 200
         
@@ -165,37 +179,67 @@ class AppleIIGSConverter: RetroMachine {
         paletteSlotMapping = []
         
         if isDesktop {
-            // DESKTOP WALLPAPER MODE - Use Apple IIgs standard 16-color palette
-            print("=== DESKTOP WALLPAPER MODE ===")
-            print("Using Apple IIgs standard system palette (16 colors)")
+            // DESKTOP MODE - Column-aware dithering (Even/Odd palettes)
+            print("=== DESKTOP MODE (640x200, 16 dithered colors) ===")
+            print("Using GS/OS Finder palette with column-aware dithering")
             
-            var expandedPalette = AppleIIGSConverter.iigsSystemPalette
-            for _ in 0..<200 { finalPalettes.append(expandedPalette) }
+            // Standard GS/OS Finder palette
+            // Even columns (indices 0-3): Black, Deep Blue, Yellow, White
+            // Odd columns (indices 4-7): Black, Red, Green, White
+            // Indices 8-15 are duplicates for hardware compatibility
+            let finderPalette = [
+                // Indices 0-3 (Even columns)
+                RGB(r: 0, g: 0, b: 0),         // 0: Black
+                RGB(r: 0, g: 0, b: 255),       // 1: Deep Blue ($00F)
+                RGB(r: 255, g: 255, b: 0),     // 2: Yellow ($FF0)
+                RGB(r: 255, g: 255, b: 255),   // 3: White
+                // Indices 4-7 (Odd columns)
+                RGB(r: 0, g: 0, b: 0),         // 4: Black
+                RGB(r: 255, g: 0, b: 0),       // 5: Red ($F00)
+                RGB(r: 0, g: 224, b: 0),       // 6: Green ($0E0)
+                RGB(r: 255, g: 255, b: 255),   // 7: White
+                // Indices 8-15 (Duplicates for hardware)
+                RGB(r: 0, g: 0, b: 0),         // 8: Black (copy of 0)
+                RGB(r: 0, g: 0, b: 255),       // 9: Deep Blue (copy of 1)
+                RGB(r: 255, g: 255, b: 0),     // 10: Yellow (copy of 2)
+                RGB(r: 255, g: 255, b: 255),   // 11: White (copy of 3)
+                RGB(r: 0, g: 0, b: 0),         // 12: Black (copy of 4)
+                RGB(r: 255, g: 0, b: 0),       // 13: Red (copy of 5)
+                RGB(r: 0, g: 224, b: 0),       // 14: Green (copy of 6)
+                RGB(r: 255, g: 255, b: 255)    // 15: White (copy of 7)
+            ]
+            
+            for _ in 0..<200 { finalPalettes.append(finderPalette) }
             
         } else if isEnhanced {
-            // ENHANCED 640 MODE - 16 custom colors optimized for the image
-            print("=== ENHANCED 640 MODE ===")
-            print("Generating 16 optimal colors from image")
+            // ENHANCED 640 MODE - Custom 8-color palette with column-aware dithering
+            print("=== ENHANCED 640 MODE (640x200, 16 dithered colors) ===")
+            print("Generating 8 optimal colors for column-aware dithering")
             
             var samplePixels: [PixelFloat] = []
-            for i in stride(from: 0, to: rawPixels.count, by: 2) {
+            for i in stride(from: 0, to: rawPixels.count, by: 4) {
                 let p = rawPixels[i]
                 samplePixels.append(PixelFloat(r: max(0, min(255, p.r)), g: max(0, min(255, p.g)), b: max(0, min(255, p.b))))
             }
             
-            var best16 = generatePaletteMedianCut(pixels: samplePixels, maxColors: 16)
+            // Generate 8 colors total (4 for even, 4 for odd)
+            var best8 = generatePaletteMedianCut(pixels: samplePixels, maxColors: 8)
+            best8.sort { ($0.r + $0.g + $0.b) < ($1.r + $1.g + $1.b) }
             
-            // Sort by brightness for better dithering
-            best16.sort { ($0.r + $0.g + $0.b) < ($1.r + $1.g + $1.b) }
-            
-            // DEBUG: Print palette
-            print("Generated 16-color palette:")
-            for (idx, color) in best16.enumerated() {
-                let brightness = (color.r + color.g + color.b) / 3.0
-                print("  \(idx): R=\(Int(color.r)) G=\(Int(color.g)) B=\(Int(color.b)) Brightness=\(Int(brightness))")
+            print("Generated 8-color palette:")
+            for (idx, color) in best8.enumerated() {
+                let col = idx < 4 ? "Even" : "Odd"
+                print("  \(idx) (\(col)): R=\(Int(color.r)) G=\(Int(color.g)) B=\(Int(color.b))")
             }
             
-            for _ in 0..<200 { finalPalettes.append(best16) }
+            // Build palette: 0-3 (Even), 4-7 (Odd), 8-15 (Duplicates)
+            var enhancedPalette = [RGB]()
+            enhancedPalette.append(contentsOf: Array(best8[0..<4]))  // Even (0-3)
+            enhancedPalette.append(contentsOf: Array(best8[4..<8]))  // Odd (4-7)
+            enhancedPalette.append(contentsOf: Array(best8[0..<4]))  // Duplicate Even (8-11)
+            enhancedPalette.append(contentsOf: Array(best8[4..<8]))  // Duplicate Odd (12-15)
+            
+            for _ in 0..<200 { finalPalettes.append(enhancedPalette) }
             
         } else if is640 {
             // A. 640 MODE - 4 colors with guaranteed brightness range
@@ -260,9 +304,157 @@ class AppleIIGSConverter: RetroMachine {
             
         } else {
             // C. TRUE 3200 MODE
-            // Step 1: Generate optimal palette for each scanline
-            var linePalettes = [[RGB]]()
-            for y in 0..<targetH {
+            let usePaletteReuse = quantMethod.contains("Reuse")
+            
+            if usePaletteReuse {
+                print("=== 3200 MODE: PALETTE REUSE ===")
+                print("Merge Threshold: \(mergeThreshold)")
+                
+                // Sequential palette reuse: try to reuse previous scanline's palette
+                var linePalettes = [[RGB]]()
+                var uniquePaletteCount = 0
+                
+                for y in 0..<targetH {
+                    let rowStart = y * targetW
+                    let rowEnd = rowStart + targetW
+                    
+                    var rowPixels: [PixelFloat] = []
+                    for i in rowStart..<rowEnd {
+                        let p = rawPixels[i]
+                        rowPixels.append(PixelFloat(
+                            r: max(0, min(255, p.r)),
+                            g: max(0, min(255, p.g)),
+                            b: max(0, min(255, p.b))
+                        ))
+                    }
+                    
+                    if y == 0 {
+                        // First scanline: always generate new palette
+                        let newPalette = generatePaletteMedianCut(pixels: rowPixels, maxColors: 16)
+                        linePalettes.append(newPalette)
+                        uniquePaletteCount = 1
+                    } else {
+                        // Try to reuse previous scanline's palette
+                        let previousPalette = linePalettes[y - 1]
+                        
+                        // Calculate how well previous palette fits this scanline
+                        let error = calculatePaletteFitError(pixels: rowPixels, palette: previousPalette)
+                        
+                        if error <= mergeThreshold {
+                            // Error is acceptable - REUSE previous palette
+                            linePalettes.append(previousPalette)
+                        } else {
+                            // Error too high - GENERATE new palette
+                            let newPalette = generatePaletteMedianCut(pixels: rowPixels, maxColors: 16)
+                            linePalettes.append(newPalette)
+                            uniquePaletteCount += 1
+                        }
+                    }
+                }
+                
+                print("Generated \(uniquePaletteCount) unique palettes for 200 scanlines")
+                
+                // Now map these palettes to 16 slots
+                paletteSlotMapping = [Int](repeating: 0, count: 200)
+                
+                if uniquePaletteCount <= 16 {
+                    // Find unique palettes and assign slots
+                    var uniquePalettes = [[RGB]]()
+                    var paletteToSlot = [String: Int]()
+                    
+                    for (lineIdx, palette) in linePalettes.enumerated() {
+                        let paletteKey = paletteToKey(palette)
+                        
+                        if let existingSlot = paletteToSlot[paletteKey] {
+                            paletteSlotMapping[lineIdx] = existingSlot
+                        } else {
+                            let newSlot = uniquePalettes.count
+                            uniquePalettes.append(palette)
+                            paletteToSlot[paletteKey] = newSlot
+                            paletteSlotMapping[lineIdx] = newSlot
+                        }
+                    }
+                    
+                    finalPalettes = uniquePalettes
+                    while finalPalettes.count < 16 {
+                        finalPalettes.append(uniquePalettes[0])
+                    }
+                    
+                } else {
+                    print("Warning: \(uniquePaletteCount) unique palettes > 16, need to merge further")
+                    
+                    // Group consecutive similar palettes into 16 slots
+                    var slotPalettes = [[RGB]]()
+                    var currentSlot = 0
+                    var linesPerSlot = 200 / 16
+                    
+                    for slot in 0..<16 {
+                        let startLine = slot * linesPerSlot
+                        let endLine = (slot == 15) ? 200 : (slot + 1) * linesPerSlot
+                        
+                        // Use the palette from the middle line of this group
+                        let midLine = (startLine + endLine) / 2
+                        slotPalettes.append(linePalettes[midLine])
+                        
+                        for lineIdx in startLine..<endLine {
+                            paletteSlotMapping[lineIdx] = slot
+                        }
+                    }
+                    
+                    finalPalettes = slotPalettes
+                }
+                
+                // CRITICAL: Quantize pixels using the actual palettes from palette reuse
+                // Use linePalettes directly, not the mapped slots
+                for y in 0..<targetH {
+                    let currentPalette = linePalettes[y]  // Use the ACTUAL palette for this line
+                    
+                    for x in 0..<targetW {
+                        let idx = y * targetW + x
+                        var p = rawPixels[idx]
+                        
+                        p.r = min(255, max(0, p.r))
+                        p.g = min(255, max(0, p.g))
+                        p.b = min(255, max(0, p.b))
+                        
+                        if isOrdered {
+                            let bayerVal = bayerMatrix[(y % 4) * 4 + (x % 4)] / 16.0
+                            let spread = 32.0 * ditherAmount
+                            let offset = (bayerVal - 0.5) * spread
+                            p.r = min(255, max(0, p.r + offset))
+                            p.g = min(255, max(0, p.g + offset))
+                            p.b = min(255, max(0, p.b + offset))
+                        }
+                        
+                        let match = findNearestColor(pixel: p, palette: currentPalette)
+                        
+                        // Map to the slot index for this line
+                        let paletteSlot = paletteSlotMapping[y]
+                        let slotPalette = finalPalettes[paletteSlot]
+                        
+                        // Find this color in the slot palette
+                        let slotMatch = findNearestColor(pixel: PixelFloat(r: match.rgb.r, g: match.rgb.g, b: match.rgb.b), palette: slotPalette)
+                        outputIndices[idx] = slotMatch.index
+                        
+                        if !isNone && !isOrdered {
+                            let errR = (p.r - match.rgb.r) * ditherAmount
+                            let errG = (p.g - match.rgb.g) * ditherAmount
+                            let errB = (p.b - match.rgb.b) * ditherAmount
+                            
+                            distributeError(source: &rawPixels, x: x, y: y, w: targetW, h: targetH,
+                                            errR: errR, errG: errG, errB: errB,
+                                            kernel: kernel)
+                        }
+                    }
+                }
+                
+            } else {
+                // PER-SCANLINE METHOD (Original/Default)
+                print("=== 3200 MODE: PER-SCANLINE ===")
+                
+                // Step 1: Generate optimal palette for each scanline
+                var linePalettes = [[RGB]]()
+                for y in 0..<targetH {
                 let rowStart = y * targetW
                 let rowEnd = rowStart + targetW
                 
@@ -358,6 +550,7 @@ class AppleIIGSConverter: RetroMachine {
                     }
                 }
             }
+            } // End of per-scanline else block
         }
         
         // Loop for non-3200 rendering
@@ -379,17 +572,47 @@ class AppleIIGSConverter: RetroMachine {
                         p.b = min(255, max(0, p.b + offset))
                     }
                     
-                    let match = findNearestColor(pixel: p, palette: currentPalette)
-                    outputIndices[idx] = match.index
-                    
-                    if !isNone && !isOrdered {
-                        let errR = (p.r - match.rgb.r) * ditherAmount
-                        let errG = (p.g - match.rgb.g) * ditherAmount
-                        let errB = (p.b - match.rgb.b) * ditherAmount
+                    // Column-aware quantization for Desktop/Enhanced 640 modes
+                    if is640 && (isDesktop || isEnhanced) {
+                        // Even columns use indices 0-3, Odd columns use indices 4-7
+                        let isEvenColumn = (x % 2 == 0)
+                        let paletteStart = isEvenColumn ? 0 : 4
+                        let paletteEnd = paletteStart + 4
                         
-                        distributeError(source: &rawPixels, x: x, y: y, w: targetW, h: targetH,
-                                        errR: errR, errG: errG, errB: errB,
-                                        kernel: kernel)
+                        // Extract the 4-color sub-palette for this column
+                        let subPalette = Array(currentPalette[paletteStart..<paletteEnd])
+                        
+                        // Find nearest color in the constrained palette
+                        let match = findNearestColor(pixel: p, palette: subPalette)
+                        
+                        // Store index offset by palette start
+                        outputIndices[idx] = match.index + paletteStart
+                        
+                        // Error diffusion with the actual matched color
+                        if !isNone && !isOrdered {
+                            let actualColor = currentPalette[match.index + paletteStart]
+                            let errR = (p.r - actualColor.r) * ditherAmount
+                            let errG = (p.g - actualColor.g) * ditherAmount
+                            let errB = (p.b - actualColor.b) * ditherAmount
+                            
+                            distributeError(source: &rawPixels, x: x, y: y, w: targetW, h: targetH,
+                                            errR: errR, errG: errG, errB: errB,
+                                            kernel: kernel)
+                        }
+                    } else {
+                        // Standard quantization for other modes
+                        let match = findNearestColor(pixel: p, palette: currentPalette)
+                        outputIndices[idx] = match.index
+                        
+                        if !isNone && !isOrdered {
+                            let errR = (p.r - match.rgb.r) * ditherAmount
+                            let errG = (p.g - match.rgb.g) * ditherAmount
+                            let errB = (p.b - match.rgb.b) * ditherAmount
+                            
+                            distributeError(source: &rawPixels, x: x, y: y, w: targetW, h: targetH,
+                                            errR: errR, errG: errG, errB: errB,
+                                            kernel: kernel)
+                        }
                     }
                 }
             }
@@ -398,8 +621,9 @@ class AppleIIGSConverter: RetroMachine {
         // 5. Generate Results
         let preview = generatePreviewImage(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH)
         
-        // Desktop and Enhanced modes use 640 resolution but 320 color mode (16 colors, not 4)
-        let shrIs640Mode = is640 && !isDesktop && !isEnhanced
+        // All 640 modes (regular, Desktop, Enhanced) are stored in 640 mode with 4 colors
+        let shrIs640Mode = is640
+        
         let shrData = generateSHRData(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH, is640: shrIs640Mode)
         
         let fileManager = FileManager.default
@@ -420,6 +644,41 @@ class AppleIIGSConverter: RetroMachine {
             pixels[i].g = gray + (p.g - gray) * amount
             pixels[i].b = gray + (p.b - gray) * amount
         }
+    }
+    
+    func calculatePaletteFitError(pixels: [PixelFloat], palette: [RGB]) -> Double {
+        // Calculate average quantization error when using this palette
+        var totalError = 0.0
+        
+        for pixel in pixels {
+            let match = findNearestColor(pixel: pixel, palette: palette)
+            let dr = pixel.r - match.rgb.r
+            let dg = pixel.g - match.rgb.g
+            let db = pixel.b - match.rgb.b
+            totalError += sqrt(dr*dr + dg*dg + db*db)
+        }
+        
+        return totalError / Double(pixels.count)
+    }
+    
+    func paletteToKey(_ palette: [RGB]) -> String {
+        // Create a unique string key for this palette
+        return palette.map { "\(Int($0.r)),\(Int($0.g)),\(Int($0.b))" }.joined(separator: "|")
+    }
+    
+    func palettesDistance(_ pal1: [RGB], _ pal2: [RGB]) -> Double {
+        // Calculate average color distance between two palettes
+        var totalDistance = 0.0
+        let count = min(pal1.count, pal2.count)
+        
+        for i in 0..<count {
+            let dr = pal1[i].r - pal2[i].r
+            let dg = pal1[i].g - pal2[i].g
+            let db = pal1[i].b - pal2[i].b
+            totalDistance += sqrt(dr*dr + dg*dg + db*db)
+        }
+        
+        return totalDistance / Double(count)
     }
     
     func generatePaletteMedianCut(pixels: [PixelFloat], maxColors: Int) -> [RGB] {
