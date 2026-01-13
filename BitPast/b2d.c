@@ -71,7 +71,7 @@ Image Fragment DHGR Color "Sprite" Output - Option "F"
 When scale is not set the maximum BMP input resolution for "Sprites" is 140 x
 192, and when scale is set the maximum is 280 x 192.
 
-Overlay File Size - 256 color BMP - verbatim sizes
+use_overlay File Size - 256 color BMP - verbatim sizes
 
 HGR and DHGR Color Output - 140 x 192
 HGR Mono Output - 280 x 192
@@ -82,9 +82,9 @@ Additional Input Files - Text Format
 
 - Palette Files (various formats)
 - User Definable Dither Files (see documentation and read source below)
-- Overlay Titling Text (uses built-in TomThumb font)
+- use_overlay Titling Text (uses built-in TomThumb font)
 
-Note: The Overlay Option for either a BMP or Text overlay does not apply to
+Note: The use_overlay Option for either a BMP or Text use_overlay does not apply to
 image fragment output.
 
 Output Summary
@@ -153,11 +153,11 @@ Bmp2DHR also accepts several secondary input files.
 - Text Files for titling using a built-in font (HGR and DHGR full-screen conversion only)
 - Palette Files in several text-based formats
 - External Error Diffusion user-defined Dither Patterns in text format
-- 256 color BMP files for overlaying the input image with verbatim text and simple pixel graphics
+- 256 color BMP files for use_overlaying the input image with verbatim text and simple pixel graphics
 (HGR and DHGR full-screen conversion only)
 
 For DHGR sprite output external Palette files and Dither Pattern files can be
-used, but titling and overlaying is targeted at full-screen output.
+used, but titling and use_overlaying is targeted at full-screen output.
 
 Apple II Output Format Specification Summary
 --------------------------------------------
@@ -284,9 +284,10 @@ documentation can be reviewed for additional information.
 #include <math.h>
 
 #include "b2d.h"
+extern unsigned char tomthumb[];
 #include <ctype.h>
-
-/* ***************************************************************** */
+/* Fix for undeclared tomthumb */
+extern unsigned char tomthumb[];/* ***************************************************************** */
 /* ======================= string data ============================= */
 /* ***************************************************************** */
 
@@ -2482,11 +2483,11 @@ sshort ReadMaskLine(ushort y)
 	ushort x, packet;
 	uchar ch;
 
-	if (overlay == 0) return INVALID;
+	if (use_overlay == 0) return INVALID;
 
 	if (mono == 1) {
-		/* two sizes for mono overlays depending on output */
-		/* 560 x 192 DHGR overlay or 280 x 192 HGR overlay */
+		/* two sizes for mono use_overlays depending on output */
+		/* 560 x 192 DHGR use_overlay or 280 x 192 HGR use_overlay */
 		if (hgroutput == 1) packet = 280;
 		else packet = 560;
 	}
@@ -2594,18 +2595,20 @@ uchar AdjustShortPixel(int clip,sshort *buf,sshort value)
 /* helper function for ReadCustomDither */
 int InitCustomLine(char *ptr, int lidx)
 {
-	int cnt=0, i;
+    int cnt=0, i;
 
     customdither[lidx][cnt] = (sshort) atoi(ptr);
 
     /* enforce 11 fields */
-	for (i=0;ptr[i]!=0;i++) {
-		if (ptr[i]== ',') {
-			cnt++;
-			if (cnt < 11) customdither[lidx][cnt] = (sshort) atoi((char*)&ptr[i+1]);
-		}
-	}
-	if (cnt != 10) return -1;
+    for (i=0;ptr[i]!=0;i++) {
+        if (ptr[i]== ',') {
+            cnt++;
+            if (cnt < 11) customdither[lidx][cnt] = (sshort) atoi((char*)&ptr[i+1]);
+        }
+    }
+    if (cnt != 10) return -1;
+    
+    return 0;  // SUCCESS - return 0 when cnt == 10
 }
 
 
@@ -3315,13 +3318,13 @@ void FloydSteinberg(int y, int width)
     /* turn-off hgr color dither */
 	dither7 = 0;
 
-   /* get the mask line from the mask file if we are overlaying this image */
+   /* get the mask line from the mask file if we are use_overlaying this image */
    /* the mask file is a 256 color BMP and is applied after rendering is complete and */
    /* immediately before Preview files are written to disk and the DHGR buffer is plotted */
    /* for monochrome masking the maskfile is either 280 x 192 or 560 x 192 */
    /* for color masking the maskfile is always 140 x 192 */
 
-   if (overlay == 1) {
+   if (use_overlay == 1) {
    		ReadMaskLine(y);
    }
 
@@ -3331,16 +3334,16 @@ void FloydSteinberg(int y, int width)
 
 
         maskpixel = 0;
-        if (overlay == 1) {
+        if (use_overlay == 1) {
 			overcolor = maskline[x];
 			if (mono == 1) {
 				/* for monochrome masking if an area is black or white
-				   it overlays the image */
+				   it use_overlays the image */
 				if (overcolor == 0 || overcolor == 15) maskpixel = 1;
 			}
 			else {
 				/* for color masking clearcolor is the transparent color for the mask */
-				/* if the overlay color is some other color then the pixel is overlaid
+				/* if the use_overlay color is some other color then the pixel is overlaid
 	     		   with the mask color */
 				if (overcolor != clearcolor) maskpixel = 1;
 			}
@@ -4147,8 +4150,8 @@ FILE *ReformatBMP(FILE *fp)
 }
 
 
-/* overlay using a 256 color BMP file in verbatim output resolution */
-/* HGR and DHGR color overlay files are 140 x 192 */
+/* use_overlay using a 256 color BMP file in verbatim output resolution */
+/* HGR and DHGR color use_overlay files are 140 x 192 */
 /* HGR and DHGR monochrome are 280 x 192 and 560 x 192 respectively */
 sshort OpenMaskFile()
 {
@@ -4158,9 +4161,9 @@ sshort OpenMaskFile()
 	double dummy;
 	int c;
 
-    if (overlay == 0) return status;
+    if (use_overlay == 0) return status;
 
-    overlay = 0;
+    use_overlay = 0;
     fpmask = fopen(maskfile,"rb");
     if (NULL == fpmask) {
 		printf("Error opening maskfile %s\n",maskfile);
@@ -4239,7 +4242,7 @@ sshort OpenMaskFile()
 		}
 		fseek(fpmask,bfi.bfOffBits,SEEK_SET);
 		status = SUCCESS;
-		overlay = 1;
+		use_overlay = 1;
 		break;
 	}
 
@@ -4504,7 +4507,7 @@ sshort Convert()
     /* if using a mask file, open it now */
     /* leave it open throughout the conversion session */
     /* it will be closed in main before exiting */
-	if (overlay == 1)OpenMaskFile();
+	if (use_overlay == 1)OpenMaskFile();
 
     if((fp=fopen(bmpfile,"rb"))==NULL) {
 		printf("Error Opening %s for reading!\n",bmpfile);
@@ -4700,7 +4703,7 @@ sshort Convert()
 		fseek(fp,pos,SEEK_SET);
 		fread((char *)&bmpscanline[0],1,packet,fp);
 
-        if (overlay == 1)ReadMaskLine(y);
+        if (use_overlay == 1)ReadMaskLine(y);
 
 		if (scale == 1) {
 			for (x = 0,i = 0, x1=0; x < bmpwidth; x++) {
@@ -4753,10 +4756,10 @@ sshort Convert()
                 if (dither == 0) {
 
 					maskpixel = 0;
-					if (overlay == 1) {
+					if (use_overlay == 1) {
 						overcolor = maskline[x/2];
 						/* clearcolor is the transparent color for the mask */
-						/* if the overlay color is some other color then the pixel is overlaid
+						/* if the use_overlay color is some other color then the pixel is overlaid
 						   with the mask color */
 						if (overcolor != clearcolor) maskpixel = 1;
 					}
@@ -4804,10 +4807,10 @@ sshort Convert()
 				}
 				else {
 					maskpixel = 0;
-					if (overlay == 1) {
+					if (use_overlay == 1) {
 						overcolor = maskline[x];
 						/* clearcolor is the transparent color for the mask */
-						/* if the overlay color is some other color then the pixel is overlaid
+						/* if the use_overlay color is some other color then the pixel is overlaid
 						   with the mask color */
 						if (overcolor != clearcolor) maskpixel = 1;
 					}
@@ -4960,7 +4963,7 @@ sshort ConvertMono()
     /* if using a mask file, open it now */
     /* leave it open throughout the conversion session */
     /* it will be closed in main before exiting */
-	if (overlay == 1)OpenMaskFile();
+	if (use_overlay == 1)OpenMaskFile();
 
 	packet = bmpwidth * 3;
     /* BMP scanlines are padded to a multiple of 4 bytes (DWORD) */
@@ -5541,7 +5544,7 @@ sshort GetUserTextFile()
 
 
 
-int main(int argc, char **argv)
+int b2d_actual_main(int argc, char **argv)
 {
 	sshort idx,jdx,kdx,palidx=5,previewidx=5,hgrpalidx=5,pseudopal=0,
 	       status,basename=0,plainname=0;
@@ -5771,7 +5774,7 @@ int main(int argc, char **argv)
 							   /* if we are using Sheldon's DHGR palette modified for HGR we use the C suffix */
 							   if (hgrpalidx == 16)strcat(hgroptions,"TC");
 							   else strcat(hgroptions,"C");
-							   clearcolor = 3; /* set overlay color to violet */
+							   clearcolor = 3; /* set use_overlay color to violet */
 						   }
 				           /* default long file name for HGR color */
 				           /* HGR long commands - can be followed by separate HGR short commands to over-ride fixed settings */
@@ -5837,7 +5840,7 @@ int main(int argc, char **argv)
 									   strcat(hgroptions,"S");
 								   }
 								   else if (cmpstr("hgrw", (char *)&wordptr[0]) == SUCCESS) {
-									   /* optionally double colors are set with a double white overlay */
+									   /* optionally double colors are set with a double white use_overlay */
 									   if (hgrcolortype == (char)0) hgrcolortype = 'B';
 									   puts("HGR Option W: double color and white pixels");
 									   doublecolors = 1;
@@ -5845,7 +5848,7 @@ int main(int argc, char **argv)
 									   strcat(hgroptions,"W");
 								   }
 								   else if (cmpstr("hgrb", (char *)&wordptr[0]) == SUCCESS) {
-									   /* optionally double colors are set with a double black overlay */
+									   /* optionally double colors are set with a double black use_overlay */
 									   if (hgrcolortype == (char)0) hgrcolortype = 'B';
 									   puts("HGR Option B: double color and black pixels");
 									   doublecolors = 1;
@@ -5868,7 +5871,7 @@ int main(int argc, char **argv)
 										/* set HGR output for green and violet only */
 										/* color type is not needed */
 										/* no pixel options - individual pixels only */
-										clearcolor = 6; /* set overlay color to blue */
+										clearcolor = 6; /* set use_overlay color to blue */
 										puts("HGR Option G: Green and Violet Palette Only");
 										grpal[6][0]  = grpal[6][1]  = grpal[6][2]  = 0;
 										grpal[9][0]  = grpal[9][1]  = grpal[9][2]  = 0;
@@ -5958,7 +5961,7 @@ int main(int argc, char **argv)
                           merge = 1;
                           break;
 
-                case 'O': /* use an 8 bit overlay file - must be 140 x 192 */
+                case 'O': /* use an 8 bit use_overlay file - must be 140 x 192 */
                           /* transparent color must be set or default is 128,128,128 - color 5 */
  				          c = wordptr[1];
  				          if (c == (uchar)0) break;
@@ -5966,7 +5969,7 @@ int main(int argc, char **argv)
  				          if (c!= (uchar)255) {
  				        	clearcolor = c; break;
 						  }
-                          overlay = 1;
+                          use_overlay = 1;
                 		  strcpy(maskfile,(char *)&wordptr[1]);
                 		  /* maskfile must have an extension or .bmp is assumed */
                 		  /* this avoids typing extensions which I dislike doing */
@@ -6182,7 +6185,7 @@ int main(int argc, char **argv)
 	}
 
 	if (loresoutput == 1) {
-		overlay = 0;
+		use_overlay = 0;
 		if (outputtype == SPRITE_OUTPUT) {
 			outputtype = BIN_OUTPUT;
 			puts("Lo-Res output and Image Fragment output are mutually exclusive.\nImage Fragment output cancelled!");

@@ -2,6 +2,9 @@
  * b2d_stubs.c
  * Stub implementations for functions declared in b2d.h
  * Replace these with actual implementations when available
+ * 
+ * DO NOT define B2D_IMPLEMENTATION here - that's only for b2d_globals.c
+ * DO NOT define global variables here - they're in b2d_globals.c
  */
 
 #include "b2d.h"
@@ -23,3 +26,4 @@ int dhrgetpixel(int x, int y) {
     // Return default pixel value for now
     return 0;  // ALWAYS RETURN A VALUE
 }
+

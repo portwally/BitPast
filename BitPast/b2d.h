@@ -284,6 +284,8 @@ extern unsigned char mono280[62];
 
 extern uchar dhgr2hgr[16];
 
+extern unsigned char tomthumb[256];
+
 #endif /* B2D_IMPLEMENTATION */
 
 #endif /* BMP2SHR_H */

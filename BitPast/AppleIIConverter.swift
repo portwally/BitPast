@@ -42,6 +42,7 @@ class AppleIIConverter: RetroMachine {
             label: "Dither Algo",
             key: "dither",
             values: [
+                "None",
                 "Floyd-Steinberg",
                 "Jarvis, Judice, Ninke",
                 "Stucki",
@@ -49,10 +50,9 @@ class AppleIIConverter: RetroMachine {
                 "Burkes",
                 "Sierra",
                 "Sierra-2",
-                "Sierra-Lite",
-                "None"
+                "Sierra-Lite"
             ],
-            selectedValue: "Floyd-Steinberg"
+            selectedValue: "None"  // Changed default to None
         ),
         
         // 5. PALETTE (Clean Names)
@@ -81,7 +81,7 @@ class AppleIIConverter: RetroMachine {
             label: "Cross-hatch Pattern",
             key: "crosshatch",
             range: 0.0...10.0,
-            defaultValue: 3.0
+            defaultValue: 0.0  // Changed default to 0
         ),
         
         // 7. THRESHOLD FOR CROSS-HATCH (Z)
@@ -89,7 +89,7 @@ class AppleIIConverter: RetroMachine {
             label: "Cross-hatch Threshold",
             key: "z_threshold",
             range: 0.0...40.0,
-            defaultValue: 20.0
+            defaultValue: 0.0  // Changed default to 0
         ),
         
         // 8. ERROR-DIFFUSION MATRIX (E)
@@ -118,6 +118,7 @@ class AppleIIConverter: RetroMachine {
         // --- SAFE RESOLUTION MAPPING ---
         var targetW = 280
         var targetH = 192
+        var forceMonoMode = false  // Some resolutions require mono mode
         
         if mode.contains("DLGR") { targetW = 80; targetH = 48 }
         else if mode.contains("LGR") { targetW = 40; targetH = 48 }
@@ -125,31 +126,69 @@ class AppleIIConverter: RetroMachine {
             if resString.contains("640x480") { targetW = 640; targetH = 480 }
             else if resString.contains("640") { targetW = 640; targetH = 400 }
             else if resString.contains("560x384") { targetW = 560; targetH = 384 }
-            else if resString.contains("560") { targetW = 560; targetH = 192 }
+            else if resString.contains("560x192") { 
+                targetW = 560; targetH = 192
+                forceMonoMode = true  // 560x192 requires MONO mode
+            }
+            else if resString.contains("560") { targetW = 560; targetH = 192; forceMonoMode = true }
             else if resString.contains("320") { targetW = 320; targetH = 200 }
+            else if resString.contains("140x192") { targetW = 140; targetH = 192 }
             else { targetW = 280; targetH = 192 }
         }
         
         // --- SAVE BMP ---
         let readyImage = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
+        
+        // Validate the resized image has the correct dimensions
+        if readyImage.size.width != CGFloat(targetW) || readyImage.size.height != CGFloat(targetH) {
+            print("⚠️ WARNING: Image resize failed. Expected \(targetW)x\(targetH), got \(Int(readyImage.size.width))x\(Int(readyImage.size.height))")
+            // Continue anyway - b2d will reject it if it's really wrong
+        }
+        
         try readyImage.saveAsStrict24BitBMP(to: inputUrl)
         
-        // --- B2D ARGUMENTS ---
-        guard let toolUrl = Bundle.main.url(forResource: "b2d", withExtension: nil) else {
-            throw NSError(domain: "BitPast", code: 404, userInfo: [NSLocalizedDescriptionKey: "b2d missing"])
+        // Verify the BMP was written successfully
+        if let attrs = try? fileManager.attributesOfItem(atPath: inputUrl.path),
+           let fileSize = attrs[.size] as? Int64 {
+            print("✅ BMP saved: \(inputUrl.lastPathComponent) (\(fileSize) bytes, \(targetW)x\(targetH))")
+        } else {
+            print("⚠️ WARNING: BMP file may not have been saved correctly")
         }
+        
+        // --- B2D ARGUMENTS ---
+        // Die executable wird nicht mehr benötigt, da wir den C-Code direkt eingebunden haben!
         
         var args: [String] = [inputFilename]
         
         // Mode Flags
-        if mode.contains("DHGR") { if colorType == "Monochrome" { args.append("MONO") } }
-        else if mode.contains("HGR") { args.append("HGR"); if colorType == "Monochrome" { args.append("MONO") } }
+        // Special handling for specific resolutions
+        if forceMonoMode {
+            // 560x192 uses MONO mode only (not HGR)
+            args.append("MONO")
+        }
+        else if mode.contains("DHGR") { 
+            // DHGR mode (default - no flag needed for color)
+            if colorType == "Monochrome" { 
+                args.append("MONO") 
+            }
+        }
+        else if mode.contains("HGR") { 
+            // HGR mode ALWAYS needs the HGR flag
+            args.append("HGR")
+            
+            if colorType == "Monochrome" { 
+                args.append("MONO") 
+            } 
+        }
         else if mode.contains("DLGR") { args.append("DL") }
         else if mode.contains("LGR") { args.append("L") }
         
         // --- DITHER MAPPING (Internal ID) ---
         let ditherName = options.first(where: {$0.key == "dither"})?.selectedValue ?? ""
         switch ditherName {
+        case "None":
+            // Don't add any dither flag - let b2d use its default (which should be none after reset)
+            break
         case "Floyd-Steinberg":       args.append("-D1")
         case "Jarvis, Judice, Ninke": args.append("-D2")
         case "Stucki":                args.append("-D3")
@@ -162,10 +201,13 @@ class AppleIIConverter: RetroMachine {
         }
         
         // --- ERROR MATRIX (E) ---
-        if let eStr = options.first(where: {$0.key == "error_matrix"})?.selectedValue,
-           let eVal = Double(eStr),
-           eVal > 0 {
-            args.append("-E\(Int(eVal))")
+        // Only add error matrix if dithering is enabled (not "None")
+        if ditherName != "None" {
+            if let eStr = options.first(where: {$0.key == "error_matrix"})?.selectedValue,
+               let eVal = Double(eStr),
+               eVal > 0 {
+                args.append("-E\(Int(eVal))")
+            }
         }
         
         // --- PALETTE MAPPING (Internal ID) ---
@@ -195,18 +237,59 @@ class AppleIIConverter: RetroMachine {
         
         // --- DEBUG PRINT ---
         print("\n---------- B2D DEBUG ----------")
-        print("Cmd: \"\(toolUrl.path)\" \(args.joined(separator: " "))")
+        print("Args: b2d \(args.joined(separator: " "))")
         print("-------------------------------\n")
         
-        let process = Process()
-        process.executableURL = toolUrl
-        process.arguments = args
-        process.currentDirectoryURL = tempDir
-        try process.run()
-        process.waitUntilExit()
+        // Wechsel ins Temp-Verzeichnis (b2d erwartet das)
+        let originalDir = fileManager.currentDirectoryPath
+        fileManager.changeCurrentDirectoryPath(tempDir.path)
+        
+        // Baue argv-Array für C
+        var cArgs: [UnsafeMutablePointer<CChar>?] = []
+        cArgs.append(strdup("b2d")) // argv[0] = Programmname
+        
+        for arg in args {
+            cArgs.append(strdup(arg))
+        }
+        cArgs.append(nil) // argv muss mit NULL enden
+        
+        // Rufe b2d direkt auf (keine executable mehr nötig!)
+        let exitCode = b2d_main_wrapper(Int32(cArgs.count - 1), &cArgs)
+        
+        // Zurück ins Original-Verzeichnis
+        fileManager.changeCurrentDirectoryPath(originalDir)
+        
+        // Cleanup
+        for ptr in cArgs where ptr != nil {
+            free(ptr)
+        }
+        
+        guard exitCode == 0 else {
+            // Clean up the failed input file
+            try? fileManager.removeItem(at: inputUrl)
+            
+            let errorMsg: String
+            if exitCode == 1 {
+                errorMsg = "b2d rejected the BMP file (wrong format). The image may have invalid dimensions or unsupported format."
+            } else {
+                errorMsg = "b2d conversion failed with code \(exitCode)"
+            }
+            
+            throw NSError(domain: "BitPast", code: Int(exitCode),
+                         userInfo: [NSLocalizedDescriptionKey: errorMsg])
+        }
         
         // --- RESULTS ---
         let allFiles = try fileManager.contentsOfDirectory(at: tempDir, includingPropertiesForKeys: nil)
+        
+        // Debug: Print all files in temp directory
+        print("📁 Files in temp directory:")
+        for file in allFiles {
+            let name = file.lastPathComponent
+            if name.localizedCaseInsensitiveContains(baseNameRaw) {
+                print("   ✅ \(name)")
+            }
+        }
         
         let previewFile = allFiles.first { file in
             let name = file.lastPathComponent
@@ -221,12 +304,15 @@ class AppleIIConverter: RetroMachine {
             file.pathExtension.lowercased() != "bmp"
         }
         
+        print("🖼️ Preview file: \(previewFile?.lastPathComponent ?? "NOT FOUND")")
+        print("📦 Asset files: \(assets.map { $0.lastPathComponent })")
+        
         if let outputUrl = previewFile, let img = NSImage(contentsOf: outputUrl) {
             try? fileManager.removeItem(at: inputUrl)
             return ConversionResult(previewImage: img, fileAssets: assets)
         }
         
-        throw NSError(domain: "BitPast", code: 500, userInfo: [NSLocalizedDescriptionKey: "Conversion failed. No preview."])
+        throw NSError(domain: "BitPast", code: 500, userInfo: [NSLocalizedDescriptionKey: "Conversion failed. No preview. Exit code: \(exitCode)"])
     }
 }
 

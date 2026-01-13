@@ -9,6 +9,10 @@
 #define B2D_IMPLEMENTATION 1
 #include "b2d.h"
 
+/* That's it! b2d.h creates all the variable definitions when B2D_IMPLEMENTATION is defined. */
+/* All other .c files that include b2d.h will see them as extern declarations. */
+
+
 /* Output buffers */
 uchar *dhrbuf = NULL;
 uchar *hgrbuf = NULL;
@@ -282,3 +286,6 @@ uchar dhgr2hgr[16] = {
     HBLACK, HBLACK, HBLACK, HVIOLET, HBLACK, HBLACK, HBLUE, HBLACK,
     HBLACK, HORANGE, HBLACK, HBLACK, HGREEN, HBLACK, HBLACK, HWHITE
 };
+/* TomThumb font data - stub implementation */
+unsigned char tomthumb[256] = {0};
+
