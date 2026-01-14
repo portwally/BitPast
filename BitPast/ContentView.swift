@@ -23,28 +23,57 @@ struct ContentView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            
+
             // 1. OBERER BEREICH: SPLIT VIEW
             HSplitView {
                 // LINKER BEREICH: IMAGE BROWSER
                 VStack(spacing: 0) {
                     HStack {
-                        Text("Image Browser").font(.headline).foregroundColor(.secondary)
+                        Text("Image Browser")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.secondary)
                         Spacer()
                         if viewModel.selectedImageId != nil {
-                            Button(action: { viewModel.removeSelectedImage() }) { Image(systemName: "trash") }.buttonStyle(.plain)
+                            Button(action: { viewModel.removeSelectedImage() }) {
+                                Image(systemName: "trash")
+                                    .foregroundStyle(.secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Remove selected image")
                         }
-                        Button(action: { viewModel.selectImagesFromFinder() }) { Image(systemName: "plus") }
+                        Button(action: { viewModel.selectImagesFromFinder() }) {
+                            Image(systemName: "plus.circle.fill")
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(.blue)
+                        }
+                        .buttonStyle(.plain)
+                        .help("Add images")
                     }
-                    .padding(8).background(Color(NSColor.controlBackgroundColor))
+                    .frame(height: 38)
+                    .padding(.horizontal, 12)
+                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+
+                    Divider()
                     
                     if viewModel.inputImages.isEmpty {
                         ZStack {
-                            Color(NSColor.controlBackgroundColor)
-                            VStack(spacing: 15) {
-                                Image(systemName: "photo.stack").resizable().aspectRatio(contentMode: .fit).frame(width: 50, height: 50).symbolRenderingMode(.hierarchical).foregroundColor(.secondary)
-                                Text("Drag Images Here").font(.headline).foregroundColor(.secondary)
+                            Color(NSColor.controlBackgroundColor).opacity(0.3)
+                            VStack(spacing: 16) {
+                                Image(systemName: "photo.stack")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 64, height: 64)
+                                    .symbolRenderingMode(.hierarchical)
+                                    .foregroundColor(Color(NSColor.tertiaryLabelColor))
+                                Text("Drag Images Here")
+                                    .font(.title3)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(.secondary)
+                                Text("or click + to add")
+                                    .font(.subheadline)
+                                    .foregroundColor(Color(NSColor.tertiaryLabelColor))
                             }
+                            .padding()
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         ScrollView {
@@ -66,29 +95,67 @@ struct ContentView: View {
                 // RECHTER BEREICH: VORSCHAU
                 VStack(spacing: 0) {
                     HStack {
-                        Text("Preview").font(.headline).foregroundColor(.secondary)
+                        Text("Preview")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.secondary)
                         Spacer()
-                        HStack(spacing: 0) {
-                            Button(action: { if zoomLevel > 0.2 { zoomLevel -= 0.2 } }) { Image(systemName: "minus.magnifyingglass") }.buttonStyle(.bordered)
-                            Text("\(Int(zoomLevel * 100))%").monospacedDigit().font(.caption).frame(width: 45)
-                            Button(action: { if zoomLevel < 5.0 { zoomLevel += 0.2 } }) { Image(systemName: "plus.magnifyingglass") }.buttonStyle(.bordered)
+                        HStack(spacing: 4) {
+                            Button(action: { if zoomLevel > 0.2 { zoomLevel -= 0.2 } }) {
+                                Image(systemName: "minus.magnifyingglass")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .help("Zoom out")
+
+                            Text("\(Int(zoomLevel * 100))%")
+                                .monospacedDigit()
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .frame(width: 45)
+
+                            Button(action: { if zoomLevel < 5.0 { zoomLevel += 0.2 } }) {
+                                Image(systemName: "plus.magnifyingglass")
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                            .help("Zoom in")
                         }
                     }
-                    .padding(8)
-                    .background(Color(NSColor.controlBackgroundColor))
-                    .border(Color(NSColor.separatorColor), width: 0.5)
+                    .frame(height: 38)
+                    .padding(.horizontal, 12)
+                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+
+                    Divider()
                     
                     ZStack {
-                        Color.black
+                        Color(NSColor.black)
                         if let img = viewModel.convertedImage {
                             ScrollView([.horizontal, .vertical], showsIndicators: true) {
-                                Image(nsImage: img).resizable().interpolation(.none).aspectRatio(contentMode: .fit)
+                                Image(nsImage: img)
+                                    .resizable()
+                                    .interpolation(.none)
+                                    .aspectRatio(contentMode: .fit)
                                     .frame(width: img.size.width * zoomLevel, height: img.size.height * zoomLevel)
+                                    .shadow(color: .black.opacity(0.3), radius: 10)
                             }
                         } else if viewModel.isConverting {
-                            ProgressView("Converting...").colorScheme(.dark)
+                            VStack(spacing: 12) {
+                                ProgressView()
+                                    .scaleEffect(1.2)
+                                Text("Converting...")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white.opacity(0.8))
+                            }
                         } else {
-                            Text("Ready").foregroundColor(.gray)
+                            VStack(spacing: 12) {
+                                Image(systemName: "photo.badge.arrow.down")
+                                    .font(.system(size: 48))
+                                    .symbolRenderingMode(.hierarchical)
+                                    .foregroundStyle(.white.opacity(0.3))
+                                Text("Select an image to preview")
+                                    .font(.subheadline)
+                                    .foregroundColor(.white.opacity(0.5))
+                            }
                         }
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 }.frame(minWidth: 350)
@@ -100,14 +167,31 @@ struct ContentView: View {
             // 2. UNTERER BEREICH: FIXED HEIGHT
             VStack(spacing: 0) {
                 if let error = viewModel.errorMessage {
-                    Text(error).foregroundColor(.red).font(.caption).frame(maxWidth: .infinity).background(Color.black.opacity(0.1))
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundColor(.orange)
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.primary)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.orange.opacity(0.1))
+                    .overlay(alignment: .bottom) {
+                        Divider()
+                    }
                 }
                 
                 HStack(spacing: 0) {
                     
                     // A. LINKS: SYSTEM (Feste Breite, Symmetrisch zu Rechts)
-                    VStack(alignment: .leading, spacing: 10) {
-                        Text("SYSTEM").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("SYSTEM")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.secondary)
+                            .tracking(0.5)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         VStack(spacing: 8) {
                             // BUTTON 1: Apple II
@@ -160,9 +244,9 @@ struct ContentView: View {
                     
                     // B. MITTE: SLIDER (Scrollbar)
                     ScrollView(.horizontal, showsIndicators: false) {
-                        VStack(alignment: .center, spacing: 15) {
+                        VStack(alignment: .center, spacing: 16) {
                             // OBERE REIHE
-                            HStack(spacing: 20) {
+                            HStack(spacing: 24) {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if topRowKeys.contains(opt.key) {
@@ -170,11 +254,12 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                            
+
                             Divider()
-                            
+                                .padding(.horizontal, 20)
+
                             // UNTERE REIHE
-                            HStack(spacing: 20) {
+                            HStack(spacing: 24) {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if bottomRowKeys.contains(opt.key) {
@@ -183,15 +268,20 @@ struct ContentView: View {
                                 }
                             }
                         }
-                        .padding(12)
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 14)
                         .frame(minWidth: 300, maxWidth: .infinity)
                     }
                     
                     Divider()
                     
                     // C. RECHTS: ACTIONS (Feste Breite, Symmetrisch zu Links)
-                    VStack(spacing: 10) {
-                        Text("ACTIONS").font(.system(size: 10, weight: .bold)).foregroundColor(.secondary).frame(maxWidth: .infinity, alignment: .leading)
+                    VStack(spacing: 12) {
+                        Text("ACTIONS")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundColor(.secondary)
+                            .tracking(0.5)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         
                         Menu {
                             Button("PNG") { viewModel.saveImage(as: .png) }
@@ -207,15 +297,18 @@ struct ContentView: View {
                             }
                         } label: {
                             Label("Save Image...", systemImage: "square.and.arrow.down")
+                                .frame(maxWidth: .infinity)
                         }
                         .menuStyle(.borderedButton)
-                        .frame(maxWidth: .infinity)
+                        .controlSize(.regular)
                         .disabled(viewModel.convertedImage == nil)
-                        
+
                         Button(action: { showDiskSheet = true }) {
                             Label("ProDOS Disk", systemImage: "externaldrive")
+                                .frame(maxWidth: .infinity)
                         }
-                        .frame(maxWidth: .infinity)
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
                         .disabled(viewModel.convertedImage == nil)
                         .sheet(isPresented: $showDiskSheet) {
                             DiskExportSheet(
@@ -253,32 +346,96 @@ struct DiskExportSheet: View {
     @Binding var selectedFormat: ConverterViewModel.DiskFormat
     @Binding var volumeName: String
     let onExport: () -> Void
+
     var body: some View {
-        VStack(spacing: 20) {
-            Text("Create ProDOS Disk").font(.headline)
-            Form {
-                TextField("Volume Name:", text: $volumeName).frame(width: 200).help("Max 15 characters")
-                Picker("Disk Size:", selection: $selectedSize) { ForEach(ConverterViewModel.DiskSize.allCases) { size in Text(size.rawValue).tag(size) } }
-                Picker("Format:", selection: $selectedFormat) { ForEach(ConverterViewModel.DiskFormat.allCases) { format in Text(format.rawValue.uppercased()).tag(format) } }
-            }.padding(.horizontal)
-            HStack {
-                Button("Cancel") { isPresented = false }.keyboardShortcut(.cancelAction)
-                Button("Create Disk Image") { isPresented = false; onExport() }.keyboardShortcut(.defaultAction)
+        VStack(spacing: 24) {
+            VStack(spacing: 8) {
+                Image(systemName: "externaldrive.fill")
+                    .font(.system(size: 48))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.blue)
+
+                Text("Create ProDOS Disk")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+
+                Text("Configure your Apple II disk image")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
             }
-        }.padding().frame(width: 350)
+
+            Form {
+                TextField("Volume Name:", text: $volumeName)
+                    .textFieldStyle(.roundedBorder)
+                    .help("Max 15 characters")
+
+                Picker("Disk Size:", selection: $selectedSize) {
+                    ForEach(ConverterViewModel.DiskSize.allCases) { size in
+                        Text(size.rawValue).tag(size)
+                    }
+                }
+
+                Picker("Format:", selection: $selectedFormat) {
+                    ForEach(ConverterViewModel.DiskFormat.allCases) { format in
+                        Text(format.rawValue.uppercased()).tag(format)
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+
+            HStack(spacing: 12) {
+                Button("Cancel") {
+                    isPresented = false
+                }
+                .keyboardShortcut(.cancelAction)
+                .controlSize(.large)
+
+                Button("Create Disk Image") {
+                    isPresented = false
+                    onExport()
+                }
+                .keyboardShortcut(.defaultAction)
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
+        }
+        .padding(30)
+        .frame(width: 420)
     }
 }
 
 struct ImageGridItem: View {
-    let item: InputImage; let isSelected: Bool
+    let item: InputImage
+    let isSelected: Bool
+
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(spacing: 6) {
             ZStack {
-                Color(NSColor.controlBackgroundColor)
-                Image(nsImage: item.image).resizable().aspectRatio(contentMode: .fit).frame(height: 70)
-            }.frame(height: 80).cornerRadius(6).padding(4).overlay(RoundedRectangle(cornerRadius: 10).stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 3))
-            Text(item.name).font(.caption).lineLimit(1).truncationMode(.middle)
-        }.padding(4).background(isSelected ? Color.accentColor.opacity(0.1) : Color.clear).cornerRadius(8)
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(NSColor.controlBackgroundColor))
+                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+
+                Image(nsImage: item.image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 70)
+                    .padding(4)
+            }
+            .frame(height: 80)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2.5)
+            )
+
+            Text(item.name)
+                .font(.caption)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundColor(isSelected ? .primary : .secondary)
+        }
+        .padding(6)
+        .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
+        .cornerRadius(10)
     }
 }
 
@@ -286,15 +443,16 @@ struct ControlView: View {
     let opt: ConversionOption
     let index: Int
     @ObservedObject var viewModel: ConverterViewModel
-    
+
     var body: some View {
-        VStack(alignment: .center, spacing: 4) {
+        VStack(alignment: .center, spacing: 6) {
             Text(opt.label.uppercased())
-                .font(.system(size: 14, weight: .bold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundColor(.secondary)
+                .tracking(0.3)
             
             if opt.type == .slider {
-                HStack(spacing: 4) {
+                VStack(spacing: 6) {
                     Slider(
                         value: Binding(
                             get: {
@@ -313,11 +471,19 @@ struct ControlView: View {
                             }
                         ),
                         in: opt.range
-                    ).frame(width: 90)
+                    )
+                    .frame(width: 100)
+                    .tint(.accentColor)
+
                     Text(safeValueDisplay)
                         .monospacedDigit()
-                        .font(.system(size: 14))
-                        .frame(width: 40, alignment: .trailing)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.primary)
+                        .frame(minWidth: 40)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                        .cornerRadius(4)
                 }
             } else if opt.type == .picker {
                 Picker("", selection: Binding(
@@ -335,10 +501,13 @@ struct ControlView: View {
                         }
                     }
                 )) {
-                    ForEach(filteredValues, id: \.self) { val in Text(val).tag(val) }
+                    ForEach(filteredValues, id: \.self) { val in
+                        Text(val).tag(val)
+                    }
                 }
-                .frame(minWidth: 100)
-                .controlSize(.small)
+                .pickerStyle(.menu)
+                .frame(minWidth: 110)
+                .controlSize(.regular)
             }
         }
         .id(opt.id)
@@ -378,38 +547,51 @@ struct SystemSelectButton: View {
     let machineName: String
     let isSelected: Bool
     let action: () -> Void
-    
+
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
+            HStack(spacing: 14) {
                 if iconName.starts(with: "icon_") {
                     Image(iconName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(height: 42) // <--- NEUE GRÖSSE 42
+                        .frame(height: 38)
+                        .opacity(isSelected ? 1.0 : 0.6)
                 } else {
                     Image(systemName: iconName)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(height: 42) // <--- NEUE GRÖSSE 42
-                        .foregroundColor(isSelected ? .accentColor : .secondary)
+                        .frame(height: 38)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
                 }
-                
+
                 Text(machineName)
-                    .font(.system(size: 14))
-                    .fontWeight(isSelected ? .bold : .medium)
+                    .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
                     .foregroundColor(isSelected ? .primary : .secondary)
-                
-                Spacer()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+
+                Spacer(minLength: 4)
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                        .imageScale(.medium)
+                        .frame(width: 16, height: 16)
+                }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 12)
             .frame(maxWidth: .infinity)
-            .frame(height: 62) // <--- ETWAS HÖHER GEMACHT (war 54)
-            .background(isSelected ? Color.accentColor.opacity(0.15) : Color(NSColor.controlBackgroundColor))
-            .cornerRadius(8)
+            .frame(height: 58)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                    .shadow(color: isSelected ? Color.accentColor.opacity(0.2) : Color.black.opacity(0.05), radius: isSelected ? 4 : 2, x: 0, y: isSelected ? 2 : 1)
+            )
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.accentColor : Color(NSColor.separatorColor), lineWidth: isSelected ? 2 : 1)
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(isSelected ? Color.accentColor.opacity(0.5) : Color(NSColor.separatorColor).opacity(0.5), lineWidth: isSelected ? 1.5 : 0.5)
             )
         }
         .buttonStyle(.plain)

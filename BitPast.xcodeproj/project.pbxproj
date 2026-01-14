@@ -14,7 +14,6 @@
 		3E829E4C2F16681A00EEF3DA /* Exceptions for "BitPast" folder in "BitPast" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				b2d_main.c,
 				b2d_stubs.c,
 			);
 			target = 3E4ACE042EF3F66000568170 /* BitPast */;
@@ -289,6 +288,7 @@
 					"$(PROJECT_DIR)/BitPast/GSConvertTool/_internal",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "2026 Walter Tengler";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -346,6 +346,7 @@
 					"$(PROJECT_DIR)/BitPast/GSConvertTool/_internal",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "2026 Walter Tengler";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
