@@ -18,7 +18,7 @@ struct ContentView: View {
     let sideColumnWidth: CGFloat = 195
     
     // Keys für die Anzeige
-    let topRowKeys = ["mode", "colortype", "dither", "quantization_method", "palette", "saturation"]
+    let topRowKeys = ["mode", "dither", "quantization_method", "palette", "saturation"]
     let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "gamma", "dither_amount", "threshold"]
     
     var body: some View {
@@ -335,13 +335,33 @@ struct ControlView: View {
                         }
                     }
                 )) {
-                    ForEach(opt.values, id: \.self) { val in Text(val).tag(val) }
+                    ForEach(filteredValues, id: \.self) { val in Text(val).tag(val) }
                 }
                 .frame(minWidth: 100)
                 .controlSize(.small)
             }
         }
         .id(opt.id)
+    }
+    
+    // Filter resolution values when Mono mode is selected
+    var filteredValues: [String] {
+        // Only filter for resolution picker
+        guard opt.key == "resolution" else {
+            return opt.values
+        }
+        
+        // Check if current mode is "Mono"
+        let currentOptions = viewModel.machines[viewModel.selectedMachineIndex].options
+        if let modeOption = currentOptions.first(where: { $0.key == "mode" }),
+           modeOption.selectedValue == "Mono" {
+            // Only allow these two resolutions for Mono mode
+            return opt.values.filter { value in
+                value.contains("280x192 (HGR Native)") || value.contains("560x384 (DHGR Best)")
+            }
+        }
+        
+        return opt.values
     }
     
     var safeValueDisplay: String {

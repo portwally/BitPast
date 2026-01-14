@@ -285,6 +285,10 @@ extern unsigned char mono280[62];
 extern uchar dhgr2hgr[16];
 
 extern unsigned char tomthumb[256];
+extern unsigned char hgrpaltype;
+extern unsigned char hgrcolortype;
+
+
 
 #endif /* B2D_IMPLEMENTATION */
 

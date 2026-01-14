@@ -9,19 +9,11 @@ class AppleIIConverter: RetroMachine {
         ConversionOption(
             label: "Target Format",
             key: "mode",
-            values: ["DHGR (Double Hi-Res)", "HGR (Hi-Res)", "LGR (Lo-Res)", "DLGR (Double Lo-Res)"],
+            values: ["DHGR (Double Hi-Res)", "HGR (Hi-Res)", "LGR (Lo-Res)", "DLGR (Double Lo-Res)", "Mono"],
             selectedValue: "DHGR (Double Hi-Res)"
         ),
         
-        // 2. COLOR TYPE
-        ConversionOption(
-            label: "Color Type",
-            key: "colortype",
-            values: ["Color", "Monochrome"],
-            selectedValue: "Color"
-        ),
-        
-        // 3. OUTPUT RESOLUTION
+        // 2. OUTPUT RESOLUTION
         ConversionOption(
             label: "Output Resolution",
             key: "resolution",
@@ -29,7 +21,6 @@ class AppleIIConverter: RetroMachine {
                 "140x192 (DHGR Direct)",
                 "280x192 (HGR Native)",
                 "320x200 (C64/DOS)",
-                "560x192 (DHGR Mono)",
                 "560x384 (DHGR Best)",
                 "640x400 (VGA)",
                 "640x480 (VGA Square)"
@@ -37,46 +28,45 @@ class AppleIIConverter: RetroMachine {
             selectedValue: "560x384 (DHGR Best)"
         ),
         
-        // 4. DITHER (Clean Names)
+        // 3. DITHER (matching b2d.c dithertext[] - IDs 1-9)
         ConversionOption(
             label: "Dither Algo",
             key: "dither",
             values: [
-                "None",
-                "Floyd-Steinberg",
-                "Jarvis, Judice, Ninke",
-                "Stucki",
-                "Atkinson",
-                "Burkes",
-                "Sierra",
-                "Sierra-2",
-                "Sierra-Lite"
+                "None",              // No dither flag
+                "Floyd-Steinberg",   // -D1
+                "Jarvis",            // -D2
+                "Stucki",            // -D3
+                "Atkinson",          // -D4
+                "Burkes",            // -D5
+                "Sierra",            // -D6
+                "Sierra Two",        // -D7
+                "Sierra Lite",       // -D8
+                "Buckels"            // -D9
             ],
-            selectedValue: "None"  // Changed default to None
+            selectedValue: "None"
         ),
-        
-        // 5. PALETTE (Clean Names)
+
+        // 4. PALETTE (matching b2d.c palname[] - IDs 0-16)
         ConversionOption(
             label: "Palette",
             key: "palette",
             values: [
-                "Apple IIgs RGB",
-                "Wikipedia NTSC",
-                "VBMP NTSC",
-                "RGB Palette",
-                "Palette Clipping",
-                "-----------------",
-                "Standard (tohgr)",
-                "CiderPress",
-                "AppleWin Old",
-                "Greyscale",
-                "Virtu",
-                "MAME"
+                "Kegs32 RGB",              // -P0  (Apple IIgs)
+                "CiderPress RGB",          // -P1
+                "AppleWin Old NTSC",       // -P2
+                "AppleWin New NTSC",       // -P3
+                "Wikipedia NTSC",          // -P4
+                "tohgr NTSC (Default)",    // -P5  (Default for DHGR)
+                "Super Convert RGB",       // -P12
+                "Jace NTSC",               // -P13
+                "Cybernesto NTSC",         // -P14
+                "tohgr NTSC HGR"           // -P16 (For HGR mode)
             ],
-            selectedValue: "Apple IIgs RGB"
+            selectedValue: "Kegs32 RGB"
         ),
         
-        // 6. CROSS-HATCH PATTERN (X)
+        // 5. CROSS-HATCH PATTERN (X)
         ConversionOption(
             label: "Cross-hatch Pattern",
             key: "crosshatch",
@@ -84,7 +74,7 @@ class AppleIIConverter: RetroMachine {
             defaultValue: 0.0  // Changed default to 0
         ),
         
-        // 7. THRESHOLD FOR CROSS-HATCH (Z)
+        // 6. THRESHOLD FOR CROSS-HATCH (Z)
         ConversionOption(
             label: "Cross-hatch Threshold",
             key: "z_threshold",
@@ -92,7 +82,7 @@ class AppleIIConverter: RetroMachine {
             defaultValue: 0.0  // Changed default to 0
         ),
         
-        // 8. ERROR-DIFFUSION MATRIX (E)
+        // 7. ERROR-DIFFUSION MATRIX (E)
         ConversionOption(
             label: "Error Matrix Index",
             key: "error_matrix",
@@ -112,26 +102,50 @@ class AppleIIConverter: RetroMachine {
         
         // --- CONFIG ---
         let mode = options.first(where: {$0.key == "mode"})?.selectedValue ?? ""
-        let colorType = options.first(where: {$0.key == "colortype"})?.selectedValue ?? ""
         let resString = options.first(where: {$0.key == "resolution"})?.selectedValue ?? ""
         
         // --- SAFE RESOLUTION MAPPING ---
         var targetW = 280
         var targetH = 192
-        var forceMonoMode = false  // Some resolutions require mono mode
         
-        if mode.contains("DLGR") { targetW = 80; targetH = 48 }
-        else if mode.contains("LGR") { targetW = 40; targetH = 48 }
-        else {
+        // Handle Mono mode - only allows 280x192 (HGR Native) or 560x384 (DHGR Best)
+        if mode == "Mono" {
+            if resString.contains("280x192") {
+                // HGR Monochrome: 280x192
+                targetW = 280
+                targetH = 192
+            } else {
+                // DHGR Monochrome: 560x384 Color BMP for dithered output
+                targetW = 560
+                targetH = 384
+            }
+        }
+        else if mode.contains("DLGR") { targetW = 80; targetH = 48 }
+        else if mode.contains("LGR") && !mode.contains("DLGR") { targetW = 40; targetH = 48 }
+        else if mode.contains("HGR") && !mode.contains("DHGR") {
+            // HGR mode requires minimum 560px width for b2d to process correctly
+            // b2d needs double-width input to simulate NTSC color artifacts properly
             if resString.contains("640x480") { targetW = 640; targetH = 480 }
             else if resString.contains("640") { targetW = 640; targetH = 400 }
             else if resString.contains("560x384") { targetW = 560; targetH = 384 }
-            else if resString.contains("560x192") { 
-                targetW = 560; targetH = 192
-                forceMonoMode = true  // 560x192 requires MONO mode
-            }
-            else if resString.contains("560") { targetW = 560; targetH = 192; forceMonoMode = true }
+            else if resString.contains("560x192") { targetW = 560; targetH = 192 }
+            else if resString.contains("560") { targetW = 560; targetH = 192 }
+            else if resString.contains("320") { targetW = 640; targetH = 400 } // Upscale for HGR
+            else if resString.contains("280x192") { targetW = 560; targetH = 384 } // Upscale for HGR
+            else if resString.contains("140x192") { targetW = 560; targetH = 384 } // Upscale for HGR
+            else { targetW = 560; targetH = 384 }  // Default for HGR
+        }
+        else {
+            // DHGR, LGR, DLGR modes
+            if resString.contains("640x480") { targetW = 640; targetH = 480 }
+            else if resString.contains("640") { targetW = 640; targetH = 400 }
+            else if resString.contains("560x384") { targetW = 560; targetH = 384 }
             else if resString.contains("320") { targetW = 320; targetH = 200 }
+            else if resString.contains("280x192") {
+                // For DHGR, upscale 280x192 to avoid format issues
+                targetW = 560
+                targetH = 384
+            }
             else if resString.contains("140x192") { targetW = 140; targetH = 192 }
             else { targetW = 280; targetH = 192 }
         }
@@ -156,50 +170,41 @@ class AppleIIConverter: RetroMachine {
         }
         
         // --- B2D ARGUMENTS ---
-        // Die executable wird nicht mehr benötigt, da wir den C-Code direkt eingebunden haben!
-        
         var args: [String] = [inputFilename]
         
-        // Mode Flags
-        // Special handling for specific resolutions
-        if forceMonoMode {
-            // 560x192 uses MONO mode only (not HGR)
+        // Mode Flags - clear and explicit logic
+        if mode == "Mono" {
+            // Mono mode uses only MONO flag (HGR and MONO are mutually exclusive!)
             args.append("MONO")
         }
-        else if mode.contains("DHGR") { 
-            // DHGR mode (default - no flag needed for color)
-            if colorType == "Monochrome" { 
-                args.append("MONO") 
-            }
-        }
-        else if mode.contains("HGR") { 
-            // HGR mode ALWAYS needs the HGR flag
+        else if mode.contains("HGR") && !mode.contains("DHGR") {
+            // HGR mode needs the HGR flag for color output (but not DHGR!)
             args.append("HGR")
-            
-            if colorType == "Monochrome" { 
-                args.append("MONO") 
-            } 
         }
-        else if mode.contains("DLGR") { args.append("DL") }
-        else if mode.contains("LGR") { args.append("L") }
+        else if mode.contains("DLGR") {
+            args.append("DL")
+        }
+        else if mode.contains("LGR") && !mode.contains("DLGR") {
+            args.append("L")
+        }
+        // DHGR mode (default) - no flags needed for color DHGR
         
-        // --- DITHER MAPPING (Internal ID) ---
+        // --- DITHER MAPPING (matching b2d.c defines) ---
         let ditherName = options.first(where: {$0.key == "dither"})?.selectedValue ?? ""
         switch ditherName {
-        case "None":
-            // Don't add any dither flag - let b2d use its default (which should be none after reset)
-            break
-        case "Floyd-Steinberg":       args.append("-D1")
-        case "Jarvis, Judice, Ninke": args.append("-D2")
-        case "Stucki":                args.append("-D3")
-        case "Atkinson":              args.append("-D4")
-        case "Burkes":                args.append("-D5")
-        case "Sierra":                args.append("-D6")
-        case "Sierra-2":              args.append("-D7")
-        case "Sierra-Lite":           args.append("-D8")
+        case "None":           break  // No dither flag
+        case "Floyd-Steinberg": args.append("-D1")
+        case "Jarvis":          args.append("-D2")
+        case "Stucki":          args.append("-D3")
+        case "Atkinson":        args.append("-D4")
+        case "Burkes":          args.append("-D5")
+        case "Sierra":          args.append("-D6")
+        case "Sierra Two":      args.append("-D7")
+        case "Sierra Lite":     args.append("-D8")
+        case "Buckels":         args.append("-D9")
         default: break
         }
-        
+
         // --- ERROR MATRIX (E) ---
         // Only add error matrix if dithering is enabled (not "None")
         if ditherName != "None" {
@@ -209,21 +214,26 @@ class AppleIIConverter: RetroMachine {
                 args.append("-E\(Int(eVal))")
             }
         }
-        
-        // --- PALETTE MAPPING (Internal ID) ---
+
+        // --- PALETTE MAPPING (matching b2d.c palname[] indices) ---
         let palName = options.first(where: {$0.key == "palette"})?.selectedValue ?? ""
-        if palName.contains("Apple IIgs RGB") { args.append("-P0") }
-        else if palName.contains("CiderPress") { args.append("-P1") }
-        else if palName.contains("AppleWin Old") { args.append("-P2") }
-        else if palName.contains("VBMP NTSC") { args.append("-P3") }
-        else if palName.contains("Wikipedia NTSC") { args.append("-P4") }
-        else if palName.contains("Greyscale") { args.append("-P5") }
-        else if palName.contains("Standard (tohgr)") { args.append("-P5") }
-        else if palName.contains("Virtu") { args.append("-P8") }
-        else if palName.contains("RGB Palette") { args.append("-P9") }
-        else if palName.contains("MAME") { args.append("-P11") }
-        else if palName.contains("Clipping") { args.append("-P13") }
-        else { args.append("-P5") } // Fallback
+
+        // For Mono mode, DO NOT set any palette - palette flags can trigger HGR internally!
+        if mode != "Mono" {
+            switch palName {
+            case "Kegs32 RGB":           args.append("-P0")
+            case "CiderPress RGB":       args.append("-P1")
+            case "AppleWin Old NTSC":    args.append("-P2")
+            case "AppleWin New NTSC":    args.append("-P3")
+            case "Wikipedia NTSC":       args.append("-P4")
+            case "tohgr NTSC (Default)": args.append("-P5")
+            case "Super Convert RGB":    args.append("-P12")
+            case "Jace NTSC":            args.append("-P13")
+            case "Cybernesto NTSC":      args.append("-P14")
+            case "tohgr NTSC HGR":       args.append("-P16")
+            default:                     args.append("-P5")  // Fallback to tohgr
+            }
+        }
         
         // --- SLIDERS (X, Z) ---
         if let valStr = options.first(where: {$0.key == "crosshatch"})?.selectedValue, let val = Double(valStr), val > 0 {

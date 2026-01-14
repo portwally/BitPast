@@ -348,6 +348,17 @@ char *palname[] = {
 	"Pseudo Palette",
 	"tohgr NTSC HGR"};
 
+/*
+* Reset all global variables to their default state
+* This must be called before each conversion to ensure clean state
+*/
+void b2d_reset_globals(void) {
+    // Reset ONLY the mode flags that cause conflicts
+   
+    
+    // DO NOT reset anything else!
+    // The palette data must stay initialized!
+}
 /* ***************************************************************** */
 /* ========================== code ================================= */
 /* ***************************************************************** */
@@ -461,7 +472,7 @@ Formula for the Luminosity Average:
 int lumaREQ = 601, lumaRED = 299, lumaGREEN = 587, lumaBLUE = 114;
 double dlumaRED, dlumaGREEN, dlumaBLUE;
 
-void setluma()
+void setluma(void)
 {
 	switch(lumaREQ)
 	{
@@ -497,7 +508,7 @@ void setluma()
 
 
 /* intialize the values for the current palette */
-void InitDoubleArrays()
+void InitDoubleArrays(void)
 {
 	int i;
 	double dr, dg, db, dthreshold;
@@ -1391,7 +1402,7 @@ void dhrfill(int y,uchar drawcolor)
    this doesn't matter for a full-screen image
 
 */
-void dhrclear()
+void dhrclear(void)
 {
 	int y;
 	uchar drawcolor;
@@ -1603,7 +1614,7 @@ void applemonobites(int y, int doubleres)
 }
 
 /* encodes monochrome bmp scanline */
-void ibmmonobites()
+void ibmmonobites(void)
 {
      int i,j,k;
      unsigned char bits[8];
@@ -1622,7 +1633,7 @@ void ibmmonobites()
 
 
 /* writes VBMP compatible 140 x 192 x 16 color bmp or VBMP monochrome bmp in 2 sizes */
-int WriteVBMPFile()
+int WriteVBMPFile(void)
 {
 
     FILE *fp;
@@ -1711,7 +1722,7 @@ void hgrbits(int y)
 		}
 }
 
-void buildhgr()
+void buildhgr(void)
 {
 	 int i, j;
 
@@ -1934,7 +1945,7 @@ void setlopixel(unsigned char color,int x, int y,int ragflag)
 /* only full-screen (48 line) or mixed-screen (40 line) files are supported for raster-oriented files */
 /* only full-sceen format is supported for BSAVE files */
 /* image fragments are not supported */
-int savelofragment()
+int savelofragment(void)
 {
 
 	FILE *fp;
@@ -2102,7 +2113,7 @@ int savelofragment()
 
 
 /* save both raw output file formats */
-int savedhr()
+int savedhr(void)
 {
 
 	FILE *fp;
@@ -2233,11 +2244,11 @@ int savedhr()
 }
 
 
-int saverag()
+int saverag(void)
 {
 	FILE *fp;
 	/* make an Rasterized Apple II Graphic (RAG) */
-    int c, x, y, xoff, width;
+    int c = 0, x, y, xoff, width;
     unsigned char *ptr;
 
     if (scale == 1) spritewidth = bmpwidth;
@@ -2328,11 +2339,11 @@ int saverag()
    etc...
 
 */
-int savesprite()
+int savesprite(void)
 {
 
 	FILE *fp;
-	int i, c, width, packet, x, y, xoff, cnt;
+    int i, c = 0, width, packet, x, y, xoff, cnt;
 	ushort fl;
 	uchar *ptraux, *ptrmain, ch;
 
@@ -3733,7 +3744,7 @@ int ShrinkLoResLine(uchar *src, uchar *dest, int srcwidth)
 void ShrinkLoResData(FILE *fp, FILE *fp2)
 {
 
-	ushort x, x1, x2, y, lines, srcwidth, packet = (bmpwidth * 3), pixel;
+    ushort x, x1, x2, y, lines = 0, srcwidth, packet = (bmpwidth * 3), pixel;
 
 	while (packet%4 != 0)packet++;
 
@@ -3979,7 +3990,7 @@ FILE *ResizeBMP(FILE *fp, sshort resize)
 
 
 /* expand monochrome bmp lines to 24-bit bmp lines */
-void ReformatMonoLine()
+void ReformatMonoLine(void)
 {
      int i,j,k,packet;
      uchar b = 0, w = 255;
@@ -4011,7 +4022,7 @@ void ReformatMonoLine()
 }
 
 /* expand 16 color and 256 color bmp lines to 24-bit bmp lines */
-void ReformatVGALine()
+void ReformatVGALine(void)
 {
 	sshort i, j, packet;
 	uchar ch;
@@ -4153,7 +4164,7 @@ FILE *ReformatBMP(FILE *fp)
 /* use_overlay using a 256 color BMP file in verbatim output resolution */
 /* HGR and DHGR color use_overlay files are 140 x 192 */
 /* HGR and DHGR monochrome are 280 x 192 and 560 x 192 respectively */
-sshort OpenMaskFile()
+sshort OpenMaskFile(void)
 {
 
 	sshort status = INVALID;
@@ -4260,7 +4271,7 @@ sshort OpenMaskFile()
 }
 
 /* LGR and DLGR only */
-sshort ValidLoResSizeRange()
+sshort ValidLoResSizeRange(void)
 {
 	sshort status = INVALID;
 
@@ -4495,7 +4506,7 @@ sshort ValidLoResSizeRange()
    		when preview is on... also leaves an optional error-diffused dib file
    		in place if error diffusion is also turned-on */
 /* Etcetera */
-sshort Convert()
+sshort Convert(void)
 {
 
     FILE *fp, *fpdib, *fpreview;
