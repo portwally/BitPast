@@ -3,23 +3,30 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var viewModel = ConverterViewModel()
+    @ObservedObject private var settings = AppSettings.shared
     @State private var isDropTarget = false
     @State private var zoomLevel: CGFloat = 1.0
-    
+
     // ProDOS Sheet State
     @State private var showDiskSheet = false
     @State private var selectedDiskSize: ConverterViewModel.DiskSize = .kb140
     @State private var selectedDiskFormat: ConverterViewModel.DiskFormat = .po
     @State private var diskVolumeName: String = "BITPAST"
-    
+
     let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
-    
+
     // Layout Konstante: Von 190 auf 195 erhöht (+5px)
     let sideColumnWidth: CGFloat = 195
-    
+
     // Keys für die Anzeige
     let topRowKeys = ["mode", "dither", "quantization_method", "palette", "saturation"]
     let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "gamma", "dither_amount", "threshold"]
+
+    // Retro mode helpers
+    var isRetro: Bool { settings.isRetroMode }
+    var retroFont: Font { RetroTheme.font(size: 12) }
+    var retroSmallFont: Font { RetroTheme.font(size: 11) }
+    var retroBoldFont: Font { RetroTheme.boldFont(size: 13) }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -30,13 +37,13 @@ struct ContentView: View {
                 VStack(spacing: 0) {
                     HStack {
                         Text("Image Browser")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.secondary)
+                            .font(isRetro ? retroBoldFont : .system(size: 13, weight: .semibold))
+                            .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
                         Spacer()
                         if viewModel.selectedImageId != nil {
                             Button(action: { viewModel.removeSelectedImage() }) {
                                 Image(systemName: "trash")
-                                    .foregroundStyle(.secondary)
+                                    .foregroundStyle(isRetro ? RetroTheme.textColor : .secondary)
                             }
                             .buttonStyle(.plain)
                             .help("Remove selected image")
@@ -44,34 +51,38 @@ struct ContentView: View {
                         Button(action: { viewModel.selectImagesFromFinder() }) {
                             Image(systemName: "plus.circle.fill")
                                 .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(isRetro ? RetroTheme.textColor : .blue)
                         }
                         .buttonStyle(.plain)
                         .help("Add images")
                     }
                     .frame(height: 38)
                     .padding(.horizontal, 12)
-                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
 
-                    Divider()
-                    
+                    if isRetro {
+                        Rectangle().fill(RetroTheme.borderColor).frame(height: RetroTheme.dividerThickness)
+                    } else {
+                        Divider()
+                    }
+
                     if viewModel.inputImages.isEmpty {
                         ZStack {
-                            Color(NSColor.controlBackgroundColor).opacity(0.3)
+                            isRetro ? RetroTheme.backgroundColor : Color(NSColor.controlBackgroundColor).opacity(0.3)
                             VStack(spacing: 16) {
                                 Image(systemName: "photo.stack")
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 64, height: 64)
                                     .symbolRenderingMode(.hierarchical)
-                                    .foregroundColor(Color(NSColor.tertiaryLabelColor))
+                                    .foregroundColor(isRetro ? RetroTheme.textColor.opacity(0.5) : Color(NSColor.tertiaryLabelColor))
                                 Text("Drag Images Here")
-                                    .font(.title3)
+                                    .font(isRetro ? retroBoldFont : .title3)
                                     .fontWeight(.medium)
-                                    .foregroundColor(.secondary)
+                                    .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
                                 Text("or click + to add")
-                                    .font(.subheadline)
-                                    .foregroundColor(Color(NSColor.tertiaryLabelColor))
+                                    .font(isRetro ? retroSmallFont : .subheadline)
+                                    .foregroundColor(isRetro ? RetroTheme.textColor.opacity(0.7) : Color(NSColor.tertiaryLabelColor))
                             }
                             .padding()
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -79,91 +90,113 @@ struct ContentView: View {
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 10) {
                                 ForEach(viewModel.inputImages) { item in
-                                    ImageGridItem(item: item, isSelected: viewModel.selectedImageId == item.id)
+                                    ImageGridItem(item: item, isSelected: viewModel.selectedImageId == item.id, isRetro: isRetro)
                                         .onTapGesture {
                                             viewModel.selectedImageId = item.id
                                             viewModel.convertImmediately()
                                         }
                                 }
                             }.padding(10)
-                        }.background(Color(NSColor.controlBackgroundColor))
+                        }.background(isRetro ? RetroTheme.backgroundColor : Color(NSColor.controlBackgroundColor))
                     }
                 }
                 .frame(minWidth: 200, maxWidth: 450)
                 .onDrop(of: [.fileURL], isTargeted: $isDropTarget) { providers in return viewModel.handleDrop(providers: providers) }
-                
+
                 // RECHTER BEREICH: VORSCHAU
                 VStack(spacing: 0) {
                     HStack {
                         Text("Preview")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundColor(.secondary)
+                            .font(isRetro ? retroBoldFont : .system(size: 13, weight: .semibold))
+                            .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
                         Spacer()
                         HStack(spacing: 4) {
                             Button(action: { if zoomLevel > 0.2 { zoomLevel -= 0.2 } }) {
                                 Image(systemName: "minus.magnifyingglass")
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(isRetro ? .bordered : .bordered)
                             .controlSize(.small)
                             .help("Zoom out")
 
                             Text("\(Int(zoomLevel * 100))%")
                                 .monospacedDigit()
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                                .font(isRetro ? retroSmallFont : .caption)
+                                .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
                                 .frame(width: 45)
 
                             Button(action: { if zoomLevel < 5.0 { zoomLevel += 0.2 } }) {
                                 Image(systemName: "plus.magnifyingglass")
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(isRetro ? .bordered : .bordered)
                             .controlSize(.small)
                             .help("Zoom in")
                         }
                     }
                     .frame(height: 38)
                     .padding(.horizontal, 12)
-                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
 
-                    Divider()
+                    if isRetro {
+                        Rectangle().fill(RetroTheme.borderColor).frame(height: RetroTheme.dividerThickness)
+                    } else {
+                        Divider()
+                    }
                     
-                    ZStack {
-                        Color(NSColor.black)
-                        if let img = viewModel.convertedImage {
-                            ScrollView([.horizontal, .vertical], showsIndicators: true) {
-                                Image(nsImage: img)
-                                    .resizable()
-                                    .interpolation(.none)
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: img.size.width * zoomLevel, height: img.size.height * zoomLevel)
-                                    .shadow(color: .black.opacity(0.3), radius: 10)
-                            }
-                        } else if viewModel.isConverting {
-                            VStack(spacing: 12) {
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                                Text("Converting...")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white.opacity(0.8))
-                            }
-                        } else {
-                            VStack(spacing: 12) {
-                                Image(systemName: "photo.badge.arrow.down")
-                                    .font(.system(size: 48))
-                                    .symbolRenderingMode(.hierarchical)
-                                    .foregroundStyle(.white.opacity(0.3))
-                                Text("Select an image to preview")
-                                    .font(.subheadline)
-                                    .foregroundColor(.white.opacity(0.5))
+                    GeometryReader { geometry in
+                        ZStack {
+                            Color(NSColor.black)
+                            if let img = viewModel.convertedImage {
+                                let fitScale = min(
+                                    geometry.size.width / img.size.width,
+                                    geometry.size.height / img.size.height
+                                )
+                                let effectiveZoom = zoomLevel == 1.0 ? fitScale : zoomLevel
+
+                                ScrollView([.horizontal, .vertical], showsIndicators: true) {
+                                    Image(nsImage: img)
+                                        .resizable()
+                                        .interpolation(.none)
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(
+                                            width: img.size.width * effectiveZoom,
+                                            height: img.size.height * effectiveZoom
+                                        )
+                                        .shadow(color: .black.opacity(0.3), radius: 10)
+                                        .frame(
+                                            minWidth: geometry.size.width,
+                                            minHeight: geometry.size.height
+                                        )
+                                }
+                            } else if viewModel.isConverting {
+                                VStack(spacing: 12) {
+                                    ProgressView()
+                                        .scaleEffect(1.2)
+                                    Text("Converting...")
+                                        .font(.subheadline)
+                                        .foregroundColor(.white.opacity(0.8))
+                                }
+                            } else {
+                                VStack(spacing: 12) {
+                                    Image(systemName: "photo.badge.arrow.down")
+                                        .font(.system(size: 48))
+                                        .symbolRenderingMode(.hierarchical)
+                                        .foregroundStyle(.white.opacity(0.3))
+                                    Text("Select an image to preview")
+                                        .font(.subheadline)
+                                        .foregroundColor(.white.opacity(0.5))
+                                }
                             }
                         }
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
                 }.frame(minWidth: 350)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
-            Divider()
-            
+
+            // Horizontal divider between browser/preview and controls
+            Rectangle()
+                .fill(Color.red)
+                .frame(height: 4)
+
             // 2. UNTERER BEREICH: FIXED HEIGHT
             VStack(spacing: 0) {
                 if let error = viewModel.errorMessage {
@@ -182,36 +215,38 @@ struct ContentView: View {
                         Divider()
                     }
                 }
-                
+
                 HStack(spacing: 0) {
-                    
+
                     // A. LINKS: SYSTEM (Feste Breite, Symmetrisch zu Rechts)
                     VStack(alignment: .leading, spacing: 12) {
                         Text("SYSTEM")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.secondary)
+                            .font(isRetro ? retroSmallFont : .system(size: 11, weight: .semibold))
+                            .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
                             .tracking(0.5)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        
+
                         VStack(spacing: 8) {
                             // BUTTON 1: Apple II
                             SystemSelectButton(
                                 iconName: "icon_apple2",
                                 machineName: viewModel.machines[0].name,
-                                isSelected: viewModel.selectedMachineIndex == 0
+                                isSelected: viewModel.selectedMachineIndex == 0,
+                                isRetro: isRetro
                             ) {
                                 if viewModel.selectedMachineIndex != 0 {
                                     viewModel.selectedMachineIndex = 0
                                     viewModel.triggerLivePreview()
                                 }
                             }
-                            
+
                             // BUTTON 2: Apple IIGS
                             if viewModel.machines.count > 1 {
                                 SystemSelectButton(
                                     iconName: "icon_iigs",
                                     machineName: viewModel.machines[1].name,
-                                    isSelected: viewModel.selectedMachineIndex == 1
+                                    isSelected: viewModel.selectedMachineIndex == 1,
+                                    isRetro: isRetro
                                 ) {
                                     if viewModel.selectedMachineIndex != 1 {
                                         viewModel.selectedMachineIndex = 1
@@ -219,13 +254,14 @@ struct ContentView: View {
                                     }
                                 }
                             }
-                            
+
                             // BUTTON 3: C64
                             if viewModel.machines.count > 2 {
                                 SystemSelectButton(
                                     iconName: "gamecontroller.fill",
                                     machineName: viewModel.machines[2].name,
-                                    isSelected: viewModel.selectedMachineIndex == 2
+                                    isSelected: viewModel.selectedMachineIndex == 2,
+                                    isRetro: isRetro
                                 ) {
                                     if viewModel.selectedMachineIndex != 2 {
                                         viewModel.selectedMachineIndex = 2
@@ -237,11 +273,15 @@ struct ContentView: View {
                         Spacer()
                     }
                     .padding(12)
-                    .frame(width: sideColumnWidth) // Breite erhöht
-                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
-                    
-                    Divider()
-                    
+                    .frame(width: sideColumnWidth)
+                    .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
+
+                    if isRetro {
+                        Rectangle().fill(RetroTheme.borderColor).frame(width: RetroTheme.dividerThickness)
+                    } else {
+                        Divider()
+                    }
+
                     // B. MITTE: SLIDER (Scrollbar)
                     ScrollView(.horizontal, showsIndicators: false) {
                         VStack(alignment: .center, spacing: 16) {
@@ -250,20 +290,23 @@ struct ContentView: View {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if topRowKeys.contains(opt.key) {
-                                        ControlView(opt: opt, index: index, viewModel: viewModel)
+                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro)
                                     }
                                 }
                             }
 
-                            Divider()
-                                .padding(.horizontal, 20)
+                            if isRetro {
+                                Rectangle().fill(RetroTheme.borderColor).frame(height: RetroTheme.dividerThickness)
+                            } else {
+                                Divider()
+                            }
 
                             // UNTERE REIHE
                             HStack(spacing: 24) {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if bottomRowKeys.contains(opt.key) {
-                                        ControlView(opt: opt, index: index, viewModel: viewModel)
+                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro)
                                     }
                                 }
                             }
@@ -272,17 +315,22 @@ struct ContentView: View {
                         .padding(.vertical, 14)
                         .frame(minWidth: 300, maxWidth: .infinity)
                     }
-                    
-                    Divider()
-                    
+                    .background(isRetro ? RetroTheme.backgroundColor : Color.clear)
+
+                    if isRetro {
+                        Rectangle().fill(RetroTheme.borderColor).frame(width: RetroTheme.dividerThickness)
+                    } else {
+                        Divider()
+                    }
+
                     // C. RECHTS: ACTIONS (Feste Breite, Symmetrisch zu Links)
                     VStack(spacing: 12) {
                         Text("ACTIONS")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundColor(.secondary)
+                            .font(isRetro ? retroSmallFont : .system(size: 11, weight: .semibold))
+                            .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
                             .tracking(0.5)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        
+
                         Menu {
                             Button("PNG") { viewModel.saveImage(as: .png) }
                             Button("JPG") { viewModel.saveImage(as: .jpg) }
@@ -327,14 +375,17 @@ struct ContentView: View {
                         Spacer()
                     }
                     .padding(12)
-                    .frame(width: sideColumnWidth) // Breite erhöht
-                    .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .frame(width: sideColumnWidth)
+                    .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
                 }
             }
-            .background(Color(NSColor.windowBackgroundColor))
+            .background(isRetro ? RetroTheme.backgroundColor : Color(NSColor.windowBackgroundColor))
             .frame(height: 180)
-            
-        }.frame(minWidth: 1000, minHeight: 650)
+
+        }
+        .frame(minWidth: 1000, minHeight: 650)
+        .background(isRetro ? RetroTheme.backgroundColor : Color(NSColor.windowBackgroundColor))
+        .id(settings.appearanceMode)
     }
 }
 
@@ -407,13 +458,20 @@ struct DiskExportSheet: View {
 struct ImageGridItem: View {
     let item: InputImage
     let isSelected: Bool
+    var isRetro: Bool = false
 
     var body: some View {
         VStack(spacing: 6) {
             ZStack {
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(NSColor.controlBackgroundColor))
-                    .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                if isRetro {
+                    Rectangle()
+                        .fill(RetroTheme.windowBackground)
+                        .border(RetroTheme.borderColor, width: 1)
+                } else {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color(NSColor.controlBackgroundColor))
+                        .shadow(color: .black.opacity(0.1), radius: 2, x: 0, y: 1)
+                }
 
                 Image(nsImage: item.image)
                     .resizable()
@@ -423,19 +481,26 @@ struct ImageGridItem: View {
             }
             .frame(height: 80)
             .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2.5)
+                Group {
+                    if isRetro {
+                        Rectangle()
+                            .stroke(isSelected ? RetroTheme.borderColor : Color.clear, lineWidth: 2)
+                    } else {
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2.5)
+                    }
+                }
             )
 
             Text(item.name)
-                .font(.caption)
+                .font(isRetro ? RetroTheme.font(size: 10) : .caption)
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .foregroundColor(isSelected ? .primary : .secondary)
+                .foregroundColor(isRetro ? RetroTheme.textColor : (isSelected ? .primary : .secondary))
         }
         .padding(6)
-        .background(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
-        .cornerRadius(10)
+        .background(isSelected ? (isRetro ? RetroTheme.windowBackground : Color.accentColor.opacity(0.12)) : Color.clear)
+        .cornerRadius(isRetro ? 0 : 10)
     }
 }
 
@@ -443,12 +508,13 @@ struct ControlView: View {
     let opt: ConversionOption
     let index: Int
     @ObservedObject var viewModel: ConverterViewModel
+    var isRetro: Bool = false
 
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
             Text(opt.label.uppercased())
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundColor(.secondary)
+                .font(isRetro ? RetroTheme.font(size: 11) : .system(size: 11, weight: .semibold))
+                .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
                 .tracking(0.3)
             
             if opt.type == .slider {
@@ -477,13 +543,14 @@ struct ControlView: View {
 
                     Text(safeValueDisplay)
                         .monospacedDigit()
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundColor(.primary)
+                        .font(isRetro ? RetroTheme.font(size: 13) : .system(size: 13, weight: .medium))
+                        .foregroundColor(isRetro ? RetroTheme.textColor : .primary)
                         .frame(minWidth: 40)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)
-                        .background(Color(NSColor.controlBackgroundColor).opacity(0.5))
-                        .cornerRadius(4)
+                        .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
+                        .cornerRadius(isRetro ? 0 : 4)
+                        .overlay(isRetro ? Rectangle().stroke(RetroTheme.borderColor, lineWidth: 1) : nil)
                 }
             } else if opt.type == .picker {
                 Picker("", selection: Binding(
@@ -546,6 +613,7 @@ struct SystemSelectButton: View {
     let iconName: String
     let machineName: String
     let isSelected: Bool
+    var isRetro: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -563,12 +631,12 @@ struct SystemSelectButton: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(height: 38)
                         .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+                        .foregroundStyle(isRetro ? RetroTheme.textColor : (isSelected ? Color.accentColor : Color.secondary))
                 }
 
                 Text(machineName)
-                    .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isSelected ? .primary : .secondary)
+                    .font(isRetro ? RetroTheme.font(size: 14) : .system(size: 14, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isRetro ? RetroTheme.textColor : (isSelected ? .primary : .secondary))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
 
@@ -576,7 +644,7 @@ struct SystemSelectButton: View {
 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(isRetro ? RetroTheme.textColor : .green)
                         .imageScale(.medium)
                         .frame(width: 16, height: 16)
                 }
@@ -585,13 +653,27 @@ struct SystemSelectButton: View {
             .frame(maxWidth: .infinity)
             .frame(height: 58)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(isSelected ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
-                    .shadow(color: isSelected ? Color.accentColor.opacity(0.2) : Color.black.opacity(0.05), radius: isSelected ? 4 : 2, x: 0, y: isSelected ? 2 : 1)
+                Group {
+                    if isRetro {
+                        Rectangle()
+                            .fill(isSelected ? RetroTheme.windowBackground : RetroTheme.backgroundColor)
+                    } else {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(isSelected ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
+                            .shadow(color: isSelected ? Color.accentColor.opacity(0.2) : Color.black.opacity(0.05), radius: isSelected ? 4 : 2, x: 0, y: isSelected ? 2 : 1)
+                    }
+                }
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(isSelected ? Color.accentColor.opacity(0.5) : Color(NSColor.separatorColor).opacity(0.5), lineWidth: isSelected ? 1.5 : 0.5)
+                Group {
+                    if isRetro {
+                        Rectangle()
+                            .strokeBorder(RetroTheme.borderColor, lineWidth: isSelected ? 2 : 1)
+                    } else {
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(isSelected ? Color.accentColor.opacity(0.5) : Color(NSColor.separatorColor).opacity(0.5), lineWidth: isSelected ? 1.5 : 0.5)
+                    }
+                }
             )
         }
         .buttonStyle(.plain)

@@ -180,8 +180,6 @@ class AppleIIGSConverter: RetroMachine {
         
         if isDesktop {
             // DESKTOP MODE - Column-aware dithering (Even/Odd palettes)
-            print("=== DESKTOP MODE (640x200, 16 dithered colors) ===")
-            print("Using GS/OS Finder palette with column-aware dithering")
             
             // Standard GS/OS Finder palette
             // Even columns (indices 0-3): Black, Deep Blue, Yellow, White
@@ -213,8 +211,6 @@ class AppleIIGSConverter: RetroMachine {
             
         } else if isEnhanced {
             // ENHANCED 640 MODE - Custom 8-color palette with column-aware dithering
-            print("=== ENHANCED 640 MODE (640x200, 16 dithered colors) ===")
-            print("Generating 8 optimal colors for column-aware dithering")
             
             var samplePixels: [PixelFloat] = []
             for i in stride(from: 0, to: rawPixels.count, by: 4) {
@@ -226,10 +222,8 @@ class AppleIIGSConverter: RetroMachine {
             var best8 = generatePaletteMedianCut(pixels: samplePixels, maxColors: 8)
             best8.sort { ($0.r + $0.g + $0.b) < ($1.r + $1.g + $1.b) }
             
-            print("Generated 8-color palette:")
             for (idx, color) in best8.enumerated() {
-                let col = idx < 4 ? "Even" : "Odd"
-                print("  \(idx) (\(col)): R=\(Int(color.r)) G=\(Int(color.g)) B=\(Int(color.b))")
+                let _ = idx < 4 ? "Even" : "Odd"
             }
             
             // Build palette: 0-3 (Even), 4-7 (Odd), 8-15 (Duplicates)
@@ -276,15 +270,6 @@ class AppleIIGSConverter: RetroMachine {
             best4[0] = RGB(r: darkestPixel.r, g: darkestPixel.g, b: darkestPixel.b)
             best4[3] = RGB(r: brightestPixel.r, g: brightestPixel.g, b: brightestPixel.b)
             
-            // DEBUG: Print palette colors
-            print("=== 640 MODE PALETTE ===")
-            print("Image brightness range: \(Int(minBrightness)) to \(Int(maxBrightness))")
-            for (idx, color) in best4.enumerated() {
-                let brightness = (color.r + color.g + color.b) / 3.0
-                print("Color \(idx): R=\(Int(color.r)) G=\(Int(color.g)) B=\(Int(color.b)) Brightness=\(Int(brightness))")
-            }
-            print("========================")
-            
             var expandedPalette = [RGB]()
             for i in 0..<16 {
                 expandedPalette.append(best4.isEmpty ? RGB(r:0,g:0,b:0) : best4[i % best4.count])
@@ -307,8 +292,6 @@ class AppleIIGSConverter: RetroMachine {
             let usePaletteReuse = quantMethod.contains("Reuse")
             
             if usePaletteReuse {
-                print("=== 3200 MODE: PALETTE REUSE ===")
-                print("Merge Threshold: \(mergeThreshold)")
                 
                 // Sequential palette reuse: try to reuse previous scanline's palette
                 var linePalettes = [[RGB]]()
@@ -352,8 +335,6 @@ class AppleIIGSConverter: RetroMachine {
                     }
                 }
                 
-                print("Generated \(uniquePaletteCount) unique palettes for 200 scanlines")
-                
                 // Now map these palettes to 16 slots
                 paletteSlotMapping = [Int](repeating: 0, count: 200)
                 
@@ -381,8 +362,6 @@ class AppleIIGSConverter: RetroMachine {
                     }
                     
                 } else {
-                    print("Warning: \(uniquePaletteCount) unique palettes > 16, need to merge further")
-                    
                     // Group consecutive similar palettes into 16 slots
                     var slotPalettes = [[RGB]]()
                     var currentSlot = 0
@@ -450,7 +429,6 @@ class AppleIIGSConverter: RetroMachine {
                 
             } else {
                 // PER-SCANLINE METHOD (Original/Default)
-                print("=== 3200 MODE: PER-SCANLINE ===")
                 
                 // Step 1: Generate optimal palette for each scanline
                 var linePalettes = [[RGB]]()

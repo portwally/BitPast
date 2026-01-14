@@ -266,7 +266,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 110;
+				CURRENT_PROJECT_VERSION = 120;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = ZFE2VJD462;
 				ENABLE_APP_SANDBOX = YES;
@@ -288,6 +288,7 @@
 					"$(PROJECT_DIR)/BitPast/GSConvertTool/_internal",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BitPast/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "2026 Walter Tengler";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -324,7 +325,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 110;
+				CURRENT_PROJECT_VERSION = 120;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = ZFE2VJD462;
 				ENABLE_APP_SANDBOX = YES;
@@ -346,6 +347,7 @@
 					"$(PROJECT_DIR)/BitPast/GSConvertTool/_internal",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = BitPast/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "2026 Walter Tengler";
 				LD_RUNPATH_SEARCH_PATHS = (
