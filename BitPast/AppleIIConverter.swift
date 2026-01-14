@@ -152,22 +152,7 @@ class AppleIIConverter: RetroMachine {
         
         // --- SAVE BMP ---
         let readyImage = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
-        
-        // Validate the resized image has the correct dimensions
-        if readyImage.size.width != CGFloat(targetW) || readyImage.size.height != CGFloat(targetH) {
-            print("⚠️ WARNING: Image resize failed. Expected \(targetW)x\(targetH), got \(Int(readyImage.size.width))x\(Int(readyImage.size.height))")
-            // Continue anyway - b2d will reject it if it's really wrong
-        }
-        
         try readyImage.saveAsStrict24BitBMP(to: inputUrl)
-        
-        // Verify the BMP was written successfully
-        if let attrs = try? fileManager.attributesOfItem(atPath: inputUrl.path),
-           let fileSize = attrs[.size] as? Int64 {
-            print("✅ BMP saved: \(inputUrl.lastPathComponent) (\(fileSize) bytes, \(targetW)x\(targetH))")
-        } else {
-            print("⚠️ WARNING: BMP file may not have been saved correctly")
-        }
         
         // --- B2D ARGUMENTS ---
         var args: [String] = [inputFilename]
@@ -244,29 +229,24 @@ class AppleIIConverter: RetroMachine {
         }
         
         args.append("-V") // Preview
-        
-        // --- DEBUG PRINT ---
-        print("\n---------- B2D DEBUG ----------")
-        print("Args: b2d \(args.joined(separator: " "))")
-        print("-------------------------------\n")
-        
-        // Wechsel ins Temp-Verzeichnis (b2d erwartet das)
+
+        // Switch to temp directory (b2d expects this)
         let originalDir = fileManager.currentDirectoryPath
         fileManager.changeCurrentDirectoryPath(tempDir.path)
         
-        // Baue argv-Array für C
+        // Build argv array for C
         var cArgs: [UnsafeMutablePointer<CChar>?] = []
-        cArgs.append(strdup("b2d")) // argv[0] = Programmname
-        
+        cArgs.append(strdup("b2d")) // argv[0] = program name
+
         for arg in args {
             cArgs.append(strdup(arg))
         }
-        cArgs.append(nil) // argv muss mit NULL enden
-        
-        // Rufe b2d direkt auf (keine executable mehr nötig!)
+        cArgs.append(nil) // argv must end with NULL
+
+        // Call b2d conversion
         let exitCode = b2d_main_wrapper(Int32(cArgs.count - 1), &cArgs)
-        
-        // Zurück ins Original-Verzeichnis
+
+        // Return to original directory
         fileManager.changeCurrentDirectoryPath(originalDir)
         
         // Cleanup
@@ -289,33 +269,21 @@ class AppleIIConverter: RetroMachine {
                          userInfo: [NSLocalizedDescriptionKey: errorMsg])
         }
         
-        // --- RESULTS ---
+        // Find output files
         let allFiles = try fileManager.contentsOfDirectory(at: tempDir, includingPropertiesForKeys: nil)
-        
-        // Debug: Print all files in temp directory
-        print("📁 Files in temp directory:")
-        for file in allFiles {
-            let name = file.lastPathComponent
-            if name.localizedCaseInsensitiveContains(baseNameRaw) {
-                print("   ✅ \(name)")
-            }
-        }
-        
+
         let previewFile = allFiles.first { file in
             let name = file.lastPathComponent
             return name.localizedCaseInsensitiveContains(baseNameRaw) &&
             name != inputFilename &&
             name.lowercased().hasSuffix(".bmp")
         }
-        
+
         let assets = allFiles.filter { file in
             let name = file.lastPathComponent
             return name.localizedCaseInsensitiveContains(baseNameRaw) &&
             file.pathExtension.lowercased() != "bmp"
         }
-        
-        print("🖼️ Preview file: \(previewFile?.lastPathComponent ?? "NOT FOUND")")
-        print("📦 Asset files: \(assets.map { $0.lastPathComponent })")
         
         if let outputUrl = previewFile, let img = NSImage(contentsOf: outputUrl) {
             try? fileManager.removeItem(at: inputUrl)
