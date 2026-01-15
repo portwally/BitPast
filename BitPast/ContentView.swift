@@ -49,9 +49,15 @@ struct ContentView: View {
                             .help("Remove selected image")
                         }
                         Button(action: { viewModel.selectImagesFromFinder() }) {
-                            Image(systemName: "plus.circle.fill")
-                                .symbolRenderingMode(.hierarchical)
-                                .foregroundStyle(isRetro ? RetroTheme.textColor : .blue)
+                            if isRetro {
+                                Text("+")
+                                    .font(RetroTheme.boldFont(size: 18))
+                                    .foregroundColor(RetroTheme.textColor)
+                            } else {
+                                Image(systemName: "plus.circle.fill")
+                                    .symbolRenderingMode(.hierarchical)
+                                    .foregroundStyle(.blue)
+                            }
                         }
                         .buttonStyle(.plain)
                         .help("Add images")
@@ -70,12 +76,24 @@ struct ContentView: View {
                         ZStack {
                             isRetro ? RetroTheme.backgroundColor : Color(NSColor.controlBackgroundColor).opacity(0.3)
                             VStack(spacing: 16) {
-                                Image(systemName: "photo.stack")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 64, height: 64)
-                                    .symbolRenderingMode(.hierarchical)
-                                    .foregroundColor(isRetro ? RetroTheme.textColor.opacity(0.5) : Color(NSColor.tertiaryLabelColor))
+                                if isRetro {
+                                    // Retro ASCII-style icon
+                                    VStack(spacing: 0) {
+                                        Text("+--------+")
+                                        Text("|  IMG   |")
+                                        Text("|  IMG   |")
+                                        Text("+--------+")
+                                    }
+                                    .font(RetroTheme.font(size: 16))
+                                    .foregroundColor(RetroTheme.textColor.opacity(0.6))
+                                } else {
+                                    Image(systemName: "photo.stack")
+                                        .resizable()
+                                        .aspectRatio(contentMode: .fit)
+                                        .frame(width: 64, height: 64)
+                                        .symbolRenderingMode(.hierarchical)
+                                        .foregroundColor(Color(NSColor.tertiaryLabelColor))
+                                }
                                 Text("Drag Images Here")
                                     .font(isRetro ? retroBoldFont : .title3)
                                     .fontWeight(.medium)
@@ -112,9 +130,15 @@ struct ContentView: View {
                         Spacer()
                         HStack(spacing: 4) {
                             Button(action: { if zoomLevel > 0.2 { zoomLevel -= 0.2 } }) {
-                                Image(systemName: "minus.magnifyingglass")
+                                if isRetro {
+                                    Text("-")
+                                        .font(RetroTheme.boldFont(size: 14))
+                                        .frame(width: 20)
+                                } else {
+                                    Image(systemName: "minus.magnifyingglass")
+                                }
                             }
-                            .buttonStyle(isRetro ? .bordered : .bordered)
+                            .buttonStyle(.bordered)
                             .controlSize(.small)
                             .help("Zoom out")
 
@@ -125,9 +149,15 @@ struct ContentView: View {
                                 .frame(width: 45)
 
                             Button(action: { if zoomLevel < 5.0 { zoomLevel += 0.2 } }) {
-                                Image(systemName: "plus.magnifyingglass")
+                                if isRetro {
+                                    Text("+")
+                                        .font(RetroTheme.boldFont(size: 14))
+                                        .frame(width: 20)
+                                } else {
+                                    Image(systemName: "plus.magnifyingglass")
+                                }
                             }
-                            .buttonStyle(isRetro ? .bordered : .bordered)
+                            .buttonStyle(.bordered)
                             .controlSize(.small)
                             .help("Zoom in")
                         }
@@ -169,20 +199,38 @@ struct ContentView: View {
                                 }
                             } else if viewModel.isConverting {
                                 VStack(spacing: 12) {
-                                    ProgressView()
-                                        .scaleEffect(1.2)
+                                    if isRetro {
+                                        Text("[ ... ]")
+                                            .font(RetroTheme.boldFont(size: 16))
+                                            .foregroundColor(.white.opacity(0.8))
+                                    } else {
+                                        ProgressView()
+                                            .scaleEffect(1.2)
+                                    }
                                     Text("Converting...")
-                                        .font(.subheadline)
+                                        .font(isRetro ? retroSmallFont : .subheadline)
                                         .foregroundColor(.white.opacity(0.8))
                                 }
                             } else {
                                 VStack(spacing: 12) {
-                                    Image(systemName: "photo.badge.arrow.down")
-                                        .font(.system(size: 48))
-                                        .symbolRenderingMode(.hierarchical)
-                                        .foregroundStyle(.white.opacity(0.3))
+                                    if isRetro {
+                                        // Retro ASCII-style icon
+                                        VStack(spacing: 0) {
+                                            Text("+--------+")
+                                            Text("|   ?    |")
+                                            Text("|   v    |")
+                                            Text("+--------+")
+                                        }
+                                        .font(RetroTheme.font(size: 16))
+                                        .foregroundColor(.white.opacity(0.4))
+                                    } else {
+                                        Image(systemName: "photo.badge.arrow.down")
+                                            .font(.system(size: 48))
+                                            .symbolRenderingMode(.hierarchical)
+                                            .foregroundStyle(.white.opacity(0.3))
+                                    }
                                     Text("Select an image to preview")
-                                        .font(.subheadline)
+                                        .font(isRetro ? retroSmallFont : .subheadline)
                                         .foregroundColor(.white.opacity(0.5))
                                 }
                             }
@@ -192,31 +240,30 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            // Horizontal divider between browser/preview and controls
-            Rectangle()
-                .fill(Color.red)
-                .frame(height: 4)
-
             // 2. UNTERER BEREICH: FIXED HEIGHT
-            VStack(spacing: 0) {
-                if let error = viewModel.errorMessage {
-                    HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundColor(.orange)
-                        Text(error)
-                            .font(.caption)
-                            .foregroundColor(.primary)
-                        Spacer()
+            ZStack(alignment: .top) {
+                // Main content
+                VStack(spacing: 0) {
+                    if let error = viewModel.errorMessage {
+                        // Error bar (below the horizontal divider)
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .foregroundColor(.orange)
+                            Text(error)
+                                .font(.caption)
+                                .foregroundColor(.primary)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .padding(.top, isRetro ? RetroTheme.dividerThickness : 1) // Space for horizontal divider
+                        .background(Color.orange.opacity(0.1))
+                        .overlay(alignment: .bottom) {
+                            Divider()
+                        }
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(Color.orange.opacity(0.1))
-                    .overlay(alignment: .bottom) {
-                        Divider()
-                    }
-                }
 
-                HStack(spacing: 0) {
+                    HStack(spacing: 0) {
 
                     // A. LINKS: SYSTEM (Feste Breite, Symmetrisch zu Rechts)
                     VStack(alignment: .leading, spacing: 12) {
@@ -276,10 +323,11 @@ struct ContentView: View {
                     .frame(width: sideColumnWidth)
                     .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
 
+                    // Vertical divider after SYSTEM
                     if isRetro {
                         Rectangle().fill(RetroTheme.borderColor).frame(width: RetroTheme.dividerThickness)
                     } else {
-                        Divider()
+                        Rectangle().fill(Color(NSColor.separatorColor)).frame(width: 1)
                     }
 
                     // B. MITTE: SLIDER (Scrollbar)
@@ -293,12 +341,6 @@ struct ContentView: View {
                                         ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro)
                                     }
                                 }
-                            }
-
-                            if isRetro {
-                                Rectangle().fill(RetroTheme.borderColor).frame(height: RetroTheme.dividerThickness)
-                            } else {
-                                Divider()
                             }
 
                             // UNTERE REIHE
@@ -317,10 +359,11 @@ struct ContentView: View {
                     }
                     .background(isRetro ? RetroTheme.backgroundColor : Color.clear)
 
+                    // Vertical divider before ACTIONS
                     if isRetro {
                         Rectangle().fill(RetroTheme.borderColor).frame(width: RetroTheme.dividerThickness)
                     } else {
-                        Divider()
+                        Rectangle().fill(Color(NSColor.separatorColor)).frame(width: 1)
                     }
 
                     // C. RECHTS: ACTIONS (Feste Breite, Symmetrisch zu Links)
@@ -378,6 +421,13 @@ struct ContentView: View {
                     .frame(width: sideColumnWidth)
                     .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
                 }
+                }
+
+                // Horizontal divider at the very top (always visible, on top of everything)
+                Rectangle()
+                    .fill(isRetro ? RetroTheme.borderColor : Color(NSColor.separatorColor))
+                    .frame(height: isRetro ? RetroTheme.dividerThickness : 1)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
             .background(isRetro ? RetroTheme.backgroundColor : Color(NSColor.windowBackgroundColor))
             .frame(height: 180)
@@ -641,13 +691,6 @@ struct SystemSelectButton: View {
                     .minimumScaleFactor(0.85)
 
                 Spacer(minLength: 4)
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(isRetro ? RetroTheme.textColor : .green)
-                        .imageScale(.medium)
-                        .frame(width: 16, height: 16)
-                }
             }
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity)

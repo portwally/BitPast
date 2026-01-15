@@ -1906,7 +1906,7 @@ void hgrline(int y)
 
    The nominal resolution for a Double Lo-Res Screen is 320 x 192
 
-/* routines to save to Apple 2 Lores Format */
+ routines to save to Apple 2 Lores Format */
 
 /* sets the pixels in the lores buffer (hgrbuf) */
 void setlopixel(unsigned char color,int x, int y,int ragflag)
@@ -5937,7 +5937,7 @@ int b2d_actual_main(int argc, char **argv)
 							   15 (white) are also available in high-resolution mode */
 							/*
 
-							/* disable the unused colors in the default palette */
+							 disable the unused colors in the default palette */
 							/* these will be propagated to any alternate palettes that are selected */
 							grpal[1][0] = grpal[1][1] = grpal[1][2] = 0;
 							grpal[2][0] = grpal[2][1] = grpal[2][2] = 0;

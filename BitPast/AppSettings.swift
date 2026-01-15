@@ -50,8 +50,8 @@ struct RetroTheme {
     static let textColor = Color.black
     static let borderColor = Color.black
 
-    // Divider thickness (4px for retro mode)
-    static let dividerThickness: CGFloat = 4
+    // Divider thickness (3px for retro mode)
+    static let dividerThickness: CGFloat = 3
 
     // Shaston 640 font - the authentic Apple IIgs system font (640x200, 1-by-2 pixel aspect)
     // Use at 16pt (1x), 32pt (2x), or 48pt (3x) for pixel-perfect rendering
