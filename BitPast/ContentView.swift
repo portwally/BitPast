@@ -24,16 +24,36 @@ struct ContentView: View {
 
     // Retro mode helpers
     var isRetro: Bool { settings.isRetroMode }
-    var retroFont: Font { RetroTheme.font(size: 12) }
-    var retroSmallFont: Font { RetroTheme.font(size: 11) }
-    var retroBoldFont: Font { RetroTheme.boldFont(size: 13) }
-    
+    var isAppleIIgs: Bool { settings.isAppleIIgsMode }
+    var isAppleII: Bool { settings.isAppleIIMode }
+
+    // Theme-aware fonts
+    var retroFont: Font { isAppleII ? AppleIITheme.font(size: 14) : RetroTheme.font(size: 12) }
+    var retroSmallFont: Font { isAppleII ? AppleIITheme.font(size: 12) : RetroTheme.font(size: 11) }
+    var retroBoldFont: Font { isAppleII ? AppleIITheme.boldFont(size: 14) : RetroTheme.boldFont(size: 13) }
+
+    // Theme-aware colors
+    var retroBgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.contentGray }
+    var retroTextColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
+    var retroBorderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
+    var retroWindowBg: Color { isAppleII ? AppleIITheme.windowBackground : RetroTheme.windowBackground }
+
     var body: some View {
-        if isRetro {
-            // GS/OS Window Frame wrapper for retro mode
+        if isAppleIIgs {
+            // GS/OS Window Frame wrapper for Apple IIgs mode
             GSOSWindowFrame(
                 title: "BitPast",
                 infoText: "Blast from the Past  •  \(viewModel.inputImages.count) images"
+            ) {
+                mainContent
+            }
+            .frame(minWidth: 1000, minHeight: 650)
+            .id(settings.appearanceMode)
+        } else if isAppleII {
+            // Apple II Green Phosphor mode
+            AppleIIWindowFrame(
+                title: "BITPAST",
+                infoText: "\(viewModel.inputImages.count) IMAGES LOADED"
             ) {
                 mainContent
             }
@@ -58,12 +78,12 @@ struct ContentView: View {
                     HStack {
                         Text("Image Browser")
                             .font(isRetro ? retroBoldFont : .system(size: 13, weight: .semibold))
-                            .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
+                            .foregroundColor(isRetro ? retroTextColor : .secondary)
                         Spacer()
                         if viewModel.selectedImageId != nil {
                             Button(action: { viewModel.removeSelectedImage() }) {
                                 Image(systemName: "trash")
-                                    .foregroundStyle(isRetro ? RetroTheme.textColor : .secondary)
+                                    .foregroundStyle(isRetro ? retroTextColor : .secondary)
                             }
                             .buttonStyle(.plain)
                             .help("Remove selected image")
@@ -71,8 +91,8 @@ struct ContentView: View {
                         Button(action: { viewModel.selectImagesFromFinder() }) {
                             if isRetro {
                                 Text("+")
-                                    .font(RetroTheme.boldFont(size: 18))
-                                    .foregroundColor(RetroTheme.textColor)
+                                    .font(retroBoldFont)
+                                    .foregroundColor(retroTextColor)
                             } else {
                                 Image(systemName: "plus.circle.fill")
                                     .symbolRenderingMode(.hierarchical)
@@ -84,17 +104,17 @@ struct ContentView: View {
                     }
                     .frame(height: 38)
                     .padding(.horizontal, 12)
-                    .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .background(isRetro ? retroWindowBg : Color(NSColor.controlBackgroundColor).opacity(0.5))
 
                     if isRetro {
-                        Rectangle().fill(RetroTheme.borderColor).frame(height: RetroTheme.dividerThickness)
+                        Rectangle().fill(retroBorderColor).frame(height: isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
                     } else {
                         Divider()
                     }
 
                     if viewModel.inputImages.isEmpty {
                         ZStack {
-                            isRetro ? RetroTheme.contentGray : Color(NSColor.controlBackgroundColor).opacity(0.3)
+                            isRetro ? retroBgColor : Color(NSColor.controlBackgroundColor).opacity(0.3)
                             VStack(spacing: 16) {
                                 if isRetro {
                                     // Retro ASCII-style icon
@@ -104,8 +124,8 @@ struct ContentView: View {
                                         Text("|  IMG   |")
                                         Text("+--------+")
                                     }
-                                    .font(RetroTheme.font(size: 16))
-                                    .foregroundColor(RetroTheme.textColor.opacity(0.6))
+                                    .font(retroFont)
+                                    .foregroundColor(retroTextColor.opacity(0.6))
                                 } else {
                                     Image(systemName: "photo.stack")
                                         .resizable()
@@ -117,10 +137,10 @@ struct ContentView: View {
                                 Text("Drag Images Here")
                                     .font(isRetro ? retroBoldFont : .title3)
                                     .fontWeight(.medium)
-                                    .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
+                                    .foregroundColor(isRetro ? retroTextColor : .secondary)
                                 Text("or click + to add")
                                     .font(isRetro ? retroSmallFont : .subheadline)
-                                    .foregroundColor(isRetro ? RetroTheme.textColor.opacity(0.7) : Color(NSColor.tertiaryLabelColor))
+                                    .foregroundColor(isRetro ? retroTextColor.opacity(0.7) : Color(NSColor.tertiaryLabelColor))
                             }
                             .padding()
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -128,14 +148,14 @@ struct ContentView: View {
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 10) {
                                 ForEach(viewModel.inputImages) { item in
-                                    ImageGridItem(item: item, isSelected: viewModel.selectedImageId == item.id, isRetro: isRetro)
+                                    ImageGridItem(item: item, isSelected: viewModel.selectedImageId == item.id, isRetro: isRetro, isAppleII: isAppleII)
                                         .onTapGesture {
                                             viewModel.selectedImageId = item.id
                                             viewModel.convertImmediately()
                                         }
                                 }
                             }.padding(10)
-                        }.background(isRetro ? RetroTheme.contentGray : Color(NSColor.controlBackgroundColor))
+                        }.background(isRetro ? retroBgColor : Color(NSColor.controlBackgroundColor))
                     }
                 }
                 .frame(minWidth: 200, maxWidth: 450)
@@ -146,13 +166,14 @@ struct ContentView: View {
                     HStack {
                         Text("Preview")
                             .font(isRetro ? retroBoldFont : .system(size: 13, weight: .semibold))
-                            .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
+                            .foregroundColor(isRetro ? retroTextColor : .secondary)
                         Spacer()
                         HStack(spacing: 4) {
                             Button(action: { if zoomLevel > 0.2 { zoomLevel -= 0.2 } }) {
                                 if isRetro {
                                     Text("-")
-                                        .font(RetroTheme.boldFont(size: 14))
+                                        .font(retroBoldFont)
+                                        .foregroundColor(retroTextColor)
                                         .frame(width: 20)
                                 } else {
                                     Image(systemName: "minus.magnifyingglass")
@@ -165,13 +186,14 @@ struct ContentView: View {
                             Text("\(Int(zoomLevel * 100))%")
                                 .monospacedDigit()
                                 .font(isRetro ? retroSmallFont : .caption)
-                                .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
+                                .foregroundColor(isRetro ? retroTextColor : .secondary)
                                 .frame(width: 45)
 
                             Button(action: { if zoomLevel < 5.0 { zoomLevel += 0.2 } }) {
                                 if isRetro {
                                     Text("+")
-                                        .font(RetroTheme.boldFont(size: 14))
+                                        .font(retroBoldFont)
+                                        .foregroundColor(retroTextColor)
                                         .frame(width: 20)
                                 } else {
                                     Image(systemName: "plus.magnifyingglass")
@@ -184,14 +206,14 @@ struct ContentView: View {
                     }
                     .frame(height: 38)
                     .padding(.horizontal, 12)
-                    .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .background(isRetro ? retroWindowBg : Color(NSColor.controlBackgroundColor).opacity(0.5))
 
                     if isRetro {
-                        Rectangle().fill(RetroTheme.borderColor).frame(height: RetroTheme.dividerThickness)
+                        Rectangle().fill(retroBorderColor).frame(height: isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
                     } else {
                         Divider()
                     }
-                    
+
                     GeometryReader { geometry in
                         ZStack {
                             Color(NSColor.black)
@@ -221,15 +243,15 @@ struct ContentView: View {
                                 VStack(spacing: 12) {
                                     if isRetro {
                                         Text("[ ... ]")
-                                            .font(RetroTheme.boldFont(size: 16))
-                                            .foregroundColor(.white.opacity(0.8))
+                                            .font(retroBoldFont)
+                                            .foregroundColor(isAppleII ? AppleIITheme.textColor : .white.opacity(0.8))
                                     } else {
                                         ProgressView()
                                             .scaleEffect(1.2)
                                     }
                                     Text("Converting...")
                                         .font(isRetro ? retroSmallFont : .subheadline)
-                                        .foregroundColor(.white.opacity(0.8))
+                                        .foregroundColor(isAppleII ? AppleIITheme.textColor : .white.opacity(0.8))
                                 }
                             } else {
                                 VStack(spacing: 12) {
@@ -241,8 +263,8 @@ struct ContentView: View {
                                             Text("|   v    |")
                                             Text("+--------+")
                                         }
-                                        .font(RetroTheme.font(size: 16))
-                                        .foregroundColor(.white.opacity(0.4))
+                                        .font(retroFont)
+                                        .foregroundColor(isAppleII ? AppleIITheme.dimTextColor : .white.opacity(0.4))
                                     } else {
                                         Image(systemName: "photo.badge.arrow.down")
                                             .font(.system(size: 48))
@@ -251,7 +273,7 @@ struct ContentView: View {
                                     }
                                     Text("Select an image to preview")
                                         .font(isRetro ? retroSmallFont : .subheadline)
-                                        .foregroundColor(.white.opacity(0.5))
+                                        .foregroundColor(isAppleII ? AppleIITheme.dimTextColor : .white.opacity(0.5))
                                 }
                             }
                         }
@@ -289,7 +311,7 @@ struct ContentView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text("SYSTEM")
                             .font(isRetro ? retroSmallFont : .system(size: 11, weight: .semibold))
-                            .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
+                            .foregroundColor(isRetro ? retroTextColor : .secondary)
                             .tracking(0.5)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -299,7 +321,8 @@ struct ContentView: View {
                                 iconName: "icon_apple2",
                                 machineName: viewModel.machines[0].name,
                                 isSelected: viewModel.selectedMachineIndex == 0,
-                                isRetro: isRetro
+                                isRetro: isRetro,
+                                isAppleII: isAppleII
                             ) {
                                 if viewModel.selectedMachineIndex != 0 {
                                     viewModel.selectedMachineIndex = 0
@@ -313,7 +336,8 @@ struct ContentView: View {
                                     iconName: "icon_iigs",
                                     machineName: viewModel.machines[1].name,
                                     isSelected: viewModel.selectedMachineIndex == 1,
-                                    isRetro: isRetro
+                                    isRetro: isRetro,
+                                    isAppleII: isAppleII
                                 ) {
                                     if viewModel.selectedMachineIndex != 1 {
                                         viewModel.selectedMachineIndex = 1
@@ -328,7 +352,8 @@ struct ContentView: View {
                                     iconName: "gamecontroller.fill",
                                     machineName: viewModel.machines[2].name,
                                     isSelected: viewModel.selectedMachineIndex == 2,
-                                    isRetro: isRetro
+                                    isRetro: isRetro,
+                                    isAppleII: isAppleII
                                 ) {
                                     if viewModel.selectedMachineIndex != 2 {
                                         viewModel.selectedMachineIndex = 2
@@ -341,11 +366,11 @@ struct ContentView: View {
                     }
                     .padding(12)
                     .frame(width: sideColumnWidth)
-                    .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .background(isRetro ? retroWindowBg : Color(NSColor.controlBackgroundColor).opacity(0.5))
 
                     // Vertical divider after SYSTEM
                     if isRetro {
-                        Rectangle().fill(RetroTheme.borderColor).frame(width: RetroTheme.dividerThickness)
+                        Rectangle().fill(retroBorderColor).frame(width: isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
                     } else {
                         Rectangle().fill(Color(NSColor.separatorColor)).frame(width: 1)
                     }
@@ -358,7 +383,7 @@ struct ContentView: View {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if topRowKeys.contains(opt.key) {
-                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro)
+                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII)
                                     }
                                 }
                             }
@@ -368,7 +393,7 @@ struct ContentView: View {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if bottomRowKeys.contains(opt.key) {
-                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro)
+                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII)
                                     }
                                 }
                             }
@@ -377,11 +402,11 @@ struct ContentView: View {
                         .padding(.vertical, 14)
                         .frame(minWidth: 300, maxWidth: .infinity)
                     }
-                    .background(isRetro ? RetroTheme.contentGray : Color.clear)
+                    .background(isRetro ? retroBgColor : Color.clear)
 
                     // Vertical divider before ACTIONS
                     if isRetro {
-                        Rectangle().fill(RetroTheme.borderColor).frame(width: RetroTheme.dividerThickness)
+                        Rectangle().fill(retroBorderColor).frame(width: isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
                     } else {
                         Rectangle().fill(Color(NSColor.separatorColor)).frame(width: 1)
                     }
@@ -390,70 +415,116 @@ struct ContentView: View {
                     VStack(spacing: 12) {
                         Text("ACTIONS")
                             .font(isRetro ? retroSmallFont : .system(size: 11, weight: .semibold))
-                            .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
+                            .foregroundColor(isRetro ? retroTextColor : .secondary)
                             .tracking(0.5)
                             .frame(maxWidth: .infinity, alignment: .leading)
 
-                        Menu {
-                            Button("PNG") { viewModel.saveImage(as: .png) }
-                            Button("JPG") { viewModel.saveImage(as: .jpg) }
-                            Button("GIF") { viewModel.saveImage(as: .gif) }
-                            Button("TIFF") { viewModel.saveImage(as: .tiff) }
-                            Divider()
-                            if let asset = viewModel.currentResult?.fileAssets.first {
-                                let ext = asset.pathExtension.uppercased()
-                                Button("Native Apple II (.\(ext))") { viewModel.saveNativeFile() }
-                            } else {
-                                Button("Native Format") { }.disabled(true)
-                            }
-                        } label: {
-                            Label("Save Image...", systemImage: "square.and.arrow.down")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .menuStyle(.borderedButton)
-                        .controlSize(.regular)
-                        .disabled(viewModel.convertedImage == nil)
+                        if isRetro {
+                            // Retro-styled Save Menu
+                            RetroActionMenu(
+                                title: "Save Image...",
+                                isAppleII: isAppleII,
+                                isDisabled: viewModel.convertedImage == nil,
+                                menuItems: {
+                                    Button("PNG") { viewModel.saveImage(as: .png) }
+                                    Button("JPG") { viewModel.saveImage(as: .jpg) }
+                                    Button("GIF") { viewModel.saveImage(as: .gif) }
+                                    Button("TIFF") { viewModel.saveImage(as: .tiff) }
+                                    Divider()
+                                    if let asset = viewModel.currentResult?.fileAssets.first {
+                                        let ext = asset.pathExtension.uppercased()
+                                        Button("Native (.\(ext))") { viewModel.saveNativeFile() }
+                                    } else {
+                                        Button("Native Format") { }.disabled(true)
+                                    }
+                                }
+                            )
 
-                        Button(action: { showDiskSheet = true }) {
-                            Label("ProDOS Disk", systemImage: "externaldrive")
-                                .frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .disabled(viewModel.convertedImage == nil)
-                        .sheet(isPresented: $showDiskSheet) {
-                            DiskExportSheet(
-                                isPresented: $showDiskSheet,
-                                selectedSize: $selectedDiskSize,
-                                selectedFormat: $selectedDiskFormat,
-                                volumeName: $diskVolumeName
+                            // Retro-styled ProDOS Disk Button
+                            RetroActionButton(
+                                title: "ProDOS Disk",
+                                isAppleII: isAppleII,
+                                isDisabled: viewModel.convertedImage == nil
                             ) {
-                                viewModel.createProDOSDisk(
-                                    size: selectedDiskSize,
-                                    format: selectedDiskFormat,
-                                    volumeName: diskVolumeName
-                                )
+                                showDiskSheet = true
+                            }
+                            .sheet(isPresented: $showDiskSheet) {
+                                DiskExportSheet(
+                                    isPresented: $showDiskSheet,
+                                    selectedSize: $selectedDiskSize,
+                                    selectedFormat: $selectedDiskFormat,
+                                    volumeName: $diskVolumeName
+                                ) {
+                                    viewModel.createProDOSDisk(
+                                        size: selectedDiskSize,
+                                        format: selectedDiskFormat,
+                                        volumeName: diskVolumeName
+                                    )
+                                }
+                            }
+                        } else {
+                            // Standard macOS buttons
+                            Menu {
+                                Button("PNG") { viewModel.saveImage(as: .png) }
+                                Button("JPG") { viewModel.saveImage(as: .jpg) }
+                                Button("GIF") { viewModel.saveImage(as: .gif) }
+                                Button("TIFF") { viewModel.saveImage(as: .tiff) }
+                                Divider()
+                                if let asset = viewModel.currentResult?.fileAssets.first {
+                                    let ext = asset.pathExtension.uppercased()
+                                    Button("Native Apple II (.\(ext))") { viewModel.saveNativeFile() }
+                                } else {
+                                    Button("Native Format") { }.disabled(true)
+                                }
+                            } label: {
+                                Label("Save Image...", systemImage: "square.and.arrow.down")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .menuStyle(.borderedButton)
+                            .controlSize(.regular)
+                            .disabled(viewModel.convertedImage == nil)
+
+                            Button(action: { showDiskSheet = true }) {
+                                Label("ProDOS Disk", systemImage: "externaldrive")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.bordered)
+                            .controlSize(.regular)
+                            .disabled(viewModel.convertedImage == nil)
+                            .sheet(isPresented: $showDiskSheet) {
+                                DiskExportSheet(
+                                    isPresented: $showDiskSheet,
+                                    selectedSize: $selectedDiskSize,
+                                    selectedFormat: $selectedDiskFormat,
+                                    volumeName: $diskVolumeName
+                                ) {
+                                    viewModel.createProDOSDisk(
+                                        size: selectedDiskSize,
+                                        format: selectedDiskFormat,
+                                        volumeName: diskVolumeName
+                                    )
+                                }
                             }
                         }
                         Spacer()
                     }
                     .padding(12)
                     .frame(width: sideColumnWidth)
-                    .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
+                    .background(isRetro ? retroWindowBg : Color(NSColor.controlBackgroundColor).opacity(0.5))
                 }
                 }
 
                 // Horizontal divider at the very top (always visible, on top of everything)
                 Rectangle()
-                    .fill(isRetro ? RetroTheme.borderColor : Color(NSColor.separatorColor))
-                    .frame(height: isRetro ? RetroTheme.dividerThickness : 1)
+                    .fill(isRetro ? retroBorderColor : Color(NSColor.separatorColor))
+                    .frame(height: isRetro ? (isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness) : 1)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            .background(isRetro ? RetroTheme.contentGray : Color(NSColor.windowBackgroundColor))
+            .background(isRetro ? retroBgColor : Color(NSColor.windowBackgroundColor))
             .frame(height: 180)
 
         }
-        .background(isRetro ? RetroTheme.contentGray : Color(NSColor.windowBackgroundColor))
+        .background(isRetro ? retroBgColor : Color(NSColor.windowBackgroundColor))
     }
 }
 
@@ -527,14 +598,20 @@ struct ImageGridItem: View {
     let item: InputImage
     let isSelected: Bool
     var isRetro: Bool = false
+    var isAppleII: Bool = false
+
+    // Theme-aware colors
+    var themeBgColor: Color { isAppleII ? AppleIITheme.windowBackground : RetroTheme.windowBackground }
+    var themeBorderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
+    var themeTextColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
 
     var body: some View {
         VStack(spacing: 6) {
             ZStack {
                 if isRetro {
                     Rectangle()
-                        .fill(RetroTheme.windowBackground)
-                        .border(RetroTheme.borderColor, width: 1)
+                        .fill(themeBgColor)
+                        .border(themeBorderColor, width: 1)
                 } else {
                     RoundedRectangle(cornerRadius: 8)
                         .fill(Color(NSColor.controlBackgroundColor))
@@ -552,7 +629,7 @@ struct ImageGridItem: View {
                 Group {
                     if isRetro {
                         Rectangle()
-                            .stroke(isSelected ? RetroTheme.borderColor : Color.clear, lineWidth: 2)
+                            .stroke(isSelected ? themeBorderColor : Color.clear, lineWidth: 2)
                     } else {
                         RoundedRectangle(cornerRadius: 8)
                             .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2.5)
@@ -561,13 +638,13 @@ struct ImageGridItem: View {
             )
 
             Text(item.name)
-                .font(isRetro ? RetroTheme.font(size: 10) : .caption)
+                .font(isRetro ? (isAppleII ? AppleIITheme.font(size: 10) : RetroTheme.font(size: 10)) : .caption)
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .foregroundColor(isRetro ? RetroTheme.textColor : (isSelected ? .primary : .secondary))
+                .foregroundColor(isRetro ? themeTextColor : (isSelected ? .primary : .secondary))
         }
         .padding(6)
-        .background(isSelected ? (isRetro ? RetroTheme.windowBackground : Color.accentColor.opacity(0.12)) : Color.clear)
+        .background(isSelected ? (isRetro ? themeBgColor : Color.accentColor.opacity(0.12)) : Color.clear)
         .cornerRadius(isRetro ? 0 : 10)
     }
 }
@@ -577,12 +654,18 @@ struct ControlView: View {
     let index: Int
     @ObservedObject var viewModel: ConverterViewModel
     var isRetro: Bool = false
+    var isAppleII: Bool = false
+
+    // Theme-aware colors
+    var themeTextColor: Color { isAppleII ? AppleIITheme.textColor : (isRetro ? RetroTheme.textColor : .secondary) }
+    var themeBgColor: Color { isAppleII ? AppleIITheme.windowBackground : (isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5)) }
+    var themeBorderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
 
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
             Text(opt.label.uppercased())
-                .font(isRetro ? RetroTheme.font(size: 11) : .system(size: 11, weight: .semibold))
-                .foregroundColor(isRetro ? RetroTheme.textColor : .secondary)
+                .font(isAppleII ? AppleIITheme.font(size: 12) : (isRetro ? RetroTheme.font(size: 11) : .system(size: 11, weight: .semibold)))
+                .foregroundColor(themeTextColor)
                 .tracking(0.3)
             
             if opt.type == .slider {
@@ -611,17 +694,39 @@ struct ControlView: View {
 
                     Text(safeValueDisplay)
                         .monospacedDigit()
-                        .font(isRetro ? RetroTheme.font(size: 13) : .system(size: 13, weight: .medium))
-                        .foregroundColor(isRetro ? RetroTheme.textColor : .primary)
+                        .font(isAppleII ? AppleIITheme.font(size: 14) : (isRetro ? RetroTheme.font(size: 13) : .system(size: 13, weight: .medium)))
+                        .foregroundColor(isAppleII ? AppleIITheme.textColor : (isRetro ? RetroTheme.textColor : .primary))
                         .frame(minWidth: 40)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)
-                        .background(isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5))
-                        .cornerRadius(isRetro ? 0 : 4)
-                        .overlay(isRetro ? Rectangle().stroke(RetroTheme.borderColor, lineWidth: 1) : nil)
+                        .background(themeBgColor)
+                        .cornerRadius((isRetro || isAppleII) ? 0 : 4)
+                        .overlay((isRetro || isAppleII) ? Rectangle().stroke(themeBorderColor, lineWidth: 1) : nil)
                 }
             } else if opt.type == .picker {
-                if isRetro {
+                if isAppleII {
+                    // Apple II-style popup picker with green phosphor look
+                    AppleIIPopupPicker(
+                        values: filteredValues,
+                        selectedValue: Binding(
+                            get: {
+                                let currentOptions = viewModel.machines[viewModel.selectedMachineIndex].options
+                                if index < currentOptions.count {
+                                    return currentOptions[index].selectedValue
+                                }
+                                return ""
+                            },
+                            set: { val in
+                                if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
+                                    viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = val
+                                }
+                            }
+                        ),
+                        onChange: {
+                            viewModel.triggerLivePreview()
+                        }
+                    )
+                } else if isRetro {
                     // GS/OS-style popup picker with Shaston font
                     GSOSPopupPicker(
                         values: filteredValues,
@@ -685,7 +790,7 @@ struct ControlView: View {
            modeOption.selectedValue == "Mono" {
             // Only allow these two resolutions for Mono mode
             return opt.values.filter { value in
-                value.contains("280x192 (HGR Native)") || value.contains("560x384 (DHGR Best)")
+                value.contains("280x192") || value.contains("560x384")
             }
         }
         
@@ -706,7 +811,14 @@ struct SystemSelectButton: View {
     let machineName: String
     let isSelected: Bool
     var isRetro: Bool = false
+    var isAppleII: Bool = false
     let action: () -> Void
+
+    // Theme-aware colors
+    var themeBgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.backgroundColor }
+    var themeWindowBg: Color { isAppleII ? AppleIITheme.windowBackground : RetroTheme.windowBackground }
+    var themeBorderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
+    var themeTextColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
 
     var body: some View {
         Button(action: action) {
@@ -723,12 +835,12 @@ struct SystemSelectButton: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(height: 38)
                         .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(isRetro ? RetroTheme.textColor : (isSelected ? Color.accentColor : Color.secondary))
+                        .foregroundStyle(isRetro ? themeTextColor : (isSelected ? Color.accentColor : Color.secondary))
                 }
 
                 Text(machineName)
-                    .font(isRetro ? RetroTheme.font(size: 14) : .system(size: 14, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isRetro ? RetroTheme.textColor : (isSelected ? .primary : .secondary))
+                    .font(isRetro ? (isAppleII ? AppleIITheme.font(size: 14) : RetroTheme.font(size: 14)) : .system(size: 14, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isRetro ? themeTextColor : (isSelected ? .primary : .secondary))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
 
@@ -741,7 +853,7 @@ struct SystemSelectButton: View {
                 Group {
                     if isRetro {
                         Rectangle()
-                            .fill(isSelected ? RetroTheme.windowBackground : RetroTheme.backgroundColor)
+                            .fill(isSelected ? themeWindowBg : themeBgColor)
                     } else {
                         RoundedRectangle(cornerRadius: 10)
                             .fill(isSelected ? Color.accentColor.opacity(0.1) : Color(NSColor.controlBackgroundColor))
@@ -753,7 +865,7 @@ struct SystemSelectButton: View {
                 Group {
                     if isRetro {
                         Rectangle()
-                            .strokeBorder(RetroTheme.borderColor, lineWidth: isSelected ? 2 : 1)
+                            .strokeBorder(themeBorderColor, lineWidth: isSelected ? 2 : 1)
                     } else {
                         RoundedRectangle(cornerRadius: 10)
                             .strokeBorder(isSelected ? Color.accentColor.opacity(0.5) : Color(NSColor.separatorColor).opacity(0.5), lineWidth: isSelected ? 1.5 : 0.5)
@@ -767,16 +879,38 @@ struct SystemSelectButton: View {
 
 // MARK: - GS/OS Popup Picker
 
-/// GS/OS-style popup menu picker with Shaston font using NSPopUpButton
-struct GSOSPopupPicker: NSViewRepresentable {
+/// GS/OS-style popup menu picker with Shaston font
+struct GSOSPopupPicker: View {
+    let values: [String]
+    @Binding var selectedValue: String
+    let onChange: () -> Void
+
+    var body: some View {
+        GSOSPopupButtonRepresentable(
+            values: values,
+            selectedValue: $selectedValue,
+            onChange: onChange
+        )
+        .frame(minWidth: 110)
+        .frame(height: 20)
+        .background(Color.white)
+        .overlay(
+            Rectangle()
+                .stroke(RetroTheme.borderColor, lineWidth: 1)
+        )
+    }
+}
+
+/// NSViewRepresentable wrapper for NSPopUpButton with Shaston font
+struct GSOSPopupButtonRepresentable: NSViewRepresentable {
     let values: [String]
     @Binding var selectedValue: String
     let onChange: () -> Void
 
     func makeNSView(context: Context) -> NSPopUpButton {
         let popup = NSPopUpButton(frame: .zero, pullsDown: false)
-        popup.bezelStyle = .inline
-        popup.isBordered = true
+        popup.bezelStyle = .smallSquare
+        popup.isBordered = false  // Remove default border, we draw our own
 
         // Set Shaston font for the button title
         if let shastonFont = NSFont(name: "Shaston640", size: 16) {
@@ -812,9 +946,9 @@ struct GSOSPopupPicker: NSViewRepresentable {
     }
 
     class Coordinator: NSObject {
-        var parent: GSOSPopupPicker
+        var parent: GSOSPopupButtonRepresentable
 
-        init(_ parent: GSOSPopupPicker) {
+        init(_ parent: GSOSPopupButtonRepresentable) {
             self.parent = parent
         }
 
@@ -960,5 +1094,236 @@ struct GSOSWindowFrame<Content: View>: View {
             Rectangle()
                 .stroke(Color.black, lineWidth: 2)
         )
+    }
+}
+
+// MARK: - Apple II Green Phosphor Window Frame
+
+/// Apple II-style window frame with green phosphor look
+struct AppleIIWindowFrame<Content: View>: View {
+    let title: String
+    let infoText: String
+    let content: Content
+
+    init(title: String, infoText: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.infoText = infoText
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Title bar - simple green text on black
+            HStack {
+                Text("*")
+                    .font(AppleIITheme.font(size: 16))
+                    .foregroundColor(AppleIITheme.textColor)
+
+                Text(title)
+                    .font(AppleIITheme.font(size: 16))
+                    .foregroundColor(AppleIITheme.textColor)
+
+                Spacer()
+
+                Text(infoText)
+                    .font(AppleIITheme.font(size: 14))
+                    .foregroundColor(AppleIITheme.dimTextColor)
+
+                Text("*")
+                    .font(AppleIITheme.font(size: 16))
+                    .foregroundColor(AppleIITheme.textColor)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(AppleIITheme.backgroundColor)
+
+            // Green divider line
+            Rectangle()
+                .fill(AppleIITheme.borderColor)
+                .frame(height: AppleIITheme.dividerThickness)
+
+            // Content area
+            content
+                .background(AppleIITheme.backgroundColor)
+        }
+        .background(AppleIITheme.backgroundColor)
+        .overlay(
+            Rectangle()
+                .stroke(AppleIITheme.borderColor, lineWidth: 2)
+        )
+    }
+}
+
+// MARK: - Apple II Popup Picker
+
+/// Apple II-style popup picker with green phosphor look
+struct AppleIIPopupPicker: View {
+    let values: [String]
+    @Binding var selectedValue: String
+    let onChange: () -> Void
+
+    var body: some View {
+        AppleIIPopupButtonRepresentable(
+            values: values,
+            selectedValue: $selectedValue,
+            onChange: onChange
+        )
+        .frame(minWidth: 110)
+        .frame(height: 20)
+        .background(AppleIITheme.backgroundColor)
+        .overlay(
+            Rectangle()
+                .stroke(AppleIITheme.borderColor, lineWidth: 1)
+        )
+    }
+}
+
+/// NSViewRepresentable wrapper for Apple II style popup
+struct AppleIIPopupButtonRepresentable: NSViewRepresentable {
+    let values: [String]
+    @Binding var selectedValue: String
+    let onChange: () -> Void
+
+    func makeNSView(context: Context) -> NSPopUpButton {
+        let popup = NSPopUpButton(frame: .zero, pullsDown: false)
+        popup.bezelStyle = .smallSquare
+        popup.isBordered = false
+
+        // Set Apple II font
+        popup.font = AppleIITheme.nsFont(size: 14)
+
+        popup.target = context.coordinator
+        popup.action = #selector(Coordinator.selectionChanged(_:))
+
+        return popup
+    }
+
+    func updateNSView(_ popup: NSPopUpButton, context: Context) {
+        popup.removeAllItems()
+
+        // Add items with Apple II font
+        let font = AppleIITheme.nsFont(size: 14)
+        for value in values {
+            popup.addItem(withTitle: value)
+            if let item = popup.lastItem {
+                let attributes: [NSAttributedString.Key: Any] = [
+                    .font: font,
+                    .foregroundColor: NSColor(AppleIITheme.textColor)
+                ]
+                item.attributedTitle = NSAttributedString(string: value, attributes: attributes)
+            }
+        }
+
+        if let index = values.firstIndex(of: selectedValue) {
+            popup.selectItem(at: index)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject {
+        var parent: AppleIIPopupButtonRepresentable
+
+        init(_ parent: AppleIIPopupButtonRepresentable) {
+            self.parent = parent
+        }
+
+        @objc func selectionChanged(_ sender: NSPopUpButton) {
+            if let title = sender.selectedItem?.title {
+                parent.selectedValue = title
+                parent.onChange()
+            }
+        }
+    }
+}
+
+// MARK: - Retro Action Button
+
+/// Retro-styled action button for Apple II and IIgs themes
+struct RetroActionButton: View {
+    let title: String
+    let isAppleII: Bool
+    var isDisabled: Bool = false
+    let action: () -> Void
+
+    // Theme colors
+    var bgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.windowBackground }
+    var textColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
+    var borderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
+    var disabledColor: Color { isAppleII ? AppleIITheme.dimTextColor : RetroTheme.textColor.opacity(0.4) }
+
+    var body: some View {
+        Button(action: action) {
+            HStack {
+                if isAppleII {
+                    Text("[ \(title) ]")
+                        .font(AppleIITheme.font(size: 12))
+                        .foregroundColor(isDisabled ? disabledColor : textColor)
+                } else {
+                    Text(title)
+                        .font(RetroTheme.font(size: 12))
+                        .foregroundColor(isDisabled ? disabledColor : textColor)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 24)
+            .background(bgColor)
+            .overlay(
+                Rectangle()
+                    .stroke(isDisabled ? disabledColor : borderColor, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+    }
+}
+
+// MARK: - Retro Action Menu
+
+/// Retro-styled dropdown menu for Apple II and IIgs themes
+struct RetroActionMenu<MenuItems: View>: View {
+    let title: String
+    let isAppleII: Bool
+    var isDisabled: Bool = false
+    @ViewBuilder let menuItems: () -> MenuItems
+
+    // Theme colors
+    var bgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.windowBackground }
+    var textColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
+    var borderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
+    var disabledColor: Color { isAppleII ? AppleIITheme.dimTextColor : RetroTheme.textColor.opacity(0.4) }
+
+    var body: some View {
+        Menu {
+            menuItems()
+        } label: {
+            HStack {
+                if isAppleII {
+                    Text("[ \(title) ]")
+                        .font(AppleIITheme.font(size: 12))
+                        .foregroundColor(isDisabled ? disabledColor : textColor)
+                } else {
+                    Text(title)
+                        .font(RetroTheme.font(size: 12))
+                        .foregroundColor(isDisabled ? disabledColor : textColor)
+                }
+                Spacer()
+                Text(isAppleII ? "v" : "▼")
+                    .font(isAppleII ? AppleIITheme.font(size: 10) : RetroTheme.font(size: 8))
+                    .foregroundColor(isDisabled ? disabledColor : textColor)
+            }
+            .padding(.horizontal, 8)
+            .frame(maxWidth: .infinity)
+            .frame(height: 24)
+            .background(bgColor)
+            .overlay(
+                Rectangle()
+                    .stroke(isDisabled ? disabledColor : borderColor, lineWidth: 1)
+            )
+        }
+        .menuStyle(.borderlessButton)
+        .disabled(isDisabled)
     }
 }

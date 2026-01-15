@@ -9,17 +9,24 @@ struct SettingsView: View {
     }
 
     var isRetro: Bool { settings.isRetroMode }
+    var isAppleII: Bool { settings.isAppleIIMode }
+
+    // Theme-aware colors
+    var themeTextColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
+    var themeBgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.backgroundColor }
+    var themeFont: Font { isAppleII ? AppleIITheme.font(size: 14) : RetroTheme.boldFont(size: 14) }
+    var themeSmallFont: Font { isAppleII ? AppleIITheme.font(size: 12) : RetroTheme.font(size: 12) }
 
     var body: some View {
         Form {
             Text("Appearance")
-                .font(isRetro ? RetroTheme.boldFont(size: 14) : .headline)
-                .foregroundColor(isRetro ? RetroTheme.textColor : .primary)
+                .font(isRetro ? themeFont : .headline)
+                .foregroundColor(isRetro ? themeTextColor : .primary)
 
             Picker("", selection: $selectedMode) {
                 ForEach(AppearanceMode.allCases, id: \.self) { mode in
                     Text(mode.rawValue)
-                        .font(isRetro ? RetroTheme.font(size: 12) : .body)
+                        .font(isRetro ? themeSmallFont : .body)
                         .tag(mode)
                 }
             }
@@ -30,6 +37,6 @@ struct SettingsView: View {
         }
         .padding(20)
         .frame(width: 300, height: 200)
-        .background(isRetro ? RetroTheme.backgroundColor : Color.clear)
+        .background(isRetro ? themeBgColor : Color.clear)
     }
 }

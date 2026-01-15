@@ -9,8 +9,8 @@ class AppleIIConverter: RetroMachine {
         ConversionOption(
             label: "Target Format",
             key: "mode",
-            values: ["DHGR (Double Hi-Res)", "HGR (Hi-Res)", "LGR (Lo-Res)", "DLGR (Double Lo-Res)", "Mono"],
-            selectedValue: "DHGR (Double Hi-Res)"
+            values: ["DHGR", "HGR", "LGR", "DLGR", "Mono"],
+            selectedValue: "DHGR"
         ),
         
         // 2. OUTPUT RESOLUTION
@@ -18,14 +18,14 @@ class AppleIIConverter: RetroMachine {
             label: "Output Resolution",
             key: "resolution",
             values: [
-                "140x192 (DHGR Direct)",
-                "280x192 (HGR Native)",
-                "320x200 (C64/DOS)",
-                "560x384 (DHGR Best)",
-                "640x400 (VGA)",
-                "640x480 (VGA Square)"
+                "140x192",
+                "280x192",
+                "320x200",
+                "560x384",
+                "640x400",
+                "640x480"
             ],
-            selectedValue: "560x384 (DHGR Best)"
+            selectedValue: "560x384"
         ),
         
         // 3. DITHER (matching b2d.c dithertext[] - IDs 1-9)

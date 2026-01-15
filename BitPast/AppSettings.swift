@@ -5,7 +5,8 @@ enum AppearanceMode: String, CaseIterable {
     case system = "System"
     case light = "Light"
     case dark = "Dark"
-    case retro = "Retro (Apple IIgs)"
+    case retroIIgs = "Retro (Apple IIgs)"
+    case retroII = "Retro (Apple II)"
 }
 
 class AppSettings: ObservableObject {
@@ -19,7 +20,15 @@ class AppSettings: ObservableObject {
     }
 
     var isRetroMode: Bool {
-        appearanceMode == .retro
+        appearanceMode == .retroIIgs || appearanceMode == .retroII
+    }
+
+    var isAppleIIgsMode: Bool {
+        appearanceMode == .retroIIgs
+    }
+
+    var isAppleIIMode: Bool {
+        appearanceMode == .retroII
     }
 
     private init() {
@@ -33,9 +42,10 @@ class AppSettings: ObservableObject {
             switch self.appearanceMode {
             case .system:
                 NSApp.appearance = nil
-            case .light, .retro:
+            case .light, .retroIIgs:
                 NSApp.appearance = NSAppearance(named: .aqua)
-            case .dark:
+            case .dark, .retroII:
+                // Apple II green phosphor needs dark mode base
                 NSApp.appearance = NSAppearance(named: .darkAqua)
             }
         }
@@ -86,5 +96,42 @@ struct RetroTheme {
         } else {
             return 32  // Large text uses 32pt
         }
+    }
+}
+
+// Apple II Green Phosphor theme - classic monitor look
+struct AppleIITheme {
+    // Classic green phosphor monitor colors
+    static let backgroundColor = Color.black
+    static let windowBackground = Color.black
+    static let textColor = Color(red: 0.2, green: 1.0, blue: 0.2)  // Bright green #33FF33
+    static let dimTextColor = Color(red: 0.1, green: 0.6, blue: 0.1)  // Dimmer green
+    static let borderColor = Color(red: 0.2, green: 1.0, blue: 0.2)
+
+    // Inverse video (for selections)
+    static let inverseBackground = Color(red: 0.2, green: 1.0, blue: 0.2)
+    static let inverseTextColor = Color.black
+
+    // Divider thickness
+    static let dividerThickness: CGFloat = 2
+
+    // Print Char 21 font - authentic Apple II 40-column font
+    // Falls back to Menlo (monospace) if font isn't installed
+    static func font(size: CGFloat) -> Font {
+        return .custom("Print Char 21", size: size)
+    }
+
+    static func boldFont(size: CGFloat) -> Font {
+        // Apple II doesn't have bold, use regular
+        return font(size: size)
+    }
+
+    // NSFont version for AppKit components
+    static func nsFont(size: CGFloat) -> NSFont {
+        if let font = NSFont(name: "Print Char 21", size: size) {
+            return font
+        }
+        // Fallback to Menlo monospace
+        return NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
     }
 }
