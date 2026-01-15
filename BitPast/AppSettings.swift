@@ -44,14 +44,23 @@ class AppSettings: ObservableObject {
 
 // Retro theme colors and fonts - Apple IIgs GS/OS style
 struct RetroTheme {
-    // GS/OS Desktop - white background with black lines
+    // GS/OS Desktop colors
     static let backgroundColor = Color.white
     static let windowBackground = Color.white
     static let textColor = Color.black
     static let borderColor = Color.black
 
+    // GS/OS window chrome colors (from screenshot)
+    static let titleBarGray = Color(red: 0.73, green: 0.73, blue: 0.73)  // Light gray for title bar
+    static let contentGray = Color(red: 0.73, green: 0.73, blue: 0.73)   // Gray for content area
+    static let infoBarBackground = Color.white
+
     // Divider thickness (3px for retro mode)
     static let dividerThickness: CGFloat = 3
+
+    // GS/OS title bar height
+    static let titleBarHeight: CGFloat = 18
+    static let infoBarHeight: CGFloat = 20
 
     // Shaston 640 font - the authentic Apple IIgs system font (640x200, 1-by-2 pixel aspect)
     // Use at 16pt (1x), 32pt (2x), or 48pt (3x) for pixel-perfect rendering

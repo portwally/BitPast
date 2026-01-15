@@ -29,6 +29,26 @@ struct ContentView: View {
     var retroBoldFont: Font { RetroTheme.boldFont(size: 13) }
     
     var body: some View {
+        if isRetro {
+            // GS/OS Window Frame wrapper for retro mode
+            GSOSWindowFrame(
+                title: "BitPast",
+                infoText: "Blast from the Past  •  \(viewModel.inputImages.count) images"
+            ) {
+                mainContent
+            }
+            .frame(minWidth: 1000, minHeight: 650)
+            .id(settings.appearanceMode)
+        } else {
+            mainContent
+                .frame(minWidth: 1000, minHeight: 650)
+                .background(Color(NSColor.windowBackgroundColor))
+                .id(settings.appearanceMode)
+        }
+    }
+
+    @ViewBuilder
+    var mainContent: some View {
         VStack(spacing: 0) {
 
             // 1. OBERER BEREICH: SPLIT VIEW
@@ -74,7 +94,7 @@ struct ContentView: View {
 
                     if viewModel.inputImages.isEmpty {
                         ZStack {
-                            isRetro ? RetroTheme.backgroundColor : Color(NSColor.controlBackgroundColor).opacity(0.3)
+                            isRetro ? RetroTheme.contentGray : Color(NSColor.controlBackgroundColor).opacity(0.3)
                             VStack(spacing: 16) {
                                 if isRetro {
                                     // Retro ASCII-style icon
@@ -115,7 +135,7 @@ struct ContentView: View {
                                         }
                                 }
                             }.padding(10)
-                        }.background(isRetro ? RetroTheme.backgroundColor : Color(NSColor.controlBackgroundColor))
+                        }.background(isRetro ? RetroTheme.contentGray : Color(NSColor.controlBackgroundColor))
                     }
                 }
                 .frame(minWidth: 200, maxWidth: 450)
@@ -357,7 +377,7 @@ struct ContentView: View {
                         .padding(.vertical, 14)
                         .frame(minWidth: 300, maxWidth: .infinity)
                     }
-                    .background(isRetro ? RetroTheme.backgroundColor : Color.clear)
+                    .background(isRetro ? RetroTheme.contentGray : Color.clear)
 
                     // Vertical divider before ACTIONS
                     if isRetro {
@@ -429,13 +449,11 @@ struct ContentView: View {
                     .frame(height: isRetro ? RetroTheme.dividerThickness : 1)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             }
-            .background(isRetro ? RetroTheme.backgroundColor : Color(NSColor.windowBackgroundColor))
+            .background(isRetro ? RetroTheme.contentGray : Color(NSColor.windowBackgroundColor))
             .frame(height: 180)
 
         }
-        .frame(minWidth: 1000, minHeight: 650)
-        .background(isRetro ? RetroTheme.backgroundColor : Color(NSColor.windowBackgroundColor))
-        .id(settings.appearanceMode)
+        .background(isRetro ? RetroTheme.contentGray : Color(NSColor.windowBackgroundColor))
     }
 }
 
@@ -603,28 +621,52 @@ struct ControlView: View {
                         .overlay(isRetro ? Rectangle().stroke(RetroTheme.borderColor, lineWidth: 1) : nil)
                 }
             } else if opt.type == .picker {
-                Picker("", selection: Binding(
-                    get: {
-                        let currentOptions = viewModel.machines[viewModel.selectedMachineIndex].options
-                        if index < currentOptions.count {
-                            return currentOptions[index].selectedValue
-                        }
-                        return ""
-                    },
-                    set: { val in
-                        if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
-                            viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = val
+                if isRetro {
+                    // GS/OS-style popup picker with Shaston font
+                    GSOSPopupPicker(
+                        values: filteredValues,
+                        selectedValue: Binding(
+                            get: {
+                                let currentOptions = viewModel.machines[viewModel.selectedMachineIndex].options
+                                if index < currentOptions.count {
+                                    return currentOptions[index].selectedValue
+                                }
+                                return ""
+                            },
+                            set: { val in
+                                if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
+                                    viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = val
+                                }
+                            }
+                        ),
+                        onChange: {
                             viewModel.triggerLivePreview()
                         }
+                    )
+                } else {
+                    Picker("", selection: Binding(
+                        get: {
+                            let currentOptions = viewModel.machines[viewModel.selectedMachineIndex].options
+                            if index < currentOptions.count {
+                                return currentOptions[index].selectedValue
+                            }
+                            return ""
+                        },
+                        set: { val in
+                            if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
+                                viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = val
+                                viewModel.triggerLivePreview()
+                            }
+                        }
+                    )) {
+                        ForEach(filteredValues, id: \.self) { val in
+                            Text(val).tag(val)
+                        }
                     }
-                )) {
-                    ForEach(filteredValues, id: \.self) { val in
-                        Text(val).tag(val)
-                    }
+                    .pickerStyle(.menu)
+                    .frame(minWidth: 110)
+                    .controlSize(.regular)
                 }
-                .pickerStyle(.menu)
-                .frame(minWidth: 110)
-                .controlSize(.regular)
             }
         }
         .id(opt.id)
@@ -720,5 +762,203 @@ struct SystemSelectButton: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - GS/OS Popup Picker
+
+/// GS/OS-style popup menu picker with Shaston font using NSPopUpButton
+struct GSOSPopupPicker: NSViewRepresentable {
+    let values: [String]
+    @Binding var selectedValue: String
+    let onChange: () -> Void
+
+    func makeNSView(context: Context) -> NSPopUpButton {
+        let popup = NSPopUpButton(frame: .zero, pullsDown: false)
+        popup.bezelStyle = .inline
+        popup.isBordered = true
+
+        // Set Shaston font for the button title
+        if let shastonFont = NSFont(name: "Shaston640", size: 16) {
+            popup.font = shastonFont
+        }
+
+        popup.target = context.coordinator
+        popup.action = #selector(Coordinator.selectionChanged(_:))
+
+        return popup
+    }
+
+    func updateNSView(_ popup: NSPopUpButton, context: Context) {
+        popup.removeAllItems()
+
+        // Add items with Shaston font
+        for value in values {
+            popup.addItem(withTitle: value)
+            if let item = popup.lastItem, let shastonFont = NSFont(name: "Shaston640", size: 16) {
+                let attributes: [NSAttributedString.Key: Any] = [.font: shastonFont]
+                item.attributedTitle = NSAttributedString(string: value, attributes: attributes)
+            }
+        }
+
+        // Select current value
+        if let index = values.firstIndex(of: selectedValue) {
+            popup.selectItem(at: index)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject {
+        var parent: GSOSPopupPicker
+
+        init(_ parent: GSOSPopupPicker) {
+            self.parent = parent
+        }
+
+        @objc func selectionChanged(_ sender: NSPopUpButton) {
+            if let title = sender.selectedItem?.title {
+                parent.selectedValue = title
+                parent.onChange()
+            }
+        }
+    }
+}
+
+// MARK: - GS/OS Window Frame
+
+/// GS/OS-style striped title bar pattern (4 lines, 2px each like real Apple IIgs)
+struct GSOSTitleBarPattern: View {
+    var body: some View {
+        GeometryReader { geometry in
+            Canvas { context, size in
+                // 4 horizontal black lines with 2px thickness, evenly spaced
+                // Start at y=3 to leave 2px padding at top (avoid connecting with border)
+                let lineHeight: CGFloat = 2
+                let linePositions: [CGFloat] = [3, 7, 11, 15]
+
+                // Fill background with white first
+                context.fill(
+                    Path(CGRect(x: 0, y: 0, width: size.width, height: size.height)),
+                    with: .color(.white)
+                )
+
+                // Draw 4 black lines
+                for y in linePositions {
+                    context.fill(
+                        Path(CGRect(x: 0, y: y, width: size.width, height: lineHeight)),
+                        with: .color(.black)
+                    )
+                }
+            }
+        }
+    }
+}
+
+/// GS/OS close box (small square with X pattern)
+struct GSOSCloseBox: View {
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.white)
+                .frame(width: 12, height: 10)
+            Rectangle()
+                .stroke(Color.black, lineWidth: 1)
+                .frame(width: 12, height: 10)
+        }
+    }
+}
+
+/// GS/OS zoom box (small square)
+struct GSOSZoomBox: View {
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.white)
+                .frame(width: 12, height: 10)
+            Rectangle()
+                .stroke(Color.black, lineWidth: 1)
+                .frame(width: 12, height: 10)
+            // Inner square for zoom icon
+            Rectangle()
+                .stroke(Color.black, lineWidth: 1)
+                .frame(width: 6, height: 5)
+        }
+    }
+}
+
+/// GS/OS-style window frame that wraps content
+struct GSOSWindowFrame<Content: View>: View {
+    let title: String
+    let infoText: String
+    let content: Content
+
+    init(title: String, infoText: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.infoText = infoText
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Title bar with stripes
+            ZStack {
+                GSOSTitleBarPattern()
+
+                HStack {
+                    // Close box
+                    GSOSCloseBox()
+                        .padding(.leading, 6)
+
+                    Spacer()
+
+                    // Title
+                    Text(title)
+                        .font(RetroTheme.font(size: 12))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 8)
+                        .background(Color.white)
+
+                    Spacer()
+
+                    // Zoom box
+                    GSOSZoomBox()
+                        .padding(.trailing, 6)
+                }
+            }
+            .frame(height: RetroTheme.titleBarHeight)
+
+            // Black line under title bar
+            Rectangle()
+                .fill(Color.black)
+                .frame(height: 1)
+
+            // Info bar (like "ProDOS  3 items  11.1 MB used  20.8 MB free")
+            HStack {
+                Text(infoText)
+                    .font(RetroTheme.font(size: 12))
+                    .foregroundColor(.black)
+                Spacer()
+            }
+            .padding(.horizontal, 8)
+            .frame(height: RetroTheme.infoBarHeight)
+            .background(Color.white)
+
+            // Black line under info bar
+            Rectangle()
+                .fill(Color.black)
+                .frame(height: 1)
+
+            // Content area with gray background
+            content
+                .background(RetroTheme.contentGray)
+        }
+        .background(Color.white)
+        .overlay(
+            Rectangle()
+                .stroke(Color.black, lineWidth: 2)
+        )
     }
 }
