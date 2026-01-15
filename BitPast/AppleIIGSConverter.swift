@@ -12,7 +12,7 @@ class AppleIIGSConverter: RetroMachine {
             label: "Display Mode",
             key: "mode",
             values: [
-                "3200 Mode (Smart Scanlines)",
+                "3200 Mode",
                 "320x200 (16 Colors)",
                 "640x200 (4 Colors)",
                 "640x200 Enhanced (16 Colors)",
@@ -221,11 +221,7 @@ class AppleIIGSConverter: RetroMachine {
             // Generate 8 colors total (4 for even, 4 for odd)
             var best8 = generatePaletteMedianCut(pixels: samplePixels, maxColors: 8)
             best8.sort { ($0.r + $0.g + $0.b) < ($1.r + $1.g + $1.b) }
-            
-            for (idx, color) in best8.enumerated() {
-                let _ = idx < 4 ? "Even" : "Odd"
-            }
-            
+
             // Build palette: 0-3 (Even), 4-7 (Odd), 8-15 (Duplicates)
             var enhancedPalette = [RGB]()
             enhancedPalette.append(contentsOf: Array(best8[0..<4]))  // Even (0-3)

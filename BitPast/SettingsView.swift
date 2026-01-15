@@ -31,7 +31,7 @@ struct SettingsView: View {
                 }
             }
             .pickerStyle(.radioGroup)
-            .onChange(of: selectedMode) { newValue in
+            .onChange(of: selectedMode) { _, newValue in
                 settings.appearanceMode = newValue
             }
         }
