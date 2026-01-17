@@ -26,17 +26,46 @@ struct ContentView: View {
     var isRetro: Bool { settings.isRetroMode }
     var isAppleIIgs: Bool { settings.isAppleIIgsMode }
     var isAppleII: Bool { settings.isAppleIIMode }
+    var isC64: Bool { settings.isC64Mode }
 
     // Theme-aware fonts
-    var retroFont: Font { isAppleII ? AppleIITheme.font(size: 14) : RetroTheme.font(size: 12) }
-    var retroSmallFont: Font { isAppleII ? AppleIITheme.font(size: 12) : RetroTheme.font(size: 11) }
-    var retroBoldFont: Font { isAppleII ? AppleIITheme.boldFont(size: 14) : RetroTheme.boldFont(size: 13) }
+    var retroFont: Font {
+        if isC64 { return C64Theme.font(size: 14) }
+        if isAppleII { return AppleIITheme.font(size: 14) }
+        return RetroTheme.font(size: 12)
+    }
+    var retroSmallFont: Font {
+        if isC64 { return C64Theme.font(size: 12) }
+        if isAppleII { return AppleIITheme.font(size: 12) }
+        return RetroTheme.font(size: 11)
+    }
+    var retroBoldFont: Font {
+        if isC64 { return C64Theme.boldFont(size: 14) }
+        if isAppleII { return AppleIITheme.boldFont(size: 14) }
+        return RetroTheme.boldFont(size: 13)
+    }
 
     // Theme-aware colors
-    var retroBgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.contentGray }
-    var retroTextColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
-    var retroBorderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
-    var retroWindowBg: Color { isAppleII ? AppleIITheme.windowBackground : RetroTheme.windowBackground }
+    var retroBgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        return RetroTheme.contentGray
+    }
+    var retroTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return RetroTheme.textColor
+    }
+    var retroBorderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        return RetroTheme.borderColor
+    }
+    var retroWindowBg: Color {
+        if isC64 { return C64Theme.windowBackground }
+        if isAppleII { return AppleIITheme.windowBackground }
+        return RetroTheme.windowBackground
+    }
 
     var body: some View {
         if isAppleIIgs {
@@ -54,6 +83,16 @@ struct ContentView: View {
             AppleIIWindowFrame(
                 title: "BITPAST",
                 infoText: "\(viewModel.inputImages.count) IMAGES LOADED"
+            ) {
+                mainContent
+            }
+            .frame(minWidth: 1000, minHeight: 650)
+            .id(settings.appearanceMode)
+        } else if isC64 {
+            // Commodore 64 mode
+            C64WindowFrame(
+                title: "BITPAST",
+                infoText: "\(viewModel.inputImages.count) IMAGES"
             ) {
                 mainContent
             }
@@ -322,7 +361,8 @@ struct ContentView: View {
                                 machineName: viewModel.machines[0].name,
                                 isSelected: viewModel.selectedMachineIndex == 0,
                                 isRetro: isRetro,
-                                isAppleII: isAppleII
+                                isAppleII: isAppleII,
+                                isC64: isC64
                             ) {
                                 if viewModel.selectedMachineIndex != 0 {
                                     viewModel.selectedMachineIndex = 0
@@ -337,7 +377,8 @@ struct ContentView: View {
                                     machineName: viewModel.machines[1].name,
                                     isSelected: viewModel.selectedMachineIndex == 1,
                                     isRetro: isRetro,
-                                    isAppleII: isAppleII
+                                    isAppleII: isAppleII,
+                                    isC64: isC64
                                 ) {
                                     if viewModel.selectedMachineIndex != 1 {
                                         viewModel.selectedMachineIndex = 1
@@ -353,7 +394,8 @@ struct ContentView: View {
                                     machineName: viewModel.machines[2].name,
                                     isSelected: viewModel.selectedMachineIndex == 2,
                                     isRetro: isRetro,
-                                    isAppleII: isAppleII
+                                    isAppleII: isAppleII,
+                                    isC64: isC64
                                 ) {
                                     if viewModel.selectedMachineIndex != 2 {
                                         viewModel.selectedMachineIndex = 2
@@ -370,8 +412,11 @@ struct ContentView: View {
 
                     // Vertical divider after SYSTEM
                     if isRetro {
-                        Rectangle().fill(retroBorderColor).frame(width: isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
-                            .padding(.bottom, isAppleII ? 12 : 0)  // Don't cross bottom border in Apple II mode
+                        let dividerThickness: CGFloat = isC64 ? C64Theme.dividerThickness : (isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
+                        // Bottom padding to align with bottom border
+                        let bottomPadding: CGFloat = (isAppleII || isC64) ? 10 : 0
+                        Rectangle().fill(retroBorderColor).frame(width: dividerThickness)
+                            .padding(.bottom, bottomPadding)
                     } else {
                         Rectangle().fill(Color(NSColor.separatorColor)).frame(width: 1)
                     }
@@ -384,7 +429,7 @@ struct ContentView: View {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if topRowKeys.contains(opt.key) {
-                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII)
+                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
                                     }
                                 }
                             }
@@ -394,7 +439,7 @@ struct ContentView: View {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if bottomRowKeys.contains(opt.key) {
-                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII)
+                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
                                     }
                                 }
                             }
@@ -407,8 +452,11 @@ struct ContentView: View {
 
                     // Vertical divider before ACTIONS
                     if isRetro {
-                        Rectangle().fill(retroBorderColor).frame(width: isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
-                            .padding(.bottom, isAppleII ? 12 : 0)  // Don't cross bottom border in Apple II mode
+                        let dividerThickness: CGFloat = isC64 ? C64Theme.dividerThickness : (isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
+                        // Bottom padding to align with bottom border
+                        let bottomPadding: CGFloat = (isAppleII || isC64) ? 10 : 0
+                        Rectangle().fill(retroBorderColor).frame(width: dividerThickness)
+                            .padding(.bottom, bottomPadding)
                     } else {
                         Rectangle().fill(Color(NSColor.separatorColor)).frame(width: 1)
                     }
@@ -426,6 +474,7 @@ struct ContentView: View {
                             RetroActionMenu(
                                 title: "Save Image...",
                                 isAppleII: isAppleII,
+                                isC64: isC64,
                                 isDisabled: viewModel.convertedImage == nil,
                                 menuItems: {
                                     Button("PNG") { viewModel.saveImage(as: .png) }
@@ -446,6 +495,7 @@ struct ContentView: View {
                             RetroActionButton(
                                 title: "ProDOS Disk",
                                 isAppleII: isAppleII,
+                                isC64: isC64,
                                 isDisabled: viewModel.convertedImage == nil
                             ) {
                                 showDiskSheet = true
@@ -657,16 +707,39 @@ struct ControlView: View {
     @ObservedObject var viewModel: ConverterViewModel
     var isRetro: Bool = false
     var isAppleII: Bool = false
+    var isC64: Bool = false
 
     // Theme-aware colors
-    var themeTextColor: Color { isAppleII ? AppleIITheme.textColor : (isRetro ? RetroTheme.textColor : .secondary) }
-    var themeBgColor: Color { isAppleII ? AppleIITheme.windowBackground : (isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5)) }
-    var themeBorderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
+    var themeTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return isRetro ? RetroTheme.textColor : .secondary
+    }
+    var themeBgColor: Color {
+        if isC64 { return C64Theme.windowBackground }
+        if isAppleII { return AppleIITheme.windowBackground }
+        return isRetro ? RetroTheme.windowBackground : Color(NSColor.controlBackgroundColor).opacity(0.5)
+    }
+    var themeBorderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        return RetroTheme.borderColor
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 12) }
+        if isAppleII { return AppleIITheme.font(size: 12) }
+        return isRetro ? RetroTheme.font(size: 11) : .system(size: 11, weight: .semibold)
+    }
+    var themeValueFont: Font {
+        if isC64 { return C64Theme.font(size: 14) }
+        if isAppleII { return AppleIITheme.font(size: 14) }
+        return isRetro ? RetroTheme.font(size: 13) : .system(size: 13, weight: .medium)
+    }
 
     var body: some View {
         VStack(alignment: .center, spacing: 6) {
             Text(opt.label.uppercased())
-                .font(isAppleII ? AppleIITheme.font(size: 12) : (isRetro ? RetroTheme.font(size: 11) : .system(size: 11, weight: .semibold)))
+                .font(themeFont)
                 .foregroundColor(themeTextColor)
                 .tracking(0.3)
             
@@ -696,17 +769,39 @@ struct ControlView: View {
 
                     Text(safeValueDisplay)
                         .monospacedDigit()
-                        .font(isAppleII ? AppleIITheme.font(size: 14) : (isRetro ? RetroTheme.font(size: 13) : .system(size: 13, weight: .medium)))
-                        .foregroundColor(isAppleII ? AppleIITheme.textColor : (isRetro ? RetroTheme.textColor : .primary))
+                        .font(themeValueFont)
+                        .foregroundColor(themeTextColor)
                         .frame(minWidth: 40)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)
                         .background(themeBgColor)
-                        .cornerRadius((isRetro || isAppleII) ? 0 : 4)
-                        .overlay((isRetro || isAppleII) ? Rectangle().stroke(themeBorderColor, lineWidth: 1) : nil)
+                        .cornerRadius((isRetro || isAppleII || isC64) ? 0 : 4)
+                        .overlay((isRetro || isAppleII || isC64) ? Rectangle().stroke(themeBorderColor, lineWidth: 1) : nil)
                 }
             } else if opt.type == .picker {
-                if isAppleII {
+                if isC64 {
+                    // C64-style popup picker with PetMe64 font
+                    C64PopupPicker(
+                        values: filteredValues,
+                        selectedValue: Binding(
+                            get: {
+                                let currentOptions = viewModel.machines[viewModel.selectedMachineIndex].options
+                                if index < currentOptions.count {
+                                    return currentOptions[index].selectedValue
+                                }
+                                return ""
+                            },
+                            set: { val in
+                                if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
+                                    viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = val
+                                }
+                            }
+                        ),
+                        onChange: {
+                            viewModel.triggerLivePreview()
+                        }
+                    )
+                } else if isAppleII {
                     // Apple II-style popup picker with green phosphor look
                     AppleIIPopupPicker(
                         values: filteredValues,
@@ -776,7 +871,7 @@ struct ControlView: View {
                 }
             }
         }
-        .id("\(opt.id)_\(isAppleII)_\(isRetro)")  // Force rebuild when theme changes
+        .id("\(opt.id)_\(isAppleII)_\(isC64)_\(isRetro)")  // Force rebuild when theme changes
     }
 
     // Filter resolution values when Mono mode is selected
@@ -814,13 +909,35 @@ struct SystemSelectButton: View {
     let isSelected: Bool
     var isRetro: Bool = false
     var isAppleII: Bool = false
+    var isC64: Bool = false
     let action: () -> Void
 
     // Theme-aware colors
-    var themeBgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.backgroundColor }
-    var themeWindowBg: Color { isAppleII ? AppleIITheme.windowBackground : RetroTheme.windowBackground }
-    var themeBorderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
-    var themeTextColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
+    var themeBgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        return RetroTheme.backgroundColor
+    }
+    var themeWindowBg: Color {
+        if isC64 { return C64Theme.windowBackground }
+        if isAppleII { return AppleIITheme.windowBackground }
+        return RetroTheme.windowBackground
+    }
+    var themeBorderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        return RetroTheme.borderColor
+    }
+    var themeTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return RetroTheme.textColor
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 14) }
+        if isAppleII { return AppleIITheme.font(size: 14) }
+        return RetroTheme.font(size: 14)
+    }
 
     var body: some View {
         Button(action: action) {
@@ -841,7 +958,7 @@ struct SystemSelectButton: View {
                 }
 
                 Text(machineName)
-                    .font(isRetro ? (isAppleII ? AppleIITheme.font(size: 14) : RetroTheme.font(size: 14)) : .system(size: 14, weight: isSelected ? .semibold : .regular))
+                    .font(isRetro ? themeFont : .system(size: 14, weight: isSelected ? .semibold : .regular))
                     .foregroundColor(isRetro ? themeTextColor : (isSelected ? .primary : .secondary))
                     .lineLimit(1)
                     .minimumScaleFactor(0.85)
@@ -1189,6 +1306,64 @@ struct AppleIIWindowFrame<Content: View>: View {
     }
 }
 
+// MARK: - Commodore 64 Window Frame
+
+struct C64WindowFrame<Content: View>: View {
+    let title: String
+    let infoText: String
+    let content: Content
+
+    init(title: String, infoText: String, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.infoText = infoText
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Title bar - C64 style with PETSCII border
+            HStack {
+                Text("*")
+                    .font(C64Theme.font(size: 16))
+                    .foregroundColor(C64Theme.textColor)
+
+                Text(title)
+                    .font(C64Theme.font(size: 16))
+                    .foregroundColor(C64Theme.textColor)
+                    .textCase(.uppercase)
+
+                Spacer()
+
+                Text(infoText)
+                    .font(C64Theme.font(size: 14))
+                    .foregroundColor(C64Theme.textColor)
+
+                Text("*")
+                    .font(C64Theme.font(size: 16))
+                    .foregroundColor(C64Theme.textColor)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(C64Theme.backgroundColor)
+
+            // C64 blue divider line
+            Rectangle()
+                .fill(C64Theme.borderColor)
+                .frame(height: C64Theme.dividerThickness)
+
+            // Content area
+            content
+                .background(C64Theme.backgroundColor)
+        }
+        .background(C64Theme.backgroundColor)
+        .overlay(
+            Rectangle()
+                .stroke(C64Theme.borderColor, lineWidth: 2)
+        )
+        .padding(.bottom, 12)  // Move border up so macOS window doesn't clip corners
+    }
+}
+
 // MARK: - Apple II Popup Picker
 
 /// Apple II-style popup picker with green phosphor look
@@ -1306,31 +1481,174 @@ struct AppleIIPopupButtonRepresentable: NSViewRepresentable {
     }
 }
 
+// MARK: - C64 Popup Picker
+
+struct C64PopupPicker: View {
+    let values: [String]
+    @Binding var selectedValue: String
+    let onChange: () -> Void
+
+    // Calculate width based on longest value
+    private var calculatedWidth: CGFloat {
+        let longestValue = values.max(by: { $0.count < $1.count }) ?? ""
+        // PetMe64 at size 14 - measure actual text width
+        let font = C64Theme.nsFont(size: 14)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        let textSize = (longestValue as NSString).size(withAttributes: attributes)
+        return max(140, textSize.width + 40)  // Add padding for dropdown arrow and borders
+    }
+
+    var body: some View {
+        C64PopupButtonRepresentable(
+            values: values,
+            selectedValue: $selectedValue,
+            onChange: onChange,
+            width: calculatedWidth
+        )
+        .frame(width: calculatedWidth, height: 22)
+        .background(C64Theme.backgroundColor)
+        .overlay(
+            Rectangle()
+                .stroke(C64Theme.borderColor, lineWidth: 1)
+        )
+    }
+}
+
+/// NSViewRepresentable wrapper for C64 style popup
+struct C64PopupButtonRepresentable: NSViewRepresentable {
+    let values: [String]
+    @Binding var selectedValue: String
+    let onChange: () -> Void
+    let width: CGFloat
+
+    func makeNSView(context: Context) -> NSView {
+        // Create clipping container view to enforce width
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: width, height: 22))
+        container.wantsLayer = true
+        container.layer?.masksToBounds = true
+
+        let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: width, height: 22), pullsDown: false)
+        popup.bezelStyle = .smallSquare
+        popup.isBordered = false
+
+        // Set C64 font
+        popup.font = C64Theme.nsFont(size: 14)
+
+        // Configure cell for text truncation
+        if let cell = popup.cell as? NSPopUpButtonCell {
+            cell.lineBreakMode = .byTruncatingTail
+            cell.truncatesLastVisibleLine = true
+        }
+
+        popup.target = context.coordinator
+        popup.action = #selector(Coordinator.selectionChanged(_:))
+
+        container.addSubview(popup)
+        context.coordinator.popup = popup
+
+        return container
+    }
+
+    func updateNSView(_ container: NSView, context: Context) {
+        guard let popup = context.coordinator.popup else { return }
+
+        popup.removeAllItems()
+
+        // Add items with C64 font
+        let font = C64Theme.nsFont(size: 14)
+        for value in values {
+            popup.addItem(withTitle: value)
+            if let item = popup.lastItem {
+                let attributes: [NSAttributedString.Key: Any] = [
+                    .font: font,
+                    .foregroundColor: NSColor(C64Theme.textColor)
+                ]
+                item.attributedTitle = NSAttributedString(string: value, attributes: attributes)
+            }
+        }
+
+        if let index = values.firstIndex(of: selectedValue) {
+            popup.selectItem(at: index)
+        }
+
+        // Update frames
+        container.frame = NSRect(x: 0, y: 0, width: width, height: 22)
+        popup.frame = NSRect(x: 0, y: 0, width: width, height: 22)
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    class Coordinator: NSObject {
+        var parent: C64PopupButtonRepresentable
+        var popup: NSPopUpButton?
+
+        init(_ parent: C64PopupButtonRepresentable) {
+            self.parent = parent
+        }
+
+        @objc func selectionChanged(_ sender: NSPopUpButton) {
+            if let title = sender.selectedItem?.title {
+                parent.selectedValue = title
+                parent.onChange()
+            }
+        }
+    }
+}
+
 // MARK: - Retro Action Button
 
-/// Retro-styled action button for Apple II and IIgs themes
+/// Retro-styled action button for Apple II, C64, and IIgs themes
 struct RetroActionButton: View {
     let title: String
     let isAppleII: Bool
+    var isC64: Bool = false
     var isDisabled: Bool = false
     let action: () -> Void
 
     // Theme colors
-    var bgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.windowBackground }
-    var textColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
-    var borderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
-    var disabledColor: Color { isAppleII ? AppleIITheme.dimTextColor : RetroTheme.textColor.opacity(0.4) }
+    var bgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        return RetroTheme.windowBackground
+    }
+    var textColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return RetroTheme.textColor
+    }
+    var borderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        return RetroTheme.borderColor
+    }
+    var disabledColor: Color {
+        if isC64 { return C64Theme.textColor.opacity(0.4) }
+        if isAppleII { return AppleIITheme.dimTextColor }
+        return RetroTheme.textColor.opacity(0.4)
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 12) }
+        if isAppleII { return AppleIITheme.font(size: 12) }
+        return RetroTheme.font(size: 12)
+    }
 
     var body: some View {
         Button(action: action) {
             HStack {
                 if isAppleII {
                     Text("[ \(title) ]")
-                        .font(AppleIITheme.font(size: 12))
+                        .font(themeFont)
                         .foregroundColor(isDisabled ? disabledColor : textColor)
+                } else if isC64 {
+                    Text("[ \(title) ]")
+                        .font(themeFont)
+                        .foregroundColor(isDisabled ? disabledColor : textColor)
+                        .textCase(.uppercase)
                 } else {
                     Text(title)
-                        .font(RetroTheme.font(size: 12))
+                        .font(themeFont)
                         .foregroundColor(isDisabled ? disabledColor : textColor)
                 }
             }
@@ -1350,18 +1668,45 @@ struct RetroActionButton: View {
 
 // MARK: - Retro Action Menu
 
-/// Retro-styled dropdown menu for Apple II and IIgs themes
+/// Retro-styled dropdown menu for Apple II, C64, and IIgs themes
 struct RetroActionMenu<MenuItems: View>: View {
     let title: String
     let isAppleII: Bool
+    var isC64: Bool = false
     var isDisabled: Bool = false
     @ViewBuilder let menuItems: () -> MenuItems
 
     // Theme colors
-    var bgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.windowBackground }
-    var textColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
-    var borderColor: Color { isAppleII ? AppleIITheme.borderColor : RetroTheme.borderColor }
-    var disabledColor: Color { isAppleII ? AppleIITheme.dimTextColor : RetroTheme.textColor.opacity(0.4) }
+    var bgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        return RetroTheme.windowBackground
+    }
+    var textColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return RetroTheme.textColor
+    }
+    var borderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        return RetroTheme.borderColor
+    }
+    var disabledColor: Color {
+        if isC64 { return C64Theme.textColor.opacity(0.4) }
+        if isAppleII { return AppleIITheme.dimTextColor }
+        return RetroTheme.textColor.opacity(0.4)
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 12) }
+        if isAppleII { return AppleIITheme.font(size: 12) }
+        return RetroTheme.font(size: 12)
+    }
+    var themeSmallFont: Font {
+        if isC64 { return C64Theme.font(size: 10) }
+        if isAppleII { return AppleIITheme.font(size: 10) }
+        return RetroTheme.font(size: 8)
+    }
 
     var body: some View {
         Menu {
@@ -1370,16 +1715,21 @@ struct RetroActionMenu<MenuItems: View>: View {
             HStack {
                 if isAppleII {
                     Text("[ \(title) ]")
-                        .font(AppleIITheme.font(size: 12))
+                        .font(themeFont)
                         .foregroundColor(isDisabled ? disabledColor : textColor)
+                } else if isC64 {
+                    Text("[ \(title) ]")
+                        .font(themeFont)
+                        .foregroundColor(isDisabled ? disabledColor : textColor)
+                        .textCase(.uppercase)
                 } else {
                     Text(title)
-                        .font(RetroTheme.font(size: 12))
+                        .font(themeFont)
                         .foregroundColor(isDisabled ? disabledColor : textColor)
                 }
                 Spacer()
-                Text(isAppleII ? "v" : "▼")
-                    .font(isAppleII ? AppleIITheme.font(size: 10) : RetroTheme.font(size: 8))
+                Text(isAppleII || isC64 ? "v" : "▼")
+                    .font(themeSmallFont)
                     .foregroundColor(isDisabled ? disabledColor : textColor)
             }
             .padding(.horizontal, 8)

@@ -10,12 +10,29 @@ struct SettingsView: View {
 
     var isRetro: Bool { settings.isRetroMode }
     var isAppleII: Bool { settings.isAppleIIMode }
+    var isC64: Bool { settings.isC64Mode }
 
     // Theme-aware colors
-    var themeTextColor: Color { isAppleII ? AppleIITheme.textColor : RetroTheme.textColor }
-    var themeBgColor: Color { isAppleII ? AppleIITheme.backgroundColor : RetroTheme.backgroundColor }
-    var themeFont: Font { isAppleII ? AppleIITheme.font(size: 14) : RetroTheme.boldFont(size: 14) }
-    var themeSmallFont: Font { isAppleII ? AppleIITheme.font(size: 12) : RetroTheme.font(size: 12) }
+    var themeTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return RetroTheme.textColor
+    }
+    var themeBgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        return RetroTheme.backgroundColor
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.boldFont(size: 14) }
+        if isAppleII { return AppleIITheme.font(size: 14) }
+        return RetroTheme.boldFont(size: 14)
+    }
+    var themeSmallFont: Font {
+        if isC64 { return C64Theme.font(size: 12) }
+        if isAppleII { return AppleIITheme.font(size: 12) }
+        return RetroTheme.font(size: 12)
+    }
 
     var body: some View {
         Form {
@@ -36,7 +53,7 @@ struct SettingsView: View {
             }
         }
         .padding(20)
-        .frame(width: 300, height: 200)
+        .frame(width: 350, height: 200)
         .background(isRetro ? themeBgColor : Color.clear)
     }
 }

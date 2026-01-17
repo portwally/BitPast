@@ -7,6 +7,7 @@ enum AppearanceMode: String, CaseIterable {
     case dark = "Dark"
     case retroIIgs = "Retro (Apple IIgs)"
     case retroII = "Retro (Apple II)"
+    case retroC64 = "Retro (Commodore 64)"
 }
 
 class AppSettings: ObservableObject {
@@ -20,7 +21,7 @@ class AppSettings: ObservableObject {
     }
 
     var isRetroMode: Bool {
-        appearanceMode == .retroIIgs || appearanceMode == .retroII
+        appearanceMode == .retroIIgs || appearanceMode == .retroII || appearanceMode == .retroC64
     }
 
     var isAppleIIgsMode: Bool {
@@ -29,6 +30,10 @@ class AppSettings: ObservableObject {
 
     var isAppleIIMode: Bool {
         appearanceMode == .retroII
+    }
+
+    var isC64Mode: Bool {
+        appearanceMode == .retroC64
     }
 
     private init() {
@@ -44,8 +49,8 @@ class AppSettings: ObservableObject {
                 NSApp.appearance = nil
             case .light, .retroIIgs:
                 NSApp.appearance = NSAppearance(named: .aqua)
-            case .dark, .retroII:
-                // Apple II green phosphor needs dark mode base
+            case .dark, .retroII, .retroC64:
+                // Apple II and C64 need dark mode base
                 NSApp.appearance = NSAppearance(named: .darkAqua)
             }
         }
@@ -129,6 +134,37 @@ struct AppleIITheme {
     // NSFont version for AppKit components
     static func nsFont(size: CGFloat) -> NSFont {
         if let font = NSFont(name: "Print Char 21", size: size) {
+            return font
+        }
+        // Fallback to Menlo monospace
+        return NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
+    }
+}
+
+// Commodore 64 theme - classic C64 blue
+struct C64Theme {
+    // Classic C64 colors
+    static let backgroundColor = Color(red: 0x2e / 255.0, green: 0x30 / 255.0, blue: 0xa1 / 255.0)  // #2e30a1
+    static let windowBackground = Color(red: 0x2e / 255.0, green: 0x30 / 255.0, blue: 0xa1 / 255.0)
+    static let textColor = Color(red: 0x67 / 255.0, green: 0x69 / 255.0, blue: 0xda / 255.0)  // #6769da
+    static let borderColor = Color(red: 0x67 / 255.0, green: 0x69 / 255.0, blue: 0xda / 255.0)
+
+    // Divider thickness
+    static let dividerThickness: CGFloat = 2
+
+    // PETSCII font - authentic Commodore 64 font
+    static func font(size: CGFloat) -> Font {
+        return .custom("PetMe64", size: size)
+    }
+
+    static func boldFont(size: CGFloat) -> Font {
+        // C64 doesn't have bold, use regular
+        return font(size: size)
+    }
+
+    // NSFont version for AppKit components
+    static func nsFont(size: CGFloat) -> NSFont {
+        if let font = NSFont(name: "PetMe64", size: size) {
             return font
         }
         // Fallback to Menlo monospace
