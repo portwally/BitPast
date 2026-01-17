@@ -371,6 +371,7 @@ struct ContentView: View {
                     // Vertical divider after SYSTEM
                     if isRetro {
                         Rectangle().fill(retroBorderColor).frame(width: isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
+                            .padding(.bottom, isAppleII ? 12 : 0)  // Don't cross bottom border in Apple II mode
                     } else {
                         Rectangle().fill(Color(NSColor.separatorColor)).frame(width: 1)
                     }
@@ -407,6 +408,7 @@ struct ContentView: View {
                     // Vertical divider before ACTIONS
                     if isRetro {
                         Rectangle().fill(retroBorderColor).frame(width: isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
+                            .padding(.bottom, isAppleII ? 12 : 0)  // Don't cross bottom border in Apple II mode
                     } else {
                         Rectangle().fill(Color(NSColor.separatorColor)).frame(width: 1)
                     }
@@ -774,9 +776,9 @@ struct ControlView: View {
                 }
             }
         }
-        .id(opt.id)
+        .id("\(opt.id)_\(isAppleII)_\(isRetro)")  // Force rebuild when theme changes
     }
-    
+
     // Filter resolution values when Mono mode is selected
     var filteredValues: [String] {
         // Only filter for resolution picker
@@ -885,14 +887,24 @@ struct GSOSPopupPicker: View {
     @Binding var selectedValue: String
     let onChange: () -> Void
 
+    // Calculate width based on longest value
+    private var calculatedWidth: CGFloat {
+        let longestValue = values.max(by: { $0.count < $1.count }) ?? ""
+        // Measure actual text width with Shaston font
+        let font = NSFont(name: "Shaston640", size: 16) ?? NSFont.systemFont(ofSize: 16)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        let textSize = (longestValue as NSString).size(withAttributes: attributes)
+        return max(140, textSize.width + 40)  // Add padding for dropdown arrow and borders
+    }
+
     var body: some View {
         GSOSPopupButtonRepresentable(
             values: values,
             selectedValue: $selectedValue,
-            onChange: onChange
+            onChange: onChange,
+            width: calculatedWidth
         )
-        .frame(minWidth: 110)
-        .frame(height: 20)
+        .frame(width: calculatedWidth, height: 22)
         .background(Color.white)
         .overlay(
             Rectangle()
@@ -906,9 +918,15 @@ struct GSOSPopupButtonRepresentable: NSViewRepresentable {
     let values: [String]
     @Binding var selectedValue: String
     let onChange: () -> Void
+    let width: CGFloat
 
-    func makeNSView(context: Context) -> NSPopUpButton {
-        let popup = NSPopUpButton(frame: .zero, pullsDown: false)
+    func makeNSView(context: Context) -> NSView {
+        // Create clipping container view to enforce width
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: width, height: 22))
+        container.wantsLayer = true
+        container.layer?.masksToBounds = true
+
+        let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: width, height: 22), pullsDown: false)
         popup.bezelStyle = .smallSquare
         popup.isBordered = false  // Remove default border, we draw our own
 
@@ -917,13 +935,24 @@ struct GSOSPopupButtonRepresentable: NSViewRepresentable {
             popup.font = shastonFont
         }
 
+        // Configure cell for text truncation
+        if let cell = popup.cell as? NSPopUpButtonCell {
+            cell.lineBreakMode = .byTruncatingTail
+            cell.truncatesLastVisibleLine = true
+        }
+
         popup.target = context.coordinator
         popup.action = #selector(Coordinator.selectionChanged(_:))
 
-        return popup
+        container.addSubview(popup)
+        context.coordinator.popup = popup
+
+        return container
     }
 
-    func updateNSView(_ popup: NSPopUpButton, context: Context) {
+    func updateNSView(_ container: NSView, context: Context) {
+        guard let popup = context.coordinator.popup else { return }
+
         popup.removeAllItems()
 
         // Add items with Shaston font
@@ -939,6 +968,10 @@ struct GSOSPopupButtonRepresentable: NSViewRepresentable {
         if let index = values.firstIndex(of: selectedValue) {
             popup.selectItem(at: index)
         }
+
+        // Update frames
+        container.frame = NSRect(x: 0, y: 0, width: width, height: 22)
+        popup.frame = NSRect(x: 0, y: 0, width: width, height: 22)
     }
 
     func makeCoordinator() -> Coordinator {
@@ -947,6 +980,7 @@ struct GSOSPopupButtonRepresentable: NSViewRepresentable {
 
     class Coordinator: NSObject {
         var parent: GSOSPopupButtonRepresentable
+        var popup: NSPopUpButton?
 
         init(_ parent: GSOSPopupButtonRepresentable) {
             self.parent = parent
@@ -1151,6 +1185,7 @@ struct AppleIIWindowFrame<Content: View>: View {
             Rectangle()
                 .stroke(AppleIITheme.borderColor, lineWidth: 2)
         )
+        .padding(.bottom, 12)  // Move border up so macOS window doesn't clip corners
     }
 }
 
@@ -1162,14 +1197,24 @@ struct AppleIIPopupPicker: View {
     @Binding var selectedValue: String
     let onChange: () -> Void
 
+    // Calculate width based on longest value
+    private var calculatedWidth: CGFloat {
+        let longestValue = values.max(by: { $0.count < $1.count }) ?? ""
+        // Print Char 21 at size 14 - measure actual text width
+        let font = AppleIITheme.nsFont(size: 14)
+        let attributes: [NSAttributedString.Key: Any] = [.font: font]
+        let textSize = (longestValue as NSString).size(withAttributes: attributes)
+        return max(140, textSize.width + 40)  // Add padding for dropdown arrow and borders
+    }
+
     var body: some View {
         AppleIIPopupButtonRepresentable(
             values: values,
             selectedValue: $selectedValue,
-            onChange: onChange
+            onChange: onChange,
+            width: calculatedWidth
         )
-        .frame(minWidth: 110)
-        .frame(height: 20)
+        .frame(width: calculatedWidth, height: 22)
         .background(AppleIITheme.backgroundColor)
         .overlay(
             Rectangle()
@@ -1183,22 +1228,39 @@ struct AppleIIPopupButtonRepresentable: NSViewRepresentable {
     let values: [String]
     @Binding var selectedValue: String
     let onChange: () -> Void
+    let width: CGFloat
 
-    func makeNSView(context: Context) -> NSPopUpButton {
-        let popup = NSPopUpButton(frame: .zero, pullsDown: false)
+    func makeNSView(context: Context) -> NSView {
+        // Create clipping container view to enforce width
+        let container = NSView(frame: NSRect(x: 0, y: 0, width: width, height: 22))
+        container.wantsLayer = true
+        container.layer?.masksToBounds = true
+
+        let popup = NSPopUpButton(frame: NSRect(x: 0, y: 0, width: width, height: 22), pullsDown: false)
         popup.bezelStyle = .smallSquare
         popup.isBordered = false
 
         // Set Apple II font
         popup.font = AppleIITheme.nsFont(size: 14)
 
+        // Configure cell for text truncation
+        if let cell = popup.cell as? NSPopUpButtonCell {
+            cell.lineBreakMode = .byTruncatingTail
+            cell.truncatesLastVisibleLine = true
+        }
+
         popup.target = context.coordinator
         popup.action = #selector(Coordinator.selectionChanged(_:))
 
-        return popup
+        container.addSubview(popup)
+        context.coordinator.popup = popup
+
+        return container
     }
 
-    func updateNSView(_ popup: NSPopUpButton, context: Context) {
+    func updateNSView(_ container: NSView, context: Context) {
+        guard let popup = context.coordinator.popup else { return }
+
         popup.removeAllItems()
 
         // Add items with Apple II font
@@ -1217,6 +1279,10 @@ struct AppleIIPopupButtonRepresentable: NSViewRepresentable {
         if let index = values.firstIndex(of: selectedValue) {
             popup.selectItem(at: index)
         }
+
+        // Update frames
+        container.frame = NSRect(x: 0, y: 0, width: width, height: 22)
+        popup.frame = NSRect(x: 0, y: 0, width: width, height: 22)
     }
 
     func makeCoordinator() -> Coordinator {
@@ -1225,6 +1291,7 @@ struct AppleIIPopupButtonRepresentable: NSViewRepresentable {
 
     class Coordinator: NSObject {
         var parent: AppleIIPopupButtonRepresentable
+        var popup: NSPopUpButton?
 
         init(_ parent: AppleIIPopupButtonRepresentable) {
             self.parent = parent
@@ -1267,16 +1334,17 @@ struct RetroActionButton: View {
                         .foregroundColor(isDisabled ? disabledColor : textColor)
                 }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 24)
-            .background(bgColor)
-            .overlay(
-                Rectangle()
-                    .stroke(isDisabled ? disabledColor : borderColor, lineWidth: 1)
-            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)
+        .frame(maxWidth: .infinity)
+        .frame(height: 28)
+        .background(bgColor)
+        .overlay(
+            Rectangle()
+                .stroke(isDisabled ? disabledColor : borderColor, lineWidth: 2)
+        )
     }
 }
 
@@ -1315,15 +1383,16 @@ struct RetroActionMenu<MenuItems: View>: View {
                     .foregroundColor(isDisabled ? disabledColor : textColor)
             }
             .padding(.horizontal, 8)
-            .frame(maxWidth: .infinity)
-            .frame(height: 24)
-            .background(bgColor)
-            .overlay(
-                Rectangle()
-                    .stroke(isDisabled ? disabledColor : borderColor, lineWidth: 1)
-            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .menuStyle(.borderlessButton)
         .disabled(isDisabled)
+        .frame(maxWidth: .infinity)
+        .frame(height: 28)
+        .background(bgColor)
+        .overlay(
+            Rectangle()
+                .stroke(isDisabled ? disabledColor : borderColor, lineWidth: 2)
+        )
     }
 }

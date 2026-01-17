@@ -42,10 +42,10 @@ class AppleIIGSConverter: RetroMachine {
             label: "3200 Quantization",
             key: "quantization_method",
             values: [
-                "Per-Scanline (Default)",
-                "Palette Reuse (Optimized)"
+                "Per-Scanline",
+                "Palette Reuse"
             ],
-            selectedValue: "Per-Scanline (Default)"
+            selectedValue: "Per-Scanline"
         ),
         
         // 3. DITHER STRENGTH
