@@ -266,7 +266,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 300;
+				CURRENT_PROJECT_VERSION = 310;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = ZFE2VJD462;
 				ENABLE_APP_SANDBOX = YES;
@@ -300,7 +300,7 @@
 					"$(PROJECT_DIR)/BitPast/gs-convert/_internal",
 					"$(PROJECT_DIR)/BitPast/GSConvertTool/_internal",
 				);
-				MARKETING_VERSION = 2.6;
+				MARKETING_VERSION = 2.8;
 				PRODUCT_BUNDLE_IDENTIFIER = portwally.BitPast;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -325,7 +325,7 @@
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
 				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 300;
+				CURRENT_PROJECT_VERSION = 310;
 				DEVELOPMENT_TEAM = "";
 				"DEVELOPMENT_TEAM[sdk=macosx*]" = ZFE2VJD462;
 				ENABLE_APP_SANDBOX = YES;
@@ -359,7 +359,7 @@
 					"$(PROJECT_DIR)/BitPast/gs-convert/_internal",
 					"$(PROJECT_DIR)/BitPast/GSConvertTool/_internal",
 				);
-				MARKETING_VERSION = 2.6;
+				MARKETING_VERSION = 2.8;
 				PRODUCT_BUNDLE_IDENTIFIER = portwally.BitPast;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
