@@ -429,7 +429,17 @@ struct ContentView: View {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if topRowKeys.contains(opt.key) {
-                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                                        // Hide quantization option when Brooks 3200 mode is selected
+                                        if opt.key == "quantization_method" {
+                                            let modeOption = viewModel.currentMachine.options.first(where: { $0.key == "mode" })
+                                            if modeOption?.selectedValue.contains("3200 Colors") == true {
+                                                EmptyView()
+                                            } else {
+                                                ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                                            }
+                                        } else {
+                                            ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                                        }
                                     }
                                 }
                             }
@@ -439,7 +449,20 @@ struct ContentView: View {
                                 ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
                                     let opt = viewModel.currentMachine.options[index]
                                     if bottomRowKeys.contains(opt.key) {
-                                        ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                                        // Show threshold only for 3200 Colors or 256 Colors with Palette Reuse
+                                        if opt.key == "threshold" {
+                                            let modeOption = viewModel.currentMachine.options.first(where: { $0.key == "mode" })
+                                            let quantOption = viewModel.currentMachine.options.first(where: { $0.key == "quantization_method" })
+                                            let is3200Brooks = modeOption?.selectedValue.contains("3200 Colors") == true
+                                            let is256WithReuse = modeOption?.selectedValue.contains("256 Colors") == true && quantOption?.selectedValue.contains("Reuse") == true
+                                            if is3200Brooks || is256WithReuse {
+                                                ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                                            } else {
+                                                EmptyView()
+                                            }
+                                        } else {
+                                            ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                                        }
                                     }
                                 }
                             }

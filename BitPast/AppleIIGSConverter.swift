@@ -12,13 +12,14 @@ class AppleIIGSConverter: RetroMachine {
             label: "Display Mode",
             key: "mode",
             values: [
-                "3200 Mode",
+                "3200 Colors (Brooks)",
+                "256 Colors (16 Palettes)",
                 "320x200 (16 Colors)",
                 "640x200 (4 Colors)",
                 "640x200 Enhanced (16 Colors)",
                 "640x200 Desktop (16 Colors)"
             ],
-            selectedValue: "3200 Mode (Smart Scanlines)"
+            selectedValue: "3200 Colors (Brooks)"
         ),
         
         // 2. DITHERING ALGO
@@ -145,7 +146,8 @@ class AppleIIGSConverter: RetroMachine {
         let mergeThreshold = Double(options.first(where: {$0.key == "threshold"})?.selectedValue ?? "10.0") ?? 10.0
         
         let is640 = mode.contains("640")
-        let is3200 = mode.contains("3200")
+        let is3200Brooks = mode.contains("3200 Colors")
+        let is256Color = mode.contains("256 Colors")
         let isDesktop = mode.contains("Desktop")
         let isEnhanced = mode.contains("Enhanced")
         
@@ -272,19 +274,95 @@ class AppleIIGSConverter: RetroMachine {
             }
             for _ in 0..<200 { finalPalettes.append(expandedPalette) }
             
-        } else if !is3200 {
-            // B. STANDARD 320 MODE
+        } else if !is3200Brooks && !is256Color {
+            // B. STANDARD 320 MODE (single 16-color palette)
             var samplePixels: [PixelFloat] = []
             for i in stride(from: 0, to: rawPixels.count, by: 4) {
                 let p = rawPixels[i]
                 samplePixels.append(PixelFloat(r: max(0, min(255, p.r)), g: max(0, min(255, p.g)), b: max(0, min(255, p.b))))
             }
-            
+
             let best16 = generatePaletteMedianCut(pixels: samplePixels, maxColors: 16)
             for _ in 0..<200 { finalPalettes.append(best16) }
-            
+
+        } else if is3200Brooks {
+            // C. TRUE 3200 COLORS (Brooks format - 200 independent palettes)
+            // Each scanline gets its own optimal 16-color palette
+            // Uses mergeThreshold to allow palette reuse between similar scanlines
+            // This reduces banding at scanline boundaries
+
+            for y in 0..<targetH {
+                let rowStart = y * targetW
+                let rowEnd = rowStart + targetW
+
+                var rowPixels: [PixelFloat] = []
+                for i in rowStart..<rowEnd {
+                    let p = rawPixels[i]
+                    rowPixels.append(PixelFloat(
+                        r: max(0, min(255, p.r)),
+                        g: max(0, min(255, p.g)),
+                        b: max(0, min(255, p.b))
+                    ))
+                }
+
+                if y == 0 || mergeThreshold == 0 {
+                    // First scanline or no tolerance: always generate new palette
+                    let linePalette = generatePaletteMedianCut(pixels: rowPixels, maxColors: 16)
+                    finalPalettes.append(linePalette)
+                } else {
+                    // Check if previous palette fits this scanline well enough
+                    let previousPalette = finalPalettes[y - 1]
+                    let error = calculatePaletteFitError(pixels: rowPixels, palette: previousPalette)
+
+                    if error <= mergeThreshold {
+                        // Reuse previous palette - reduces banding
+                        finalPalettes.append(previousPalette)
+                    } else {
+                        // Generate new palette for this scanline
+                        let linePalette = generatePaletteMedianCut(pixels: rowPixels, maxColors: 16)
+                        finalPalettes.append(linePalette)
+                    }
+                }
+            }
+
+            // Quantize and dither for Brooks mode
+            for y in 0..<targetH {
+                let currentPalette = finalPalettes[y]
+
+                for x in 0..<targetW {
+                    let idx = y * targetW + x
+                    var p = rawPixels[idx]
+
+                    p.r = min(255, max(0, p.r))
+                    p.g = min(255, max(0, p.g))
+                    p.b = min(255, max(0, p.b))
+
+                    if isOrdered {
+                        let bayerVal = bayerMatrix[(y % 4) * 4 + (x % 4)] / 16.0
+                        let spread = 32.0 * ditherAmount
+                        let offset = (bayerVal - 0.5) * spread
+                        p.r = min(255, max(0, p.r + offset))
+                        p.g = min(255, max(0, p.g + offset))
+                        p.b = min(255, max(0, p.b + offset))
+                    }
+
+                    let match = findNearestColor(pixel: p, palette: currentPalette)
+                    outputIndices[idx] = match.index
+
+                    if !isNone && !isOrdered {
+                        let errR = (p.r - match.rgb.r) * ditherAmount
+                        let errG = (p.g - match.rgb.g) * ditherAmount
+                        let errB = (p.b - match.rgb.b) * ditherAmount
+
+                        distributeError(source: &rawPixels, x: x, y: y, w: targetW, h: targetH,
+                                        errR: errR, errG: errG, errB: errB,
+                                        kernel: kernel)
+                    }
+                }
+            }
+
         } else {
-            // C. TRUE 3200 MODE
+            // D. 256 COLORS MODE (16 palettes - was previously called "3200 Mode")
             let usePaletteReuse = quantMethod.contains("Reuse")
             
             if usePaletteReuse {
@@ -527,8 +605,8 @@ class AppleIIGSConverter: RetroMachine {
             } // End of per-scanline else block
         }
         
-        // Loop for non-3200 rendering
-        if !is3200 {
+        // Loop for non-3200/256 rendering (standard 320 mode, 640 modes)
+        if !is3200Brooks && !is256Color {
             for y in 0..<targetH {
                 let currentPalette = finalPalettes[y]
                 for x in 0..<targetW {
@@ -594,16 +672,25 @@ class AppleIIGSConverter: RetroMachine {
         
         // 5. Generate Results
         let preview = generatePreviewImage(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH)
-        
-        // All 640 modes (regular, Desktop, Enhanced) are stored in 640 mode with 4 colors
-        let shrIs640Mode = is640
-        
-        let shrData = generateSHRData(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH, is640: shrIs640Mode)
-        
+
         let fileManager = FileManager.default
         let uuid = UUID().uuidString.prefix(8)
-        let outputUrl = fileManager.temporaryDirectory.appendingPathComponent("iigs_\(uuid).shr")
-        try shrData.write(to: outputUrl)
+
+        let outputData: Data
+        let outputUrl: URL
+
+        if is3200Brooks {
+            // Brooks format (3200 colors) - 38,400 bytes with 200 palettes
+            outputData = generateBrooksData(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH)
+            outputUrl = fileManager.temporaryDirectory.appendingPathComponent("iigs_\(uuid).3200")
+        } else {
+            // Standard SHR format (32,768 bytes with 16 palettes)
+            let shrIs640Mode = is640
+            outputData = generateSHRData(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH, is640: shrIs640Mode)
+            outputUrl = fileManager.temporaryDirectory.appendingPathComponent("iigs_\(uuid).shr")
+        }
+
+        try outputData.write(to: outputUrl)
         
         return ConversionResult(previewImage: preview, fileAssets: [outputUrl])
     }
@@ -778,23 +865,65 @@ class AppleIIGSConverter: RetroMachine {
         }
         return data
     }
-    
+
+    func generateBrooksData(indices: [Int], palettes: [[RGB]], width: Int, height: Int) -> Data {
+        // Brooks format (3200 colors): 38,400 bytes total
+        // - Bytes 0-31,999: Pixel data (200 lines × 160 bytes)
+        // - Bytes 32,000-38,399: 200 palettes × 32 bytes each
+        // Colors are stored in REVERSE order (15 to 0) per Brooks spec
+
+        var data = Data(count: 38400)
+
+        // Write pixel data (same format as standard SHR 320 mode)
+        for y in 0..<height {
+            let lineOffset = y * 160
+
+            for x in stride(from: 0, to: width, by: 2) {
+                let bytePos = lineOffset + (x / 2)
+                if bytePos >= 32000 { continue }
+
+                let p1 = indices[y * width + x] & 0x0F
+                let p2 = indices[y * width + x + 1] & 0x0F
+                let byte = UInt8(p2 | (p1 << 4))
+                data[bytePos] = byte
+            }
+        }
+
+        // Write 200 palettes (one per scanline) in reverse color order
+        let paletteOffset = 32000
+        for y in 0..<200 {
+            let palette = (y < palettes.count) ? palettes[y] : palettes[0]
+
+            // Brooks format stores colors in reverse order (15 to 0)
+            for colorIdx in 0..<16 {
+                let reversedIdx = 15 - colorIdx
+                let color = (reversedIdx < palette.count) ? palette[reversedIdx] : RGB(r: 0, g: 0, b: 0)
+                let iigsVal = rgbToIIGS(color)
+                let offset = paletteOffset + (y * 32) + (colorIdx * 2)
+                data[offset] = UInt8(iigsVal & 0xFF)
+                data[offset + 1] = UInt8((iigsVal >> 8) & 0xFF)
+            }
+        }
+
+        return data
+    }
+
     func generatePreviewImage(indices: [Int], palettes: [[RGB]], width: Int, height: Int) -> NSImage {
         var bytes = [UInt8](repeating: 255, count: width * height * 4)
         for y in 0..<height {
             // Determine which palette to use for this line
             let paletteIndex: Int
-            if !paletteSlotMapping.isEmpty {
-                // 3200 mode with custom mapping
+            if palettes.count == 200 {
+                // Brooks 3200 mode - one palette per scanline
+                paletteIndex = y
+            } else if !paletteSlotMapping.isEmpty {
+                // 256 color mode with custom mapping
                 paletteIndex = paletteSlotMapping[y]
-            } else if palettes.count > 16 {
-                // Shouldn't happen, but fallback
-                paletteIndex = y % 16
             } else {
-                // Standard mode
+                // Standard mode - use available palettes
                 paletteIndex = min(y, palettes.count - 1)
             }
-            
+
             let pal = palettes[paletteIndex]
             
             for x in 0..<width {
