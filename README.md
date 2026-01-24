@@ -56,7 +56,7 @@ Powered by a **native Swift engine** featuring advanced color quantization:
 - **Modern Previews:** Export as PNG, JPG, GIF, or TIFF for web use.
 - **Native Binaries:** - **Apple II:** `.BIN` (binary dumps) ready for hardware.
   - **Apple IIgs:** `.SHR` (Super Hi-Res, Type $C1) compatible with GS Paint and generic loaders.
-- **ProDOS Disk Images:** Create bootable `.PO`, `.2MG`, or `.HDV` disk images directly from the app (requires `cadius`).
+- **ProDOS Disk Images:** Create bootable `.PO`, `.2MG`, or `.HDV` disk images directly from the app.
 
 ## 🚀 How to Use
 
@@ -76,14 +76,14 @@ BitPast is built with **Swift** and **SwiftUI** for macOS.
 - **Frontend:** SwiftUI (Grid Views, HSplitView, Combine for debounced live previews).
 - **Backend (Apple II):** `b2d` (modified build with struct packing fixes for modern macOS ARM64/x86_64 architecture).
 - **Backend (Apple IIgs):** Native Swift implementation using Median Cut algorithm and Euclidean distance scanline clustering.
-- **Disk Operations:** Integrated wrapper for `cadius` (by BrutalDeluxe) to manage ProDOS volumes.
+- **Disk Operations:** Native Swift implementation for ProDOS volume creation and file management.
 
 ## 📦 Installation
 
 ### From Source
 1. Clone the repository.
 2. Open `BitPast.xcodeproj` in Xcode.
-3. Ensure the `b2d` and `cadius` binaries are present in the project bundle resources.
+3. Ensure the `b2d` binary is present in the project bundle resources.
 4. Build and Run (Requires macOS 12.0+).
 
 ### From Binary Release
@@ -111,7 +111,6 @@ Applications → Utilities → Terminal
 ## 👏 Credits
 
 - **Bill Buckels**: For creating the original **b2d** (Bmp2DHR) command-line tool. [Visit AppleOldies.ca](https://www.appleoldies.ca/bmp2dhr/).
-- **Brutal Deluxe**: For the **Cadius** tool used for ProDOS disk management.[Visit https://www.brutaldeluxe.fr/](https://www.brutaldeluxe.fr/products/crossdevtools/cadius/)
 
 
 ## 📄 License
