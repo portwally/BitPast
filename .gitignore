@@ -19,6 +19,6 @@ xcshareddata/
 *.swp
 *.lock
 
-# Apple II Tooling (Falls b2d/cadius temporäre Dateien erzeugen)
+# Apple II Tooling (Falls b2d temporäre Dateien erzeugt)
 *.tmp
 *.temp

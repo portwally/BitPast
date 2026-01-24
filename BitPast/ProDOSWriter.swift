@@ -2,7 +2,7 @@
 //  ProDOSWriter.swift
 //  BitPast
 //
-//  Native ProDOS disk image creation without external tools (cadius)
+//  Native ProDOS disk image creation
 //  Adapted from ProBrowse project
 //
 

@@ -209,7 +209,7 @@ class AppleIIGSConverter: RetroMachine {
                 RGB(r: 255, g: 255, b: 255)    // 15: White (copy of 7)
             ]
             
-            for _ in 0..<200 { finalPalettes.append(finderPalette) }
+            finalPalettes.append(finderPalette)  // Single palette for Desktop mode
             
         } else if isEnhanced {
             // ENHANCED 640 MODE - Custom 8-color palette with column-aware dithering
@@ -231,7 +231,7 @@ class AppleIIGSConverter: RetroMachine {
             enhancedPalette.append(contentsOf: Array(best8[0..<4]))  // Duplicate Even (8-11)
             enhancedPalette.append(contentsOf: Array(best8[4..<8]))  // Duplicate Odd (12-15)
             
-            for _ in 0..<200 { finalPalettes.append(enhancedPalette) }
+            finalPalettes.append(enhancedPalette)  // Single palette for Enhanced mode
             
         } else if is640 {
             // A. 640 MODE - 4 colors with guaranteed brightness range
@@ -272,7 +272,7 @@ class AppleIIGSConverter: RetroMachine {
             for i in 0..<16 {
                 expandedPalette.append(best4.isEmpty ? RGB(r:0,g:0,b:0) : best4[i % best4.count])
             }
-            for _ in 0..<200 { finalPalettes.append(expandedPalette) }
+            finalPalettes.append(expandedPalette)  // Single palette for 640 mode
             
         } else if !is3200Brooks && !is256Color {
             // B. STANDARD 320 MODE (single 16-color palette)
@@ -283,7 +283,7 @@ class AppleIIGSConverter: RetroMachine {
             }
 
             let best16 = generatePaletteMedianCut(pixels: samplePixels, maxColors: 16)
-            for _ in 0..<200 { finalPalettes.append(best16) }
+            finalPalettes.append(best16)  // Single palette for 320x200 mode
 
         } else if is3200Brooks {
             // C. TRUE 3200 COLORS (Brooks format - 200 independent palettes)
@@ -607,8 +607,8 @@ class AppleIIGSConverter: RetroMachine {
         
         // Loop for non-3200/256 rendering (standard 320 mode, 640 modes)
         if !is3200Brooks && !is256Color {
+            let currentPalette = finalPalettes[0]  // Single palette for all scanlines
             for y in 0..<targetH {
-                let currentPalette = finalPalettes[y]
                 for x in 0..<targetW {
                     let idx = y * targetW + x
                     var p = rawPixels[idx]
@@ -691,8 +691,20 @@ class AppleIIGSConverter: RetroMachine {
         }
 
         try outputData.write(to: outputUrl)
-        
-        return ConversionResult(previewImage: preview, fileAssets: [outputUrl])
+
+        // Convert palettes to PaletteRGB for editor
+        let paletteRGBs: [[PaletteRGB]] = finalPalettes.map { palette in
+            palette.map { PaletteRGB(r: $0.r, g: $0.g, b: $0.b) }
+        }
+
+        return ConversionResult(
+            previewImage: preview,
+            fileAssets: [outputUrl],
+            palettes: paletteRGBs,
+            pixelIndices: outputIndices,
+            imageWidth: targetW,
+            imageHeight: targetH
+        )
     }
     
     // MARK: - Helper Methods

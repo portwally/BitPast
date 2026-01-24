@@ -1,6 +1,52 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+// Helper class for managing the floating palette editor window
+class PaletteEditorWindowController {
+    static let shared = PaletteEditorWindowController()
+    private var window: NSWindow?
+
+    func openWindow(palettes: Binding<[[PaletteColor]]>, onApply: @escaping ([[PaletteColor]]) -> Void) {
+        // Close existing window if open
+        window?.close()
+
+        // Create binding for isPresented that closes the window
+        let isPresented = Binding<Bool>(
+            get: { self.window != nil },
+            set: { if !$0 { self.closeWindow() } }
+        )
+
+        let editorView = PaletteEditorView(
+            isPresented: isPresented,
+            palettes: palettes,
+            onApply: onApply
+        )
+
+        let hostingView = NSHostingView(rootView: editorView)
+
+        let newWindow = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 650, height: 550),
+            styleMask: [.titled, .closable, .resizable, .utilityWindow, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        newWindow.title = "Palette Editor"
+        newWindow.contentView = hostingView
+        newWindow.isFloatingPanel = true
+        newWindow.becomesKeyOnlyIfNeeded = true
+        newWindow.level = .floating
+        newWindow.center()
+        newWindow.makeKeyAndOrderFront(nil)
+
+        self.window = newWindow
+    }
+
+    func closeWindow() {
+        window?.close()
+        window = nil
+    }
+}
+
 struct ContentView: View {
     @StateObject private var viewModel = ConverterViewModel()
     @ObservedObject private var settings = AppSettings.shared
@@ -12,6 +58,12 @@ struct ContentView: View {
     @State private var selectedDiskSize: ConverterViewModel.DiskSize = .kb140
     @State private var selectedDiskFormat: ConverterViewModel.DiskFormat = .po
     @State private var diskVolumeName: String = "BITPAST"
+
+    // Palette Editor State
+    @State private var editablePalettes: [[PaletteColor]] = []
+
+    // Image Tools State
+    @State private var showHistogram = false
 
     let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
 
@@ -202,11 +254,74 @@ struct ContentView: View {
 
                 // RECHTER BEREICH: VORSCHAU
                 VStack(spacing: 0) {
-                    HStack {
+                    HStack(spacing: 12) {
                         Text("Preview")
                             .font(isRetro ? retroBoldFont : .system(size: 13, weight: .semibold))
                             .foregroundColor(isRetro ? retroTextColor : .secondary)
+
                         Spacer()
+
+                        // Image Tools Toolbar
+                        HStack(spacing: 8) {
+                            // Edit Palette (Apple IIgs only)
+                            if viewModel.selectedMachineIndex == 1 {
+                                ToolbarButton(
+                                    icon: "paintpalette",
+                                    label: "Palette",
+                                    isRetro: isRetro,
+                                    isAppleII: isAppleII,
+                                    isC64: isC64,
+                                    disabled: viewModel.currentResult?.palettes.isEmpty ?? true
+                                ) {
+                                    openPaletteEditor()
+                                }
+                            }
+
+                            // Horizontal Flip
+                            ToolbarButton(
+                                icon: "arrow.left.and.right.righttriangle.left.righttriangle.right",
+                                label: "H-Flip",
+                                isRetro: isRetro,
+                                isAppleII: isAppleII,
+                                isC64: isC64,
+                                disabled: viewModel.convertedImage == nil
+                            ) {
+                                flipImageHorizontally()
+                            }
+
+                            // Vertical Flip
+                            ToolbarButton(
+                                icon: "arrow.up.and.down.righttriangle.up.righttriangle.down",
+                                label: "V-Flip",
+                                isRetro: isRetro,
+                                isAppleII: isAppleII,
+                                isC64: isC64,
+                                disabled: viewModel.convertedImage == nil
+                            ) {
+                                flipImageVertically()
+                            }
+
+                            // Histogram
+                            ToolbarButton(
+                                icon: "chart.bar",
+                                label: "Histogram",
+                                isRetro: isRetro,
+                                isAppleII: isAppleII,
+                                isC64: isC64,
+                                disabled: viewModel.convertedImage == nil,
+                                isActive: showHistogram
+                            ) {
+                                showHistogram.toggle()
+                            }
+                        }
+
+                        // Divider between tools and zoom
+                        if !isRetro {
+                            Divider()
+                                .frame(height: 24)
+                        }
+
+                        // Zoom Controls
                         HStack(spacing: 4) {
                             Button(action: { if zoomLevel > 0.2 { zoomLevel -= 0.2 } }) {
                                 if isRetro {
@@ -314,6 +429,15 @@ struct ContentView: View {
                                         .font(isRetro ? retroSmallFont : .subheadline)
                                         .foregroundColor(isAppleII ? AppleIITheme.dimTextColor : .white.opacity(0.5))
                                 }
+                            }
+
+                            // Histogram Overlay (top-right corner)
+                            VStack {
+                                HStack {
+                                    Spacer()
+                                    HistogramOverlay(image: viewModel.convertedImage, isShowing: $showHistogram, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                                }
+                                Spacer()
                             }
                         }
                     }.frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -580,6 +704,7 @@ struct ContentView: View {
                                     )
                                 }
                             }
+
                         }
                         Spacer()
                     }
@@ -600,6 +725,503 @@ struct ContentView: View {
 
         }
         .background(isRetro ? retroBgColor : Color(NSColor.windowBackgroundColor))
+    }
+
+    // MARK: - Palette Editor Helpers
+
+    private func openPaletteEditor() {
+        guard let result = viewModel.currentResult, !result.palettes.isEmpty else { return }
+
+        // Convert PaletteRGB to PaletteColor for the editor
+        editablePalettes = result.palettes.map { palette in
+            palette.map { PaletteColor(r: $0.r, g: $0.g, b: $0.b) }
+        }
+
+        // Open floating window
+        PaletteEditorWindowController.shared.openWindow(
+            palettes: $editablePalettes
+        ) { newPalettes in
+            applyEditedPalettes(newPalettes)
+        }
+    }
+
+    private func applyEditedPalettes(_ newPalettes: [[PaletteColor]]) {
+        guard var result = viewModel.currentResult else { return }
+
+        // Convert PaletteColor back to PaletteRGB
+        result.palettes = newPalettes.map { palette in
+            palette.map { PaletteRGB(r: $0.r, g: $0.g, b: $0.b) }
+        }
+
+        // Regenerate preview with edited palettes
+        let preview = regeneratePreview(
+            indices: result.pixelIndices,
+            palettes: newPalettes,
+            width: result.imageWidth,
+            height: result.imageHeight
+        )
+
+        // Update the result
+        viewModel.currentResult = ConversionResult(
+            previewImage: preview,
+            fileAssets: result.fileAssets,
+            palettes: result.palettes,
+            pixelIndices: result.pixelIndices,
+            imageWidth: result.imageWidth,
+            imageHeight: result.imageHeight
+        )
+    }
+
+    private func regeneratePreview(indices: [Int], palettes: [[PaletteColor]], width: Int, height: Int) -> NSImage {
+        guard !indices.isEmpty, !palettes.isEmpty else {
+            return NSImage(size: NSSize(width: width, height: height))
+        }
+
+        var bytes = [UInt8](repeating: 255, count: width * height * 4)
+
+        for y in 0..<height {
+            let paletteIndex: Int
+            if palettes.count == 200 {
+                // Brooks 3200 mode - one palette per scanline
+                paletteIndex = y
+            } else {
+                paletteIndex = min(y % palettes.count, palettes.count - 1)
+            }
+
+            let palette = palettes[paletteIndex]
+
+            for x in 0..<width {
+                let idx = y * width + x
+                if idx >= indices.count { continue }
+
+                let colorIdx = indices[idx]
+                if colorIdx >= palette.count { continue }
+
+                let color = palette[colorIdx]
+                let pixelOffset = idx * 4
+
+                bytes[pixelOffset + 0] = UInt8(max(0, min(255, color.r)))
+                bytes[pixelOffset + 1] = UInt8(max(0, min(255, color.g)))
+                bytes[pixelOffset + 2] = UInt8(max(0, min(255, color.b)))
+                bytes[pixelOffset + 3] = 255
+            }
+        }
+
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        guard let context = CGContext(
+            data: &bytes,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: width * 4,
+            space: colorSpace,
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ), let cgImage = context.makeImage() else {
+            return NSImage(size: NSSize(width: width, height: height))
+        }
+
+        return NSImage(cgImage: cgImage, size: NSSize(width: width, height: height))
+    }
+
+    // MARK: - Image Flip Functions
+
+    private func flipImageHorizontally() {
+        guard let currentImage = viewModel.convertedImage else { return }
+        let flipped = flipImage(currentImage, horizontal: true)
+        updatePreviewWithFlippedImage(flipped)
+    }
+
+    private func flipImageVertically() {
+        guard let currentImage = viewModel.convertedImage else { return }
+        let flipped = flipImage(currentImage, horizontal: false)
+        updatePreviewWithFlippedImage(flipped)
+    }
+
+    private func flipImage(_ image: NSImage, horizontal: Bool) -> NSImage {
+        let size = image.size
+        let flippedImage = NSImage(size: size)
+
+        flippedImage.lockFocus()
+
+        let transform = NSAffineTransform()
+        if horizontal {
+            transform.translateX(by: size.width, yBy: 0)
+            transform.scaleX(by: -1, yBy: 1)
+        } else {
+            transform.translateX(by: 0, yBy: size.height)
+            transform.scaleX(by: 1, yBy: -1)
+        }
+        transform.concat()
+
+        image.draw(at: .zero, from: NSRect(origin: .zero, size: size), operation: .copy, fraction: 1.0)
+
+        flippedImage.unlockFocus()
+
+        return flippedImage
+    }
+
+    private func updatePreviewWithFlippedImage(_ flipped: NSImage) {
+        guard let result = viewModel.currentResult else { return }
+
+        viewModel.currentResult = ConversionResult(
+            previewImage: flipped,
+            fileAssets: result.fileAssets,
+            palettes: result.palettes,
+            pixelIndices: result.pixelIndices,
+            imageWidth: result.imageWidth,
+            imageHeight: result.imageHeight
+        )
+    }
+}
+
+// MARK: - Toolbar Button
+
+struct ToolbarButton: View {
+    let icon: String
+    let label: String
+    var isRetro: Bool = false
+    var isAppleII: Bool = false
+    var isC64: Bool = false
+    var disabled: Bool = false
+    var isActive: Bool = false
+    let action: () -> Void
+
+    // Theme-aware colors
+    var themeTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        if isRetro { return RetroTheme.textColor }
+        return .primary
+    }
+    var themeBgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        if isRetro { return RetroTheme.contentGray }
+        return Color.clear
+    }
+    var themeBorderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        if isRetro { return RetroTheme.borderColor }
+        return Color.gray.opacity(0.3)
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 9) }
+        if isAppleII { return AppleIITheme.font(size: 9) }
+        if isRetro { return .system(size: 8) }  // Smaller text for IIgs buttons
+        return .system(size: 9)
+    }
+    var activeColor: Color {
+        if isC64 { return C64Theme.textColor.opacity(0.3) }
+        if isAppleII { return AppleIITheme.textColor.opacity(0.3) }
+        if isRetro { return Color.blue.opacity(0.2) }
+        return Color.accentColor.opacity(0.2)
+    }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Image(systemName: icon)
+                    .font(.system(size: 14))
+                    .foregroundColor(isRetro || isAppleII || isC64 ? themeTextColor : nil)
+                    .frame(width: 20, height: 16)
+                Text(label)
+                    .font(themeFont)
+                    .foregroundColor(isRetro || isAppleII || isC64 ? themeTextColor : nil)
+                    .lineLimit(1)
+            }
+            .frame(width: 50, height: 34)
+            .background(isActive ? activeColor : (isRetro || isAppleII || isC64 ? themeBgColor : Color.clear))
+            .cornerRadius(isRetro || isAppleII || isC64 ? 0 : 4)
+            .overlay(
+                (isRetro || isAppleII || isC64) ?
+                Rectangle().stroke(themeBorderColor, lineWidth: 1) : nil
+            )
+        }
+        .buttonStyle(.plain)
+        .background(
+            Group {
+                if !(isRetro || isAppleII || isC64) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.gray.opacity(0.15))
+                }
+            }
+        )
+        .disabled(disabled)
+        .opacity(disabled ? 0.5 : 1.0)
+        .help(label)
+    }
+}
+
+// MARK: - Histogram View
+
+struct HistogramOverlay: View {
+    let image: NSImage?
+    @Binding var isShowing: Bool
+    var isRetro: Bool = false
+    var isAppleII: Bool = false
+    var isC64: Bool = false
+    @State private var showRed = true
+    @State private var showGreen = true
+    @State private var showBlue = true
+    @State private var showLuma = false
+
+    // Theme-aware colors
+    var themeTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        if isRetro { return RetroTheme.textColor }
+        return .primary
+    }
+    var themeBgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        if isRetro { return RetroTheme.contentGray }
+        return Color(NSColor.windowBackgroundColor)
+    }
+    var themeBorderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        if isRetro { return RetroTheme.borderColor }
+        return Color.clear
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 12) }
+        if isAppleII { return AppleIITheme.font(size: 12) }
+        if isRetro { return RetroTheme.font(size: 12) }
+        return .caption
+    }
+
+    var body: some View {
+        if isShowing, let img = image {
+            VStack(spacing: 0) {
+                // Header with title and close button
+                HStack {
+                    Text("Histogram")
+                        .font(isRetro || isAppleII || isC64 ? themeFont : .caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(isRetro || isAppleII || isC64 ? themeTextColor : .primary)
+                    Spacer()
+                    Button(action: { isShowing = false }) {
+                        Image(systemName: isAppleII || isC64 ? "xmark" : "xmark.circle.fill")
+                            .foregroundColor(isRetro || isAppleII || isC64 ? themeTextColor : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+
+                // Channel toggle buttons
+                HStack(spacing: 4) {
+                    ChannelToggleButton(label: "R", color: .red, isOn: $showRed, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                    ChannelToggleButton(label: "G", color: .green, isOn: $showGreen, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                    ChannelToggleButton(label: "B", color: .blue, isOn: $showBlue, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                    ChannelToggleButton(label: "L", color: .gray, isOn: $showLuma, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                }
+                .padding(.horizontal, 8)
+                .padding(.bottom, 4)
+
+                // Histogram chart
+                HistogramChart(
+                    image: img,
+                    showRed: showRed,
+                    showGreen: showGreen,
+                    showBlue: showBlue,
+                    showLuma: showLuma,
+                    isRetro: isRetro,
+                    isAppleII: isAppleII,
+                    isC64: isC64
+                )
+                .frame(height: 100)
+                .padding(.horizontal, 8)
+                .padding(.bottom, 8)
+            }
+            .background(themeBgColor.opacity(0.95))
+            .cornerRadius(isRetro || isAppleII || isC64 ? 0 : 8)
+            .overlay(
+                (isRetro || isAppleII || isC64) ?
+                Rectangle().stroke(themeBorderColor, lineWidth: 2) : nil
+            )
+            .shadow(radius: isRetro || isAppleII || isC64 ? 0 : 4)
+            .frame(width: 260)
+            .padding(12)
+        }
+    }
+}
+
+struct ChannelToggleButton: View {
+    let label: String
+    let color: Color
+    @Binding var isOn: Bool
+    var isRetro: Bool = false
+    var isAppleII: Bool = false
+    var isC64: Bool = false
+
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 11) }
+        if isAppleII { return AppleIITheme.font(size: 11) }
+        if isRetro { return RetroTheme.font(size: 11) }
+        return .system(size: 11, weight: .bold, design: .monospaced)
+    }
+    var themeBorderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        if isRetro { return RetroTheme.borderColor }
+        return Color.clear
+    }
+
+    var body: some View {
+        Button(action: { isOn.toggle() }) {
+            Text(label)
+                .font(themeFont)
+                .foregroundColor(isOn ? .white : color)
+                .frame(width: 28, height: 20)
+                .background(isOn ? color : color.opacity(0.2))
+                .cornerRadius(isRetro || isAppleII || isC64 ? 0 : 4)
+                .overlay(
+                    (isRetro || isAppleII || isC64) ?
+                    Rectangle().stroke(themeBorderColor, lineWidth: 1) : nil
+                )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct HistogramChart: View {
+    let image: NSImage
+    var showRed: Bool = true
+    var showGreen: Bool = true
+    var showBlue: Bool = true
+    var showLuma: Bool = false
+    var isRetro: Bool = false
+    var isAppleII: Bool = false
+    var isC64: Bool = false
+
+    @State private var redData: [CGFloat] = []
+    @State private var greenData: [CGFloat] = []
+    @State private var blueData: [CGFloat] = []
+    @State private var lumaData: [CGFloat] = []
+
+    var themeBgColor: Color {
+        if isC64 { return Color.black }
+        if isAppleII { return Color.black }
+        if isRetro { return Color.black.opacity(0.5) }
+        return Color.black.opacity(0.3)
+    }
+    var themeBorderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        if isRetro { return RetroTheme.borderColor }
+        return Color.clear
+    }
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                // Luma channel (behind colors)
+                if showLuma {
+                    HistogramPath(data: lumaData, width: geometry.size.width, height: geometry.size.height)
+                        .fill(Color.white.opacity(0.5))
+                }
+                // Red channel
+                if showRed {
+                    HistogramPath(data: redData, width: geometry.size.width, height: geometry.size.height)
+                        .fill(Color.red.opacity(0.4))
+                }
+                // Green channel
+                if showGreen {
+                    HistogramPath(data: greenData, width: geometry.size.width, height: geometry.size.height)
+                        .fill(Color.green.opacity(0.4))
+                }
+                // Blue channel
+                if showBlue {
+                    HistogramPath(data: blueData, width: geometry.size.width, height: geometry.size.height)
+                        .fill(Color.blue.opacity(0.4))
+                }
+            }
+            .background(themeBgColor)
+            .cornerRadius(isRetro || isAppleII || isC64 ? 0 : 4)
+            .overlay(
+                (isRetro || isAppleII || isC64) ?
+                Rectangle().stroke(themeBorderColor, lineWidth: 1) : nil
+            )
+        }
+        .onAppear {
+            calculateHistogram()
+        }
+    }
+
+    private func calculateHistogram() {
+        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+
+        let width = cgImage.width
+        let height = cgImage.height
+
+        var redHist = [Int](repeating: 0, count: 256)
+        var greenHist = [Int](repeating: 0, count: 256)
+        var blueHist = [Int](repeating: 0, count: 256)
+        var lumaHist = [Int](repeating: 0, count: 256)
+
+        guard let data = cgImage.dataProvider?.data,
+              let bytes = CFDataGetBytePtr(data) else { return }
+
+        let bytesPerPixel = cgImage.bitsPerPixel / 8
+        let bytesPerRow = cgImage.bytesPerRow
+
+        for y in 0..<height {
+            for x in 0..<width {
+                let offset = y * bytesPerRow + x * bytesPerPixel
+                let r = Int(bytes[offset])
+                let g = Int(bytes[offset + 1])
+                let b = Int(bytes[offset + 2])
+
+                // Calculate luma using standard BT.601 coefficients
+                let luma = Int(0.299 * Double(r) + 0.587 * Double(g) + 0.114 * Double(b))
+
+                redHist[r] += 1
+                greenHist[g] += 1
+                blueHist[b] += 1
+                lumaHist[min(255, luma)] += 1
+            }
+        }
+
+        let maxVal = CGFloat(max(
+            redHist.max() ?? 1,
+            greenHist.max() ?? 1,
+            blueHist.max() ?? 1,
+            lumaHist.max() ?? 1
+        ))
+
+        redData = redHist.map { CGFloat($0) / maxVal }
+        greenData = greenHist.map { CGFloat($0) / maxVal }
+        blueData = blueHist.map { CGFloat($0) / maxVal }
+        lumaData = lumaHist.map { CGFloat($0) / maxVal }
+    }
+}
+
+struct HistogramPath: Shape {
+    let data: [CGFloat]
+    let width: CGFloat
+    let height: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        guard !data.isEmpty else { return path }
+
+        let stepWidth = width / CGFloat(data.count)
+
+        path.move(to: CGPoint(x: 0, y: height))
+
+        for (index, value) in data.enumerated() {
+            let x = CGFloat(index) * stepWidth
+            let y = height - (value * height)
+            path.addLine(to: CGPoint(x: x, y: y))
+        }
+
+        path.addLine(to: CGPoint(x: width, y: height))
+        path.closeSubpath()
+
+        return path
     }
 }
 

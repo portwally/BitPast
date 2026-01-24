@@ -63,9 +63,9 @@ class AppleIIConverter: RetroMachine {
                 "Cybernesto NTSC",         // -P14
                 "tohgr NTSC HGR"           // -P16 (For HGR mode)
             ],
-            selectedValue: "Kegs32 RGB"
+            selectedValue: "tohgr NTSC (Default)"
         ),
-        
+
         // 5. CROSS-HATCH PATTERN (X)
         ConversionOption(
             label: "Cross-hatch Pattern",

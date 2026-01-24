@@ -1,9 +1,29 @@
 import Cocoa
 
+// RGB color for palette editing
+struct PaletteRGB {
+    var r: Double
+    var g: Double
+    var b: Double
+}
+
 // Ergebnis-Container (Bild + Dateien)
 struct ConversionResult {
     let previewImage: NSImage
     let fileAssets: [URL]
+    var palettes: [[PaletteRGB]]  // For Apple IIgs palette editing
+    var pixelIndices: [Int]       // Pixel-to-palette-color indices
+    var imageWidth: Int
+    var imageHeight: Int
+
+    init(previewImage: NSImage, fileAssets: [URL], palettes: [[PaletteRGB]] = [], pixelIndices: [Int] = [], imageWidth: Int = 0, imageHeight: Int = 0) {
+        self.previewImage = previewImage
+        self.fileAssets = fileAssets
+        self.palettes = palettes
+        self.pixelIndices = pixelIndices
+        self.imageWidth = imageWidth
+        self.imageHeight = imageHeight
+    }
 }
 
 enum OptionType {
