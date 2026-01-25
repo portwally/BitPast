@@ -184,10 +184,24 @@ struct ContentView: View {
                                 Text("+")
                                     .font(retroBoldFont)
                                     .foregroundColor(retroTextColor)
+                                    .frame(width: 28, height: 22)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .stroke(retroTextColor, lineWidth: 1)
+                                    )
                             } else {
-                                Image(systemName: "plus.circle.fill")
-                                    .symbolRenderingMode(.hierarchical)
-                                    .foregroundStyle(.blue)
+                                Text("+")
+                                    .font(.system(size: 18, weight: .medium))
+                                    .foregroundColor(.blue)
+                                    .frame(width: 28, height: 22)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .fill(Color.blue.opacity(0.1))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 4)
+                                            .stroke(Color.blue.opacity(0.3), lineWidth: 1)
+                                    )
                             }
                         }
                         .buttonStyle(.plain)
