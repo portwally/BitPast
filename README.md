@@ -83,8 +83,7 @@ BitPast is built with **Swift** and **SwiftUI** for macOS.
 ### From Source
 1. Clone the repository.
 2. Open `BitPast.xcodeproj` in Xcode.
-3. Ensure the `b2d` binary is present in the project bundle resources.
-4. Build and Run (Requires macOS 12.0+).
+3. Build and Run (Requires macOS 12.0+).
 
 ### From Binary Release
 
