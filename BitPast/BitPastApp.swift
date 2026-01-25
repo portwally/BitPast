@@ -17,6 +17,14 @@ struct BitPastApp: App {
                     openHelpWindow()
                 }
                 .keyboardShortcut("?", modifiers: .command)
+
+                Divider()
+
+                Button("Visit GitHub Page") {
+                    if let url = URL(string: "https://github.com/portwally/BitPast") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
             }
         }
 

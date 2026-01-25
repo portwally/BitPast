@@ -2,7 +2,40 @@
 
 All notable changes to BitPast will be documented in this file.
 
-## [Unreleased] - 2026-01-24
+## [2.3] - 2026-01-25
+
+### Added
+- **Preprocessing Filters** - Apply image filters before color conversion:
+  - **Median** - Noise reduction with selectable kernel size (3×3, 5×5, 7×7)
+  - **Sharpen** - Edge enhancement with adjustable strength (0.2–2.5)
+  - **Sigma** - Edge-preserving blur/noise reduction (5–50 range)
+  - **Solarize** - Artistic partial negative effect (32–224 threshold)
+  - **Emboss** - 3D relief effect with depth control (0.3–2.0)
+  - **Find Edges** - Sobel edge detection with sensitivity control (10–100)
+- **Filter-Specific Parameters** - Each filter now has its own dedicated control with appropriate range and labeling
+- **Help Menu: Preprocessing Filters Section** - Comprehensive documentation for all filters with:
+  - Parameter descriptions and ranges
+  - Best use cases for each filter
+  - Value recommendations
+- **Help Menu: Visit GitHub Page** - Quick link to the BitPast GitHub repository
+- **Palette Editor Undo/Redo** - Full undo/redo support (⌘Z / ⇧⌘Z) with 50-level history
+- **Palette Editor Copy/Paste** - Copy and paste entire palettes between scanlines
+
+### Changed
+- **Settings Toolbar Reorganization** - Controls now grouped in vertical pairs:
+  - Mode + Resolution + 3200-specific options in first column
+  - Dither + Error Matrix + Dither Amount grouped together
+  - Preprocessing filter with its parameter below
+  - Each group has subtle visual separation for clarity
+- **3200 Quantization Visibility** - Now only appears when 3200 Colors mode is selected
+- **640x200 Preview Aspect Ratio** - Fixed stretched preview for 640×200 modes (now displays with correct 2:1 aspect correction)
+- **Palette Editor Layout** - Fixed heights for header, footer, and button bar to prevent layout compression
+
+### Fixed
+- **Preview Aspect Ratio** - 640×200 images no longer appear horizontally stretched in preview
+- **Palette Editor Stability** - Header and footer no longer compress when resizing window
+
+## [2.2] - 2026-01-24
 
 ### Added
 - **Image Tools Toolbar** - New toolbar buttons in the preview area:

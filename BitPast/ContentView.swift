@@ -71,8 +71,17 @@ struct ContentView: View {
     let sideColumnWidth: CGFloat = 195
 
     // Keys für die Anzeige
-    let topRowKeys = ["mode", "dither", "quantization_method", "palette", "saturation"]
-    let bottomRowKeys = ["resolution", "crosshatch", "z_threshold", "error_matrix", "gamma", "dither_amount", "threshold"]
+    // Control groups for vertical pairing layout
+    // Each group: [dropdown(s), slider(s)] displayed vertically
+    let controlGroups: [[String]] = [
+        ["mode", "resolution", "quantization_method", "threshold"],  // Mode + 3200-specific options
+        ["dither", "error_matrix", "dither_amount"],  // Dithering controls
+        ["palette"],                          // Palette selection
+        ["preprocess", "median_size", "sharpen_strength", "sigma_range", "solarize_threshold", "emboss_depth", "edge_threshold"], // Preprocessing filter + filter-specific params
+        ["saturation"],                       // Saturation adjustment
+        ["gamma"],                            // Gamma correction
+        ["crosshatch", "z_threshold"]         // Crosshatch pattern
+    ]
 
     // Retro mode helpers
     var isRetro: Bool { settings.isRetroMode }
@@ -386,9 +395,13 @@ struct ContentView: View {
                         ZStack {
                             Color(NSColor.black)
                             if let img = viewModel.convertedImage {
+                                // Apply aspect ratio correction for 640x200 mode (IIgs 640 mode has non-square pixels)
+                                let aspectCorrection: CGFloat = (img.size.width == 640 && img.size.height == 200) ? 2.0 : 1.0
+                                let displayHeight = img.size.height * aspectCorrection
+
                                 let fitScale = min(
                                     geometry.size.width / img.size.width,
-                                    geometry.size.height / img.size.height
+                                    geometry.size.height / displayHeight
                                 )
                                 let effectiveZoom = zoomLevel == 1.0 ? fitScale : zoomLevel
 
@@ -396,10 +409,9 @@ struct ContentView: View {
                                     Image(nsImage: img)
                                         .resizable()
                                         .interpolation(.none)
-                                        .aspectRatio(contentMode: .fit)
                                         .frame(
                                             width: img.size.width * effectiveZoom,
-                                            height: img.size.height * effectiveZoom
+                                            height: displayHeight * effectiveZoom
                                         )
                                         .shadow(color: .black.opacity(0.3), radius: 10)
                                         .frame(
@@ -559,54 +571,62 @@ struct ContentView: View {
                         Rectangle().fill(Color(NSColor.separatorColor)).frame(width: 1)
                     }
 
-                    // B. MITTE: SLIDER (Scrollbar)
+                    // B. MITTE: SLIDER (Scrollbar) - Vertical Groups Layout
                     ScrollView(.horizontal, showsIndicators: false) {
-                        VStack(alignment: .center, spacing: 16) {
-                            // OBERE REIHE
-                            HStack(spacing: 24) {
-                                ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
-                                    let opt = viewModel.currentMachine.options[index]
-                                    if topRowKeys.contains(opt.key) {
-                                        // Hide quantization option when Brooks 3200 mode is selected
-                                        if opt.key == "quantization_method" {
-                                            let modeOption = viewModel.currentMachine.options.first(where: { $0.key == "mode" })
-                                            if modeOption?.selectedValue.contains("3200 Colors") == true {
-                                                EmptyView()
-                                            } else {
-                                                ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
-                                            }
-                                        } else {
-                                            ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
-                                        }
-                                    }
-                                }
-                            }
+                        HStack(alignment: .top, spacing: 20) {
+                            ForEach(controlGroups.indices, id: \.self) { groupIndex in
+                                let group = controlGroups[groupIndex]
 
-                            // UNTERE REIHE
-                            HStack(spacing: 24) {
-                                ForEach(viewModel.currentMachine.options.indices, id: \.self) { index in
-                                    let opt = viewModel.currentMachine.options[index]
-                                    if bottomRowKeys.contains(opt.key) {
-                                        // Show threshold only for 3200 Colors or 256 Colors with Palette Reuse
-                                        if opt.key == "threshold" {
-                                            let modeOption = viewModel.currentMachine.options.first(where: { $0.key == "mode" })
-                                            let quantOption = viewModel.currentMachine.options.first(where: { $0.key == "quantization_method" })
-                                            let is3200Brooks = modeOption?.selectedValue.contains("3200 Colors") == true
-                                            let is256WithReuse = modeOption?.selectedValue.contains("256 Colors") == true && quantOption?.selectedValue.contains("Reuse") == true
-                                            if is3200Brooks || is256WithReuse {
-                                                ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
-                                            } else {
-                                                EmptyView()
+                                // Filter out invisible controls for this group
+                                let visibleControls = group.filter { key in
+                                    // Check visibility conditions
+                                    let modeOption = viewModel.currentMachine.options.first(where: { $0.key == "mode" })
+                                    let quantOption = viewModel.currentMachine.options.first(where: { $0.key == "quantization_method" })
+                                    let preprocessOption = viewModel.currentMachine.options.first(where: { $0.key == "preprocess" })
+                                    let selectedFilter = preprocessOption?.selectedValue ?? "None"
+                                    let is3200Brooks = modeOption?.selectedValue.contains("3200 Colors") == true
+                                    let is256WithReuse = modeOption?.selectedValue.contains("256 Colors") == true && quantOption?.selectedValue.contains("Reuse") == true
+
+                                    // Show quantization ONLY in 3200 mode
+                                    if key == "quantization_method" && !is3200Brooks { return false }
+                                    // Hide threshold unless 3200 or 256+Reuse
+                                    if key == "threshold" && !(is3200Brooks || is256WithReuse) { return false }
+
+                                    // Filter-specific parameter visibility
+                                    if key == "median_size" && selectedFilter != "Median" { return false }
+                                    if key == "sharpen_strength" && selectedFilter != "Sharpen" { return false }
+                                    if key == "sigma_range" && selectedFilter != "Sigma" { return false }
+                                    if key == "solarize_threshold" && selectedFilter != "Solarize" { return false }
+                                    if key == "emboss_depth" && selectedFilter != "Emboss" { return false }
+                                    if key == "edge_threshold" && selectedFilter != "Find Edges" { return false }
+
+                                    return viewModel.currentMachine.options.contains(where: { $0.key == key })
+                                }
+
+                                if !visibleControls.isEmpty {
+                                    VStack(alignment: .center, spacing: 8) {
+                                        ForEach(visibleControls, id: \.self) { key in
+                                            if let optIndex = viewModel.currentMachine.options.firstIndex(where: { $0.key == key }) {
+                                                let opt = viewModel.currentMachine.options[optIndex]
+                                                ControlView(opt: opt, index: optIndex, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
                                             }
-                                        } else {
-                                            ControlView(opt: opt, index: index, viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
                                         }
                                     }
+                                    .padding(.vertical, 8)
+                                    .padding(.horizontal, 4)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: isRetro ? 0 : 8)
+                                            .fill(isRetro ? retroBgColor.opacity(0.3) : Color(NSColor.controlBackgroundColor).opacity(0.3))
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: isRetro ? 0 : 8)
+                                            .stroke(isRetro ? retroBorderColor.opacity(0.3) : Color.clear, lineWidth: 1)
+                                    )
                                 }
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 14)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                         .frame(minWidth: 300, maxWidth: .infinity)
                     }
                     .background(isRetro ? retroBgColor : Color.clear)
@@ -1415,7 +1435,7 @@ struct ControlView: View {
                             },
                             set: { val in
                                 if index < viewModel.machines[viewModel.selectedMachineIndex].options.count {
-                                    let isFloat = ["gamma", "saturation", "dither_amount"].contains(opt.key)
+                                    let isFloat = ["gamma", "saturation", "dither_amount", "sharpen_strength", "emboss_depth"].contains(opt.key)
                                     viewModel.machines[viewModel.selectedMachineIndex].options[index].selectedValue = isFloat ? String(format: "%.2f", val) : String(format: "%.0f", val)
                                     viewModel.triggerLivePreview()
                                 }

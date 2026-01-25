@@ -52,6 +52,15 @@ Powered by a **native Swift engine** featuring advanced color quantization:
 - **Saturation Boost:** Compensates for the limited 4-bit color depth to make images "pop".
 - **Gamma Correction:** Adjust brightness distribution for retro CRTs.
 
+**Preprocessing Filters:**
+Apply image filters before color conversion to improve results:
+- **Median:** Noise reduction with selectable kernel size (3×3, 5×5, 7×7). Best for noisy images, scanned photos, JPEG artifacts.
+- **Sharpen:** Edge enhancement with adjustable strength (0.2–2.5). Best for soft or blurry images.
+- **Sigma:** Edge-preserving blur for smoothing gradients while keeping sharp boundaries (5–50 range).
+- **Solarize:** Artistic partial negative effect with adjustable threshold (32–224).
+- **Emboss:** 3D relief effect with depth control (0.3–2.0). Creates metallic or textured looks.
+- **Find Edges:** Sobel edge detection for line-art style output (10–100 sensitivity).
+
 ### 💾 Export Formats
 - **Modern Previews:** Export as PNG, JPG, GIF, or TIFF for web use.
 - **Native Binaries:** - **Apple II:** `.BIN` (binary dumps) ready for hardware.

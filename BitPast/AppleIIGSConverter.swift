@@ -71,6 +71,71 @@ class AppleIIGSConverter: RetroMachine {
             key: "saturation",
             range: 0.0...2.0,
             defaultValue: 1.1
+        ),
+
+        // 6. PREPROCESSING FILTER
+        ConversionOption(
+            label: "Preprocessing",
+            key: "preprocess",
+            values: [
+                "None",
+                "Median",
+                "Sharpen",
+                "Sigma",
+                "Solarize",
+                "Emboss",
+                "Find Edges"
+            ],
+            selectedValue: "None"
+        ),
+
+        // 7. FILTER-SPECIFIC PARAMETERS
+        // Median: Kernel size (3x3, 5x5, 7x7)
+        ConversionOption(
+            label: "Kernel Size",
+            key: "median_size",
+            values: ["3x3", "5x5", "7x7"],
+            selectedValue: "3x3"
+        ),
+
+        // Sharpen: Strength (0.2 - 2.5)
+        ConversionOption(
+            label: "Sharpen Amount",
+            key: "sharpen_strength",
+            range: 0.2...2.5,
+            defaultValue: 1.0
+        ),
+
+        // Sigma: Range for noise reduction (5 - 50)
+        ConversionOption(
+            label: "Sigma Range",
+            key: "sigma_range",
+            range: 5.0...50.0,
+            defaultValue: 20.0
+        ),
+
+        // Solarize: Brightness threshold (32 - 224)
+        ConversionOption(
+            label: "Threshold",
+            key: "solarize_threshold",
+            range: 32.0...224.0,
+            defaultValue: 128.0
+        ),
+
+        // Emboss: Depth of effect (0.3 - 2.0)
+        ConversionOption(
+            label: "Emboss Depth",
+            key: "emboss_depth",
+            range: 0.3...2.0,
+            defaultValue: 1.0
+        ),
+
+        // Find Edges: Sensitivity threshold (10 - 100)
+        ConversionOption(
+            label: "Edge Sensitivity",
+            key: "edge_threshold",
+            range: 10.0...100.0,
+            defaultValue: 50.0
         )
     ]
     
@@ -144,26 +209,49 @@ class AppleIIGSConverter: RetroMachine {
         let saturation = Double(options.first(where: {$0.key == "saturation"})?.selectedValue ?? "1.0") ?? 1.0
         let quantMethod = options.first(where: {$0.key == "quantization_method"})?.selectedValue ?? "Per-Scanline (Default)"
         let mergeThreshold = Double(options.first(where: {$0.key == "threshold"})?.selectedValue ?? "10.0") ?? 10.0
-        
+        let preprocessFilter = options.first(where: {$0.key == "preprocess"})?.selectedValue ?? "None"
+
+        // Get filter-specific parameters
+        let medianSize = options.first(where: {$0.key == "median_size"})?.selectedValue ?? "3x3"
+        let sharpenStrength = Double(options.first(where: {$0.key == "sharpen_strength"})?.selectedValue ?? "1.0") ?? 1.0
+        let sigmaRange = Double(options.first(where: {$0.key == "sigma_range"})?.selectedValue ?? "20.0") ?? 20.0
+        let solarizeThreshold = Double(options.first(where: {$0.key == "solarize_threshold"})?.selectedValue ?? "128.0") ?? 128.0
+        let embossDepth = Double(options.first(where: {$0.key == "emboss_depth"})?.selectedValue ?? "1.0") ?? 1.0
+        let edgeThreshold = Double(options.first(where: {$0.key == "edge_threshold"})?.selectedValue ?? "50.0") ?? 50.0
+
         let is640 = mode.contains("640")
         let is3200Brooks = mode.contains("3200 Colors")
         let is256Color = mode.contains("256 Colors")
         let isDesktop = mode.contains("Desktop")
         let isEnhanced = mode.contains("Enhanced")
-        
+
         // All 640 modes (including Desktop/Enhanced) use 640 width
         let targetW = is640 ? 640 : 320
         let targetH = 200
-        
+
         // 1. Resize & Pixel Data
         let resized = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
         guard let cgImage = resized.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw NSError(domain: "IIGS", code: 1, userInfo: [NSLocalizedDescriptionKey: "No CGImage"])
         }
-        
+
         var rawPixels = getRGBData(from: cgImage, width: targetW, height: targetH)
-        
-        // 2. Saturation Boost
+
+        // 2. Preprocessing Filter
+        if preprocessFilter != "None" {
+            applyPreprocessing(
+                &rawPixels, width: targetW, height: targetH,
+                filter: preprocessFilter,
+                medianSize: medianSize,
+                sharpenStrength: sharpenStrength,
+                sigmaRange: sigmaRange,
+                solarizeThreshold: solarizeThreshold,
+                embossDepth: embossDepth,
+                edgeThreshold: edgeThreshold
+            )
+        }
+
+        // 3. Saturation Boost
         if saturation != 1.0 { applySaturation(&rawPixels, amount: saturation) }
         
         // 3. Setup Dither
@@ -438,8 +526,7 @@ class AppleIIGSConverter: RetroMachine {
                 } else {
                     // Group consecutive similar palettes into 16 slots
                     var slotPalettes = [[RGB]]()
-                    var currentSlot = 0
-                    var linesPerSlot = 200 / 16
+                    let linesPerSlot = 200 / 16
                     
                     for slot in 0..<16 {
                         let startLine = slot * linesPerSlot
@@ -540,7 +627,7 @@ class AppleIIGSConverter: RetroMachine {
                 }
                 
                 // Convert to PixelFloat for median cut
-                var colorPixels = slotColors.map { PixelFloat(r: $0.r, g: $0.g, b: $0.b) }
+                let colorPixels = slotColors.map { PixelFloat(r: $0.r, g: $0.g, b: $0.b) }
                 
                 // Generate merged palette
                 let mergedPalette = generatePaletteMedianCut(pixels: colorPixels, maxColors: 16)
@@ -718,7 +805,220 @@ class AppleIIGSConverter: RetroMachine {
             pixels[i].b = gray + (p.b - gray) * amount
         }
     }
-    
+
+    // MARK: - Preprocessing Filters
+
+    func applyPreprocessing(_ pixels: inout [PixelFloat], width: Int, height: Int, filter: String,
+                             medianSize: String, sharpenStrength: Double, sigmaRange: Double,
+                             solarizeThreshold: Double, embossDepth: Double, edgeThreshold: Double) {
+        switch filter {
+        case "Median":
+            // Parse kernel size from "3x3", "5x5", "7x7"
+            let kernelSize = Int(medianSize.prefix(1)) ?? 3
+            applyMedianFilter(&pixels, width: width, height: height, kernelSize: kernelSize)
+        case "Sharpen":
+            applySharpenFilter(&pixels, width: width, height: height, strength: sharpenStrength)
+        case "Sigma":
+            applySigmaFilter(&pixels, width: width, height: height, sigma: sigmaRange)
+        case "Solarize":
+            applySolarizeFilter(&pixels, threshold: solarizeThreshold)
+        case "Emboss":
+            applyEmbossFilter(&pixels, width: width, height: height, strength: embossDepth)
+        case "Find Edges":
+            applyFindEdgesFilter(&pixels, width: width, height: height, threshold: edgeThreshold)
+        default:
+            break
+        }
+    }
+
+    func applyMedianFilter(_ pixels: inout [PixelFloat], width: Int, height: Int, kernelSize: Int) {
+        let radius = kernelSize / 2
+        var result = pixels
+
+        for y in 0..<height {
+            for x in 0..<width {
+                var reds: [Double] = []
+                var greens: [Double] = []
+                var blues: [Double] = []
+
+                for ky in -radius...radius {
+                    for kx in -radius...radius {
+                        let nx = min(max(x + kx, 0), width - 1)
+                        let ny = min(max(y + ky, 0), height - 1)
+                        let idx = ny * width + nx
+                        reds.append(pixels[idx].r)
+                        greens.append(pixels[idx].g)
+                        blues.append(pixels[idx].b)
+                    }
+                }
+
+                reds.sort()
+                greens.sort()
+                blues.sort()
+
+                let mid = reds.count / 2
+                let idx = y * width + x
+                result[idx].r = reds[mid]
+                result[idx].g = greens[mid]
+                result[idx].b = blues[mid]
+            }
+        }
+        pixels = result
+    }
+
+    func applySharpenFilter(_ pixels: inout [PixelFloat], width: Int, height: Int, strength: Double) {
+        var result = pixels
+        let kernel: [Double] = [
+             0, -1,  0,
+            -1,  5, -1,
+             0, -1,  0
+        ]
+
+        for y in 1..<(height - 1) {
+            for x in 1..<(width - 1) {
+                var r = 0.0, g = 0.0, b = 0.0
+                var ki = 0
+
+                for ky in -1...1 {
+                    for kx in -1...1 {
+                        let idx = (y + ky) * width + (x + kx)
+                        let weight = kernel[ki]
+                        r += pixels[idx].r * weight
+                        g += pixels[idx].g * weight
+                        b += pixels[idx].b * weight
+                        ki += 1
+                    }
+                }
+
+                let idx = y * width + x
+                let orig = pixels[idx]
+                result[idx].r = min(255, max(0, orig.r + (r - orig.r) * strength))
+                result[idx].g = min(255, max(0, orig.g + (g - orig.g) * strength))
+                result[idx].b = min(255, max(0, orig.b + (b - orig.b) * strength))
+            }
+        }
+        pixels = result
+    }
+
+    func applySigmaFilter(_ pixels: inout [PixelFloat], width: Int, height: Int, sigma: Double) {
+        var result = pixels
+        let radius = 1
+
+        for y in 0..<height {
+            for x in 0..<width {
+                let centerIdx = y * width + x
+                let center = pixels[centerIdx]
+                var sumR = 0.0, sumG = 0.0, sumB = 0.0
+                var count = 0.0
+
+                for ky in -radius...radius {
+                    for kx in -radius...radius {
+                        let nx = min(max(x + kx, 0), width - 1)
+                        let ny = min(max(y + ky, 0), height - 1)
+                        let idx = ny * width + nx
+                        let p = pixels[idx]
+
+                        let diff = abs(p.r - center.r) + abs(p.g - center.g) + abs(p.b - center.b)
+                        if diff < sigma {
+                            sumR += p.r
+                            sumG += p.g
+                            sumB += p.b
+                            count += 1
+                        }
+                    }
+                }
+
+                if count > 0 {
+                    result[centerIdx].r = sumR / count
+                    result[centerIdx].g = sumG / count
+                    result[centerIdx].b = sumB / count
+                }
+            }
+        }
+        pixels = result
+    }
+
+    func applySolarizeFilter(_ pixels: inout [PixelFloat], threshold: Double) {
+        for i in 0..<pixels.count {
+            if pixels[i].r > threshold { pixels[i].r = 255 - pixels[i].r }
+            if pixels[i].g > threshold { pixels[i].g = 255 - pixels[i].g }
+            if pixels[i].b > threshold { pixels[i].b = 255 - pixels[i].b }
+        }
+    }
+
+    func applyEmbossFilter(_ pixels: inout [PixelFloat], width: Int, height: Int, strength: Double) {
+        var result = pixels
+        let kernel: [Double] = [
+            -2, -1,  0,
+            -1,  1,  1,
+             0,  1,  2
+        ]
+
+        for y in 1..<(height - 1) {
+            for x in 1..<(width - 1) {
+                var r = 0.0, g = 0.0, b = 0.0
+                var ki = 0
+
+                for ky in -1...1 {
+                    for kx in -1...1 {
+                        let idx = (y + ky) * width + (x + kx)
+                        let weight = kernel[ki] * strength
+                        r += pixels[idx].r * weight
+                        g += pixels[idx].g * weight
+                        b += pixels[idx].b * weight
+                        ki += 1
+                    }
+                }
+
+                let idx = y * width + x
+                result[idx].r = min(255, max(0, r + 128))
+                result[idx].g = min(255, max(0, g + 128))
+                result[idx].b = min(255, max(0, b + 128))
+            }
+        }
+        pixels = result
+    }
+
+    func applyFindEdgesFilter(_ pixels: inout [PixelFloat], width: Int, height: Int, threshold: Double) {
+        var result = pixels
+        let sobelX: [Double] = [-1, 0, 1, -2, 0, 2, -1, 0, 1]
+        let sobelY: [Double] = [-1, -2, -1, 0, 0, 0, 1, 2, 1]
+
+        for y in 1..<(height - 1) {
+            for x in 1..<(width - 1) {
+                var gxR = 0.0, gyR = 0.0
+                var gxG = 0.0, gyG = 0.0
+                var gxB = 0.0, gyB = 0.0
+                var ki = 0
+
+                for ky in -1...1 {
+                    for kx in -1...1 {
+                        let idx = (y + ky) * width + (x + kx)
+                        gxR += pixels[idx].r * sobelX[ki]
+                        gyR += pixels[idx].r * sobelY[ki]
+                        gxG += pixels[idx].g * sobelX[ki]
+                        gyG += pixels[idx].g * sobelY[ki]
+                        gxB += pixels[idx].b * sobelX[ki]
+                        gyB += pixels[idx].b * sobelY[ki]
+                        ki += 1
+                    }
+                }
+
+                let magR = sqrt(gxR * gxR + gyR * gyR)
+                let magG = sqrt(gxG * gxG + gyG * gyG)
+                let magB = sqrt(gxB * gxB + gyB * gyB)
+                let mag = (magR + magG + magB) / 3.0
+
+                let idx = y * width + x
+                let edge = mag > threshold ? 255.0 : 0.0
+                result[idx].r = edge
+                result[idx].g = edge
+                result[idx].b = edge
+            }
+        }
+        pixels = result
+    }
+
     func calculatePaletteFitError(pixels: [PixelFloat], palette: [RGB]) -> Double {
         // Calculate average quantization error when using this palette
         var totalError = 0.0

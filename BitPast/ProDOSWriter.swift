@@ -63,7 +63,7 @@ class ProDOSWriter {
         guard blockData.count == BLOCK_SIZE else { return }
         let bytes = diskData.mutableBytes.assumingMemoryBound(to: UInt8.self)
         let offset = blockIndex * BLOCK_SIZE
-        blockData.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
+        _ = blockData.withUnsafeBytes { (ptr: UnsafeRawBufferPointer) in
             memcpy(bytes + offset, ptr.baseAddress!, BLOCK_SIZE)
         }
     }

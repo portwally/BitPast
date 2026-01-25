@@ -50,6 +50,9 @@ struct PaletteEditorView: View {
     @State private var selectedPaletteIndex: Int = 0
     @State private var selectedColorIndex: Int? = nil
     @State private var colorPanelDelegate = ColorPanelDelegate()
+    @State private var undoStack: [[[PaletteColor]]] = []
+    @State private var redoStack: [[[PaletteColor]]] = []
+    @State private var lastEditedColorKey: String? = nil  // Track palette+color being edited
 
     private let is3200Mode: Bool
 
@@ -72,7 +75,9 @@ struct PaletteEditorView: View {
                     .foregroundColor(.secondary)
             }
             .padding()
+            .frame(minHeight: 44, maxHeight: 44)
             .background(Color(NSColor.windowBackgroundColor))
+            .layoutPriority(1)
 
             Divider()
 
@@ -110,44 +115,65 @@ struct PaletteEditorView: View {
                 .frame(minWidth: 200, maxWidth: 250)
 
                 // Right: Color grid for selected palette
-                VStack(spacing: 12) {
+                VStack(spacing: 0) {
                     if selectedPaletteIndex < editedPalettes.count {
-                        Text(is3200Mode ? "Scanline \(selectedPaletteIndex)" : "Palette \(selectedPaletteIndex)")
-                            .font(.headline)
+                        // Scrollable content area
+                        ScrollView {
+                            VStack(spacing: 12) {
+                                Text(is3200Mode ? "Scanline \(selectedPaletteIndex)" : "Palette \(selectedPaletteIndex)")
+                                    .font(.headline)
+                                    .padding(.top, 12)
 
-                        // Color grid (4x4)
-                        LazyVGrid(columns: Array(repeating: GridItem(.fixed(60), spacing: 8), count: 4), spacing: 8) {
-                            ForEach(0..<editedPalettes[selectedPaletteIndex].count, id: \.self) { colorIdx in
-                                ColorCell(
-                                    color: editedPalettes[selectedPaletteIndex][colorIdx],
-                                    index: colorIdx,
-                                    isSelected: selectedColorIndex == colorIdx
-                                ) {
-                                    selectedColorIndex = colorIdx
-                                    openColorPanel(for: colorIdx)
+                                // Color grid (4x4)
+                                LazyVGrid(columns: Array(repeating: GridItem(.fixed(60), spacing: 8), count: 4), spacing: 8) {
+                                    ForEach(0..<editedPalettes[selectedPaletteIndex].count, id: \.self) { colorIdx in
+                                        ColorCell(
+                                            color: editedPalettes[selectedPaletteIndex][colorIdx],
+                                            index: colorIdx,
+                                            isSelected: selectedColorIndex == colorIdx
+                                        ) {
+                                            selectedColorIndex = colorIdx
+                                            openColorPanel(for: colorIdx)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal)
+
+                                // Selected color info
+                                if let colorIdx = selectedColorIndex, colorIdx < editedPalettes[selectedPaletteIndex].count {
+                                    let color = editedPalettes[selectedPaletteIndex][colorIdx]
+                                    VStack(spacing: 4) {
+                                        Text("Color \(colorIdx)")
+                                            .font(.caption)
+                                        Text(color.hexString)
+                                            .font(.system(.caption, design: .monospaced))
+                                        Text("IIgs: $\(String(format: "%X%X%X", color.iigsR, color.iigsG, color.iigsB))")
+                                            .font(.system(.caption, design: .monospaced))
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.bottom, 12)
                                 }
                             }
                         }
-                        .padding()
 
-                        // Selected color info
-                        if let colorIdx = selectedColorIndex, colorIdx < editedPalettes[selectedPaletteIndex].count {
-                            let color = editedPalettes[selectedPaletteIndex][colorIdx]
-                            VStack(spacing: 4) {
-                                Text("Color \(colorIdx)")
-                                    .font(.caption)
-                                Text(color.hexString)
-                                    .font(.system(.caption, design: .monospaced))
-                                Text("IIgs: $\(String(format: "%X%X%X", color.iigsR, color.iigsG, color.iigsB))")
-                                    .font(.system(.caption, design: .monospaced))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-
-                        Spacer()
-
-                        // Copy/Paste palette buttons
+                        // Undo/Redo and Copy/Paste palette buttons - fixed at bottom
                         HStack {
+                            Button(action: undo) {
+                                Image(systemName: "arrow.uturn.backward")
+                            }
+                            .disabled(undoStack.isEmpty)
+                            .help("Undo (⌘Z)")
+                            .keyboardShortcut("z", modifiers: .command)
+
+                            Button(action: redo) {
+                                Image(systemName: "arrow.uturn.forward")
+                            }
+                            .disabled(redoStack.isEmpty)
+                            .help("Redo (⇧⌘Z)")
+                            .keyboardShortcut("z", modifiers: [.command, .shift])
+
+                            Spacer().frame(width: 20)
+
                             Button("Copy Palette") {
                                 copyPalette()
                             }
@@ -156,7 +182,9 @@ struct PaletteEditorView: View {
                             }
                             .disabled(!canPaste())
                         }
-                        .padding(.bottom)
+                        .padding()
+                        .frame(minHeight: 44, maxHeight: 44)
+                        .background(Color(NSColor.windowBackgroundColor).opacity(0.5))
                     }
                 }
                 .frame(minWidth: 300)
@@ -187,6 +215,8 @@ struct PaletteEditorView: View {
                 .keyboardShortcut(.defaultAction)
             }
             .padding()
+            .frame(minHeight: 52, maxHeight: 52)
+            .layoutPriority(1)
         }
         .frame(minWidth: 600, minHeight: 500)
         .onAppear {
@@ -208,12 +238,34 @@ struct PaletteEditorView: View {
 
     private func pastePalette() {
         if let copied = copiedPalette, selectedPaletteIndex < editedPalettes.count {
+            saveUndoState()
             editedPalettes[selectedPaletteIndex] = copied
         }
     }
 
     private func canPaste() -> Bool {
         copiedPalette != nil
+    }
+
+    private func saveUndoState() {
+        undoStack.append(editedPalettes.map { $0 })
+        redoStack.removeAll()
+        // Limit undo stack size to prevent excessive memory usage
+        if undoStack.count > 50 {
+            undoStack.removeFirst()
+        }
+    }
+
+    private func undo() {
+        guard let previousState = undoStack.popLast() else { return }
+        redoStack.append(editedPalettes.map { $0 })
+        editedPalettes = previousState
+    }
+
+    private func redo() {
+        guard let nextState = redoStack.popLast() else { return }
+        undoStack.append(editedPalettes.map { $0 })
+        editedPalettes = nextState
     }
 
     private func setupColorPanelDelegate() {
@@ -240,6 +292,12 @@ struct PaletteEditorView: View {
     }
 
     private func openColorPanel(for colorIdx: Int) {
+        // Save undo state when starting to edit a different color
+        let colorKey = "\(selectedPaletteIndex)-\(colorIdx)"
+        if lastEditedColorKey != colorKey {
+            saveUndoState()
+            lastEditedColorKey = colorKey
+        }
         let colorPanel = NSColorPanel.shared
         colorPanel.setTarget(colorPanelDelegate)
         colorPanel.setAction(#selector(ColorPanelDelegate.colorDidChange(_:)))
@@ -254,6 +312,7 @@ struct PaletteEditorView: View {
         colorPanel.setTarget(nil)
         colorPanel.setAction(nil)
         colorPanel.close()
+        lastEditedColorKey = nil
     }
 }
 

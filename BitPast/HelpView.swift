@@ -146,6 +146,97 @@ struct HelpView: View {
 
                 Divider()
 
+                // Preprocessing Filters
+                VStack(alignment: .leading, spacing: 16) {
+                    Text("Preprocessing Filters")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+
+                    Text("Apply these filters before color conversion to improve results. Each filter has its own parameter control.")
+                        .foregroundColor(.secondary)
+
+                    FilterHelpSection(
+                        name: "Median",
+                        parameter: "Kernel Size",
+                        values: "3×3, 5×5, 7×7",
+                        description: "Removes noise while preserving edges. Replaces each pixel with the median value of neighboring pixels.",
+                        bestFor: "Noisy images, scanned photos, JPEG artifacts",
+                        tips: [
+                            "3×3: Light noise reduction, preserves detail",
+                            "5×5: Moderate smoothing, good for most noisy images",
+                            "7×7: Strong smoothing, may lose fine detail"
+                        ]
+                    )
+
+                    FilterHelpSection(
+                        name: "Sharpen",
+                        parameter: "Sharpen Amount",
+                        values: "0.2 – 2.5",
+                        description: "Enhances edges and detail by increasing local contrast. Uses unsharp masking technique.",
+                        bestFor: "Soft or blurry images, enhancing texture detail",
+                        tips: [
+                            "0.5: Subtle sharpening",
+                            "1.0: Standard sharpening (default)",
+                            "1.5–2.0: Strong sharpening for very soft images",
+                            "Above 2.0: May create halos around edges"
+                        ]
+                    )
+
+                    FilterHelpSection(
+                        name: "Sigma",
+                        parameter: "Sigma Range",
+                        values: "5 – 50",
+                        description: "Edge-preserving blur that smooths similar pixels while maintaining sharp boundaries. Also known as bilateral filter.",
+                        bestFor: "Reducing color banding, smoothing gradients, noise reduction that preserves edges",
+                        tips: [
+                            "10–15: Light smoothing, good for subtle noise",
+                            "20–30: Moderate smoothing, balances detail and smoothness",
+                            "40–50: Strong smoothing, good for heavily compressed images"
+                        ]
+                    )
+
+                    FilterHelpSection(
+                        name: "Solarize",
+                        parameter: "Threshold",
+                        values: "32 – 224",
+                        description: "Inverts tones above the threshold, creating a partial negative effect. Named after the darkroom technique.",
+                        bestFor: "Artistic effects, psychedelic looks, special image treatments",
+                        tips: [
+                            "64: Inverts most of the image (only darkest tones preserved)",
+                            "128: Inverts the brighter half (middle threshold)",
+                            "192: Only inverts the brightest highlights"
+                        ]
+                    )
+
+                    FilterHelpSection(
+                        name: "Emboss",
+                        parameter: "Emboss Depth",
+                        values: "0.3 – 2.0",
+                        description: "Creates a raised, 3D relief effect by highlighting edges with directional lighting.",
+                        bestFor: "Artistic effects, texture visualization, creating metallic looks",
+                        tips: [
+                            "0.5: Subtle emboss, light texture",
+                            "1.0: Standard emboss effect",
+                            "1.5–2.0: Deep emboss, very pronounced 3D effect"
+                        ]
+                    )
+
+                    FilterHelpSection(
+                        name: "Find Edges",
+                        parameter: "Edge Sensitivity",
+                        values: "10 – 100",
+                        description: "Detects and highlights edges using Sobel operator. Creates a line-art style output.",
+                        bestFor: "Line art extraction, edge detection visualization, artistic outlines",
+                        tips: [
+                            "20–30: Detects many edges including subtle ones",
+                            "50: Balanced edge detection (default)",
+                            "70–100: Only detects strong, prominent edges"
+                        ]
+                    )
+                }
+
+                Divider()
+
                 // File Formats
                 VStack(alignment: .leading, spacing: 16) {
                     Text("Output File Formats")
@@ -329,6 +420,67 @@ struct QuickRefRow: View {
                 .foregroundColor(.secondary)
         }
         .font(.system(.caption, design: .monospaced))
+    }
+}
+
+struct FilterHelpSection: View {
+    let name: String
+    let parameter: String
+    let values: String
+    let description: String
+    let bestFor: String
+    let tips: [String]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            // Header with filter name and parameter badge
+            HStack {
+                Text(name)
+                    .font(.headline)
+                Spacer()
+                HStack(spacing: 4) {
+                    Text(parameter + ":")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(values)
+                        .font(.system(.caption, design: .monospaced))
+                        .fontWeight(.medium)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.accentColor.opacity(0.1))
+                .cornerRadius(4)
+            }
+
+            Text(description)
+                .foregroundColor(.secondary)
+
+            HStack(alignment: .top) {
+                Text("Best for:")
+                    .fontWeight(.medium)
+                Text(bestFor)
+                    .foregroundColor(.secondary)
+            }
+
+            // Tips/values as subpoints
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Values:")
+                    .fontWeight(.medium)
+                ForEach(tips, id: \.self) { tip in
+                    HStack(alignment: .top, spacing: 8) {
+                        Text("•")
+                            .foregroundColor(.accentColor)
+                        Text(tip)
+                            .font(.callout)
+                            .foregroundColor(.secondary)
+                    }
+                    .padding(.leading, 8)
+                }
+            }
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
     }
 }
 
