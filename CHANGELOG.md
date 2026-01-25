@@ -2,7 +2,7 @@
 
 All notable changes to BitPast will be documented in this file.
 
-## [2.3] - 2026-01-25
+## [2.7] - 2026-01-25
 
 ### Added
 - **Preprocessing Filters** - Apply image filters before color conversion:
