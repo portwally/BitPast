@@ -6,7 +6,7 @@
 
 **BitPast** is a modern, native macOS application for converting images into authentic retro computer graphic formats including **Apple II**, **Apple IIgs**, **Commodore 64**, **VIC-20**, **ZX Spectrum**, **Amstrad CPC**, and **Plus/4**.
 
-![BitPast Screenshot](screenshot1.png)
+<img width="1509" height="934" alt="Screenshot 2026-01-29 at 01 54 57" src="https://github.com/user-attachments/assets/1eafff12-7856-4f87-999e-a4dcea9c71bc" />
 
 
 ## ✨ Features
