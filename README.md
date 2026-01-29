@@ -8,8 +8,6 @@
 
 ![BitPast Screenshot](screenshot1.png)
 
-<img width="1309" height="876" alt="Bildschirmfoto 2025-12-21 um 04 01 44" src="https://github.com/user-attachments/assets/1dc4d534-9914-4349-b0d6-98cd4711dc81" />
-
 
 ## ✨ Features
 
