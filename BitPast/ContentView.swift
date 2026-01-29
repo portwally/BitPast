@@ -48,7 +48,7 @@ class PaletteEditorWindowController {
 }
 
 struct ContentView: View {
-    @StateObject private var viewModel = ConverterViewModel()
+    @ObservedObject private var viewModel = ConverterViewModel.shared
     @ObservedObject private var settings = AppSettings.shared
     @State private var isDropTarget = false
     @State private var zoomLevel: CGFloat = 1.0
@@ -78,6 +78,8 @@ struct ContentView: View {
         ["dither", "error_matrix", "dither_amount"],  // Dithering controls
         ["palette"],                          // Palette selection
         ["preprocess", "median_size", "sharpen_strength", "sigma_range", "solarize_threshold", "emboss_depth", "edge_threshold"], // Preprocessing filter + filter-specific params
+        ["contrast", "filter"],               // C64: Contrast + Filter
+        ["pixel_merge", "color_match"],       // C64: Pixel merge + Color matching
         ["saturation"],                       // Saturation adjustment
         ["gamma"],                            // Gamma correction
         ["crosshatch", "z_threshold"]         // Crosshatch pattern
@@ -170,6 +172,15 @@ struct ContentView: View {
     @ViewBuilder
     var mainContent: some View {
         VStack(spacing: 0) {
+
+            // 0. SYSTEM BAR (Horizontal at top)
+            HorizontalSystemBar(viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+
+            if isRetro {
+                Rectangle().fill(retroBorderColor).frame(height: isAppleII ? AppleIITheme.dividerThickness : (isC64 ? C64Theme.dividerThickness : RetroTheme.dividerThickness))
+            } else {
+                Divider()
+            }
 
             // 1. OBERER BEREICH: SPLIT VIEW
             HSplitView {
@@ -496,74 +507,15 @@ struct ContentView: View {
 
                     HStack(spacing: 0) {
 
-                    // A. LINKS: SYSTEM (Feste Breite, Symmetrisch zu Rechts)
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("SYSTEM")
-                            .font(isRetro ? retroSmallFont : .system(size: 11, weight: .semibold))
-                            .foregroundColor(isRetro ? retroTextColor : .secondary)
-                            .tracking(0.5)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                    // A. LINKS: IMAGE INFO (Feste Breite, Symmetrisch zu Rechts)
+                    ImageInfoPanel(viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                        .padding(12)
+                        .frame(width: sideColumnWidth)
+                        .background(isRetro ? retroWindowBg : Color(NSColor.controlBackgroundColor).opacity(0.5))
 
-                        VStack(spacing: 8) {
-                            // BUTTON 1: Apple II
-                            SystemSelectButton(
-                                iconName: "icon_apple2",
-                                machineName: viewModel.machines[0].name,
-                                isSelected: viewModel.selectedMachineIndex == 0,
-                                isRetro: isRetro,
-                                isAppleII: isAppleII,
-                                isC64: isC64
-                            ) {
-                                if viewModel.selectedMachineIndex != 0 {
-                                    viewModel.selectedMachineIndex = 0
-                                    viewModel.triggerLivePreview()
-                                }
-                            }
-
-                            // BUTTON 2: Apple IIGS
-                            if viewModel.machines.count > 1 {
-                                SystemSelectButton(
-                                    iconName: "icon_iigs",
-                                    machineName: viewModel.machines[1].name,
-                                    isSelected: viewModel.selectedMachineIndex == 1,
-                                    isRetro: isRetro,
-                                    isAppleII: isAppleII,
-                                    isC64: isC64
-                                ) {
-                                    if viewModel.selectedMachineIndex != 1 {
-                                        viewModel.selectedMachineIndex = 1
-                                        viewModel.triggerLivePreview()
-                                    }
-                                }
-                            }
-
-                            // BUTTON 3: C64
-                            if viewModel.machines.count > 2 {
-                                SystemSelectButton(
-                                    iconName: "gamecontroller.fill",
-                                    machineName: viewModel.machines[2].name,
-                                    isSelected: viewModel.selectedMachineIndex == 2,
-                                    isRetro: isRetro,
-                                    isAppleII: isAppleII,
-                                    isC64: isC64
-                                ) {
-                                    if viewModel.selectedMachineIndex != 2 {
-                                        viewModel.selectedMachineIndex = 2
-                                        viewModel.triggerLivePreview()
-                                    }
-                                }
-                            }
-                        }
-                        Spacer()
-                    }
-                    .padding(12)
-                    .frame(width: sideColumnWidth)
-                    .background(isRetro ? retroWindowBg : Color(NSColor.controlBackgroundColor).opacity(0.5))
-
-                    // Vertical divider after SYSTEM
+                    // Vertical divider after IMAGE INFO
                     if isRetro {
                         let dividerThickness: CGFloat = isC64 ? C64Theme.dividerThickness : (isAppleII ? AppleIITheme.dividerThickness : RetroTheme.dividerThickness)
-                        // Bottom padding to align with bottom border
                         let bottomPadding: CGFloat = (isAppleII || isC64) ? 10 : 0
                         Rectangle().fill(retroBorderColor).frame(width: dividerThickness)
                             .padding(.bottom, bottomPadding)
@@ -599,6 +551,13 @@ struct ContentView: View {
                                     if key == "solarize_threshold" && selectedFilter != "Solarize" { return false }
                                     if key == "emboss_depth" && selectedFilter != "Emboss" { return false }
                                     if key == "edge_threshold" && selectedFilter != "Find Edges" { return false }
+
+                                    // Pixel Merge only visible in modes that use it (Mode 0 for CPC, Multicolor/LowRes for C64/VIC-20)
+                                    if key == "pixel_merge" {
+                                        let mode = modeOption?.selectedValue ?? ""
+                                        let isPixelMergeMode = mode.contains("Mode 0") || mode.contains("Multicolor") || mode.contains("LowRes")
+                                        if !isPixelMergeMode { return false }
+                                    }
 
                                     return viewModel.currentMachine.options.contains(where: { $0.key == key })
                                 }
@@ -665,7 +624,7 @@ struct ContentView: View {
                                     Divider()
                                     if let asset = viewModel.currentResult?.fileAssets.first {
                                         let ext = asset.pathExtension.uppercased()
-                                        Button("Native (.\(ext))") { viewModel.saveNativeFile() }
+                                        Button("Native Format (.\(ext))") { viewModel.saveNativeFile() }
                                     } else {
                                         Button("Native Format") { }.disabled(true)
                                     }
@@ -705,7 +664,7 @@ struct ContentView: View {
                                 Divider()
                                 if let asset = viewModel.currentResult?.fileAssets.first {
                                     let ext = asset.pathExtension.uppercased()
-                                    Button("Native Apple II (.\(ext))") { viewModel.saveNativeFile() }
+                                    Button("Native Format (.\(ext))") { viewModel.saveNativeFile() }
                                 } else {
                                     Button("Native Format") { }.disabled(true)
                                 }
@@ -1672,6 +1631,239 @@ struct SystemSelectButton: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Horizontal System Bar
+
+struct HorizontalSystemBar: View {
+    @ObservedObject var viewModel: ConverterViewModel
+    var isRetro: Bool
+    var isAppleII: Bool
+    var isC64: Bool
+
+    var themeBgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        return RetroTheme.contentGray
+    }
+    var themeTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return RetroTheme.textColor
+    }
+    var themeBorderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        return RetroTheme.borderColor
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 11) }
+        if isAppleII { return AppleIITheme.font(size: 11) }
+        return RetroTheme.font(size: 10)
+    }
+
+    private let systemIcons = ["icon_apple2", "icon_iigs", "icon_C64", "icon_vic20", "icon_ZXSpectrum", "icon_AmstradCPC", "icon_commodoreplus4"]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(viewModel.machines.indices, id: \.self) { index in
+                if index < systemIcons.count {
+                    HorizontalSystemButton(
+                        iconName: systemIcons[index],
+                        machineName: viewModel.machines[index].name,
+                        isSelected: viewModel.selectedMachineIndex == index,
+                        isRetro: isRetro,
+                        isAppleII: isAppleII,
+                        isC64: isC64
+                    ) {
+                        if viewModel.selectedMachineIndex != index {
+                            viewModel.selectedMachineIndex = index
+                            viewModel.triggerLivePreview()
+                        }
+                    }
+
+                    if index < viewModel.machines.count - 1 {
+                        if isRetro {
+                            Rectangle().fill(themeBorderColor).frame(width: 1)
+                        } else {
+                            Rectangle().fill(Color(NSColor.separatorColor).opacity(0.3)).frame(width: 1)
+                        }
+                    }
+                }
+            }
+            Spacer()
+        }
+        .frame(height: 64)
+        .background(isRetro ? themeBgColor : Color(NSColor.controlBackgroundColor).opacity(0.5))
+    }
+}
+
+struct HorizontalSystemButton: View {
+    let iconName: String
+    let machineName: String
+    let isSelected: Bool
+    var isRetro: Bool = false
+    var isAppleII: Bool = false
+    var isC64: Bool = false
+    let action: () -> Void
+
+    var themeBgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        return RetroTheme.contentGray
+    }
+    var themeWindowBg: Color {
+        if isC64 { return C64Theme.windowBackground }
+        if isAppleII { return AppleIITheme.windowBackground }
+        return RetroTheme.windowBackground
+    }
+    var themeBorderColor: Color {
+        if isC64 { return C64Theme.borderColor }
+        if isAppleII { return AppleIITheme.borderColor }
+        return RetroTheme.borderColor
+    }
+    var themeTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return RetroTheme.textColor
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 11) }
+        if isAppleII { return AppleIITheme.font(size: 11) }
+        return RetroTheme.font(size: 10)
+    }
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 2) {
+                Image(iconName)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(height: 46)
+                    .opacity(isSelected ? 1.0 : 0.5)
+
+                Text(machineName)
+                    .font(isRetro ? themeFont : .system(size: 9, weight: isSelected ? .semibold : .regular))
+                    .foregroundColor(isRetro ? themeTextColor.opacity(isSelected ? 1.0 : 0.6) : (isSelected ? .primary : .secondary))
+                    .lineLimit(1)
+            }
+            .frame(width: 90)
+            .padding(.vertical, 4)
+            .background(
+                Group {
+                    if isRetro {
+                        Rectangle().fill(isSelected ? themeWindowBg : Color.clear)
+                    } else {
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(isSelected ? Color.accentColor.opacity(0.15) : Color.clear)
+                    }
+                }
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Image Info Panel
+
+struct ImageInfoPanel: View {
+    @ObservedObject var viewModel: ConverterViewModel
+    var isRetro: Bool
+    var isAppleII: Bool
+    var isC64: Bool
+
+    var themeBgColor: Color {
+        if isC64 { return C64Theme.backgroundColor }
+        if isAppleII { return AppleIITheme.backgroundColor }
+        return RetroTheme.contentGray
+    }
+    var themeTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return RetroTheme.textColor
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 11) }
+        if isAppleII { return AppleIITheme.font(size: 11) }
+        return RetroTheme.font(size: 10)
+    }
+    var themeBoldFont: Font {
+        if isC64 { return C64Theme.boldFont(size: 11) }
+        if isAppleII { return AppleIITheme.boldFont(size: 11) }
+        return RetroTheme.boldFont(size: 11)
+    }
+
+    var selectedImage: InputImage? {
+        guard let id = viewModel.selectedImageId else { return nil }
+        return viewModel.inputImages.first(where: { $0.id == id })
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("IMAGE INFO")
+                .font(isRetro ? themeFont : .system(size: 11, weight: .semibold))
+                .foregroundColor(isRetro ? themeTextColor : .secondary)
+                .tracking(0.5)
+
+            if let img = selectedImage {
+                VStack(alignment: .leading, spacing: 6) {
+                    InfoRow(label: "File", value: img.name, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                    InfoRow(label: "Size", value: "\(Int(img.image.size.width))×\(Int(img.image.size.height))", isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+
+                    if let result = viewModel.currentResult {
+                        Divider().opacity(isRetro ? 0 : 1)
+                        if isRetro {
+                            Rectangle().fill(themeTextColor.opacity(0.3)).frame(height: 1)
+                        }
+                        InfoRow(label: "Output", value: "\(result.imageWidth)×\(result.imageHeight)", isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                        if let fileUrl = result.fileAssets.first {
+                            InfoRow(label: "Format", value: fileUrl.pathExtension.uppercased(), isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                        }
+                    }
+                }
+            } else {
+                Text(isRetro ? "NO IMAGE" : "No image selected")
+                    .font(isRetro ? themeFont : .system(size: 11))
+                    .foregroundColor(isRetro ? themeTextColor.opacity(0.5) : .secondary)
+            }
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+struct InfoRow: View {
+    let label: String
+    let value: String
+    var isRetro: Bool = false
+    var isAppleII: Bool = false
+    var isC64: Bool = false
+
+    var themeTextColor: Color {
+        if isC64 { return C64Theme.textColor }
+        if isAppleII { return AppleIITheme.textColor }
+        return RetroTheme.textColor
+    }
+    var themeFont: Font {
+        if isC64 { return C64Theme.font(size: 10) }
+        if isAppleII { return AppleIITheme.font(size: 10) }
+        return RetroTheme.font(size: 9)
+    }
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(isRetro ? "\(label.uppercased()):" : "\(label):")
+                .font(isRetro ? themeFont : .system(size: 10))
+                .foregroundColor(isRetro ? themeTextColor.opacity(0.6) : .secondary)
+                .frame(width: 50, alignment: .leading)
+            Text(value)
+                .font(isRetro ? themeFont : .system(size: 10, weight: .medium))
+                .foregroundColor(isRetro ? themeTextColor : .primary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
     }
 }
 

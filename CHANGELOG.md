@@ -2,6 +2,117 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [3.0] - 2026-01-29
+
+### Added
+- **ZX Spectrum Converter** - Full ZX Spectrum graphics conversion support:
+  - 256×192 resolution with 8×8 attribute cells
+  - 2 colors per attribute cell (ink + paper)
+  - 16-color palette (8 colors × 2 brightness levels)
+  - Native .scr file output (6912 bytes: 6144 bitmap + 768 attributes)
+- **Amstrad CPC Converter** - Full Amstrad CPC graphics conversion support:
+  - **Mode 1** - 320×200, 4 colors from 27-color hardware palette
+  - **Mode 0** - 160×200, 16 colors from 27-color hardware palette
+  - Native .scr file output with AMSDOS header (128 + 16384 bytes)
+- **Plus/4 Converter** - Full Commodore Plus/4 graphics conversion support:
+  - **HiRes Mode** - 320×200, 2 colors per 8×8 character cell
+  - **Multicolor Mode** - 160×200, 4 colors per 4×8 character cell (2 global + 2 per cell)
+  - 128-color palette (16 hues × 8 luminance levels)
+  - Native .prg file output (10000 bytes: nibble + screen + bitmap)
+- **System Menu Update** - ZX Spectrum (⇧⌘5), Amstrad CPC (⇧⌘6), Plus/4 (⇧⌘7)
+- **ZX Spectrum Processing Options**:
+  - Dithering: None, Floyd-Steinberg, Atkinson, Noise, Bayer (2×2-16×16), Blue Noise
+  - Contrast: None (default), HE, CLAHE, SWAHE
+  - Filters: None, Lowpass, Sharpen, Emboss, Edge
+  - Color Matching: Euclidean, Perceptive, Luma, Chroma, Mahalanobis
+  - Saturation and Gamma controls
+- **Amstrad CPC Processing Options**:
+  - Same dithering, contrast, filter, and color matching options as ZX Spectrum
+  - Pixel Merge option for Mode 0 (Average/Brightest)
+- **Plus/4 Processing Options**:
+  - Same dithering, contrast, filter, and color matching options as ZX Spectrum
+  - Pixel Merge option for Multicolor mode (Average/Brightest)
+
+### Changed
+- **UI Redesign** - System selector moved to horizontal bar at top
+- **Image Info Panel** - New panel showing file info where system selector was
+- **Larger System Icons** - System bar icons increased to 46×90px for better visibility
+- **Mode Labels with Resolution** - VIC-20 and C64 mode labels now show resolution:
+  - VIC-20: "HiRes (176×184)", "LowRes (88×184)"
+  - C64: "HiRes (320×200)", "Multicolor (160×200)"
+- **Default Presets** - VIC-20, C64, ZX Spectrum, Amstrad CPC, Plus/4 now default to:
+  - Contrast: None
+  - Dither Amount: 0.5
+
+### Fixed
+- **Amstrad CPC Filters** - Implemented missing filter processing (Lowpass, Sharpen, Emboss, Edge)
+
+### Technical
+- Added `ZXSpectrumConverter.swift` with attribute-based conversion
+- Added `AmstradCPCConverter.swift` with optimal palette selection from 27-color hardware palette
+- Added `Plus4Converter.swift` with 128-color TED palette and HiRes/Multicolor modes
+- ZX Spectrum, Amstrad CPC, and Plus/4 icons added to Assets.xcassets
+- Added `HorizontalSystemBar` and `ImageInfoPanel` components
+- ZX Spectrum interleaved memory format for authentic screen layout
+- Amstrad CPC interleaved memory format with AMSDOS file headers
+- Plus/4 file format: nibble (1000) + screen (1000) + bitmap (8000) bytes
+
+## [2.9] - 2026-01-29
+
+### Added
+- **VIC-20 Converter** - Full VIC-20 graphics conversion support:
+  - **HiRes Mode** - 176×184 resolution, 2 colors per 8×8 character cell
+  - **LowRes Mode** - 88×184 resolution (double-wide pixels), 4 colors per 4×8 cell
+- **System Menu Update** - VIC-20 added (⇧⌘4)
+- **VIC-20 Processing Options**:
+  - Dithering: None, Floyd-Steinberg, Atkinson, Noise, Bayer (2×2-16×16), Blue Noise
+  - Contrast: HE, CLAHE, SWAHE (default: SWAHE)
+  - Filters: Lowpass, Sharpen (default), Emboss, Edge
+  - Color Matching: Euclidean, Perceptive, Luma, Chroma, Mahalanobis
+- **VIC-20 Palette** - Authentic 16-color VIC-20 palette
+
+### Technical
+- Added `VIC20Converter.swift` with HiRes and LowRes conversion
+- VIC-20 icon added to Assets.xcassets
+- Native file format: .prg (VIC-20 executable)
+- Screen: 22×23 character cells (506 characters)
+
+### Fixed
+- **SWAHE Performance** - Optimized sliding window algorithm with incremental histogram updates (40x faster)
+
+## [2.8] - 2026-01-28
+
+### Added
+- **Commodore 64 Converter** - Full C64 graphics conversion support:
+  - **HiRes Mode** - 320×200 resolution, 2 colors per 8×8 character cell (Art Studio .art format)
+  - **Multicolor Mode** - 160×200 resolution, 4 colors per 4×8 character cell (Koala .kla format)
+- **System Menu** - New menu to switch between target systems:
+  - Apple II (⇧⌘1)
+  - Apple IIgs (⇧⌘2)
+  - C64 (⇧⌘3)
+- **C64 Dithering Algorithms** - Full set from retropic reference:
+  - None, Floyd-Steinberg, Atkinson, Noise
+  - Bayer 2×2, 4×4, 8×8, 16×16
+  - Blue Noise 8×8, 16×16
+- **C64 Contrast Processing** - HE, CLAHE, SWAHE histogram equalization
+- **C64 Image Filters** - Lowpass, Sharpen, Emboss, Edge detection
+- **C64 Color Matching Algorithms**:
+  - Euclidean, Perceptive, Luma-weighted, Chroma-weighted, Mahalanobis
+- **C64 Pixel Merge Options** - Average or Brightest for multicolor mode
+- **C64 Saturation/Gamma Controls** - Fine-tune image appearance before conversion
+
+### Changed
+- **Toolbar Layout** - Reorganized control groups for better C64 options display:
+  - Contrast + Filter in one group
+  - Pixel Merge + Color Match in another group
+- **C64 Palette** - Uses accurate VICE/Pepto palette (16 colors)
+
+### Technical
+- Added `C64Converter.swift` with full HiRes and Multicolor conversion
+- Added `ConverterViewModel.shared` singleton for menu access
+- C64 icon added to Assets.xcassets
+- Native file format support: Art Studio (.art) and Koala (.kla)
+
 ## [2.7] - 2026-01-25
 
 ### Added

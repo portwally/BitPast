@@ -15,7 +15,9 @@ struct InputImage: Identifiable, Hashable {
 
 @MainActor
 class ConverterViewModel: ObservableObject {
-    @Published var machines: [RetroMachine] = [AppleIIConverter(),AppleIIGSConverter()]
+    static let shared = ConverterViewModel()
+
+    @Published var machines: [RetroMachine] = [AppleIIConverter(), AppleIIGSConverter(), C64Converter(), VIC20Converter(), ZXSpectrumConverter(), AmstradCPCConverter(), Plus4Converter()]
     @Published var selectedMachineIndex: Int = 0
     
     @Published var inputImages: [InputImage] = []

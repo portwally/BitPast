@@ -12,6 +12,91 @@ struct BitPastApp: App {
             ContentView()
         }
         .commands {
+            // System menu for switching between target systems
+            CommandMenu("System") {
+                Button("Apple II") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.selectedMachineIndex != 0 {
+                            vm.selectedMachineIndex = 0
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("1", modifiers: [.command, .shift])
+
+                Button("Apple IIgs") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.selectedMachineIndex != 1 {
+                            vm.selectedMachineIndex = 1
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("2", modifiers: [.command, .shift])
+
+                Button("C64") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 2 && vm.selectedMachineIndex != 2 {
+                            vm.selectedMachineIndex = 2
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("3", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 2)
+
+                Button("VIC-20") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 3 && vm.selectedMachineIndex != 3 {
+                            vm.selectedMachineIndex = 3
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("4", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 3)
+
+                Button("ZX Spectrum") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 4 && vm.selectedMachineIndex != 4 {
+                            vm.selectedMachineIndex = 4
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("5", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 4)
+
+                Button("Amstrad CPC") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 5 && vm.selectedMachineIndex != 5 {
+                            vm.selectedMachineIndex = 5
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("6", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 5)
+
+                Button("Plus/4") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 6 && vm.selectedMachineIndex != 6 {
+                            vm.selectedMachineIndex = 6
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("7", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 6)
+            }
+
             CommandGroup(replacing: .help) {
                 Button("Graphics Mode Guide") {
                     openHelpWindow()
