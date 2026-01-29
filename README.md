@@ -4,7 +4,7 @@
 ![Language](https://img.shields.io/badge/language-Swift%20%7C%20C-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**BitPast** is a modern, native macOS application for converting images into authentic retro computer graphic formats including **Apple II**, **Apple IIgs**, **Commodore 64**, **VIC-20**, **ZX Spectrum**, **Amstrad CPC**, and **Plus/4**.
+**BitPast** is a modern, native macOS application for converting images into authentic retro computer graphic formats including **Apple II**, **Apple IIgs**, **Commodore 64**, **VIC-20**, **ZX Spectrum**, **Amstrad CPC**, **Plus/4**, **Atari ST**, **Amiga 500**, **Amiga 1200**, **IBM PC**, and **MSX**.
 
 <img width="1509" height="934" alt="Screenshot 2026-01-29 at 01 54 57" src="https://github.com/user-attachments/assets/1eafff12-7856-4f87-999e-a4dcea9c71bc" />
 
@@ -69,12 +69,45 @@ TED chip graphics with extended palette:
 - **128-color TED palette** (16 hues × 8 luminance levels).
 - **Output:** `.prg` (10,000 bytes: nibble + screen + bitmap).
 
+#### 🖱️ Atari ST
+16-bit graphics with 512-color palette:
+- **320×200 resolution** with 16 colors from 512-color palette.
+- **512-color hardware palette** (8 levels R × 8 levels G × 8 levels B).
+- **Output:** `.pi1` (DEGAS Elite format).
+
+#### 🐚 Amiga 500 (OCS/ECS)
+Original Chip Set graphics:
+- **Standard Mode:** 320×256/320×512, 32 colors from 4096-color palette.
+- **HAM6 Mode:** Up to 4096 colors via Hold-And-Modify encoding.
+- **Output:** `.iff` (IFF ILBM format).
+
+#### 🚀 Amiga 1200 (AGA)
+Advanced Graphics Architecture:
+- **Standard Mode:** 320×256/320×512/640×512, 256 colors from 24-bit palette.
+- **HAM8 Mode:** Up to 262,144 colors via Hold-And-Modify encoding.
+- **Output:** `.iff` (IFF ILBM format).
+
+#### 💻 IBM PC
+CGA, EGA, VGA and text mode graphics:
+- **CGA Mode:** 320×200, 4 colors from fixed CGA palettes.
+- **EGA Mode:** 320×200, 16 colors (fixed or from 64-color palette).
+- **VGA Mode 13h:** 320×200, 256 colors from 262,144-color palette.
+- **Text Modes:** CGA 80×25 and VESA 132×50 character displays.
+- **Output:** `.pcx` (graphics), `.ans` (text/ANSI art).
+
+#### 📺 MSX
+TMS9918 and V9938 video chip graphics:
+- **Screen 2 (MSX1):** 256×192, 2 colors per 8×1 line from 16-color palette.
+- **Screen 5 (MSX2):** 256×212, 16 colors from 512-color palette.
+- **Screen 8 (MSX2):** 256×212, 256 fixed colors (3-3-2 RGB).
+- **Output:** `.sc2`, `.sc5`, `.sc8` (BSAVE format).
+
 ### 🎛️ Fine-Tuning Control
 
 **Processing Options:**
 - **Dithering Algorithms:** None, Floyd-Steinberg, Atkinson, Noise, Bayer (2×2 to 16×16), Blue Noise.
 - **Contrast Enhancement:** None, HE, CLAHE, SWAHE (adaptive histogram equalization).
-- **Color Matching:** Euclidean, Perceptive, Luma, Chroma, Mahalanobis.
+- **Color Matching:** Euclidean, Perceptive, Luma, Chroma, Hue, Mahalanobis.
 - **Filters:** Lowpass, Sharpen, Emboss, Edge detection.
 - **Saturation & Gamma:** Fine-tune color intensity and brightness.
 
@@ -95,7 +128,7 @@ TED chip graphics with extended palette:
 
 1. **Drag Images** into the left "Image Browser" panel.
 2. Select an image to preview it.
-3. Choose your **System** from the horizontal bar at the top (Apple II, Apple IIgs, C64, VIC-20, ZX Spectrum, Amstrad CPC, Plus/4).
+3. Choose your **System** from the horizontal bar at the top (Apple II, Apple IIgs, C64, VIC-20, ZX Spectrum, Amstrad CPC, Plus/4, Atari ST, Amiga 500, Amiga 1200, PC, MSX).
 4. Select the **Mode** and tweak **Dither**, **Contrast**, and other settings.
 5. Click **Export** in the bottom right corner.
    - Choose **PNG/JPG** for a visual preview.

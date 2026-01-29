@@ -12,6 +12,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
     case amiga500 = "Amiga 500"
     case amiga1200 = "Amiga 1200"
     case pc = "PC"
+    case msx = "MSX"
     case generalOptions = "General Options"
     case filters = "Preprocessing Filters"
 
@@ -30,6 +31,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
         case .amiga500: return "desktopcomputer"
         case .amiga1200: return "desktopcomputer"
         case .pc: return "desktopcomputer"
+        case .msx: return "tv"
         case .generalOptions: return "slider.horizontal.3"
         case .filters: return "camera.filters"
         }
@@ -43,7 +45,7 @@ struct HelpView: View {
         NavigationSplitView {
             List(selection: $selectedSection) {
                 Section("Systems") {
-                    ForEach([HelpSection.appleII, .appleIIgs, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atariST, .amiga500, .amiga1200, .pc], id: \.self) { section in
+                    ForEach([HelpSection.appleII, .appleIIgs, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atariST, .amiga500, .amiga1200, .pc, .msx], id: \.self) { section in
                         Label(section.rawValue, systemImage: section.iconName)
                             .tag(section)
                     }
@@ -94,6 +96,8 @@ struct HelpView: View {
             Amiga1200HelpContent()
         case .pc:
             PCHelpContent()
+        case .msx:
+            MSXHelpContent()
         case .generalOptions:
             GeneralOptionsHelpContent()
         case .filters:
@@ -883,10 +887,23 @@ struct PCHelpContent: View {
             ModeHelpSection(
                 title: "EGA Mode (320×200, 16 colors)",
                 fileFormat: ".pcx (PC Paintbrush)",
-                description: "Enhanced Graphics Adapter mode with 16 colors selected from the 64-color EGA palette. Popular from 1984-1990.",
-                bestFor: "DOS game graphics, Sierra adventure games aesthetic",
+                description: "Enhanced Graphics Adapter mode using the standard fixed 16-color EGA palette. The same colors as CGA's 16-color text mode palette.",
+                bestFor: "Authentic EGA look, classic DOS game graphics",
                 options: [
                     OptionHelp(name: "Dithering", description: "Ordered dithering (Bayer) often produces good results. 16 colors allow reasonable color reproduction."),
+                    OptionHelp(name: "Color Matching", description: "Hue or Chroma recommended to preserve colors with this fixed palette. Perceptive may map saturated colors to grays.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "EGA 64 Mode (320×200, 16 from 64)",
+                fileFormat: ".pcx (PC Paintbrush)",
+                description: "Enhanced Graphics Adapter mode with 16 colors selected from the full 64-color EGA palette. Allows optimal color selection per image.",
+                bestFor: "Images that benefit from custom color selection, Sierra adventure games aesthetic",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Ordered dithering (Bayer) often produces good results."),
                     OptionHelp(name: "Color Matching", description: "Perceptive recommended. Optimal 16 colors are automatically selected from the 64-color EGA palette.")
                 ]
             )
@@ -968,6 +985,92 @@ struct PCHelpContent: View {
     }
 }
 
+// MARK: - MSX Help
+
+struct MSXHelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "MSX", subtitle: "TMS9918 and V9938 video modes")
+
+            ModeHelpSection(
+                title: "Screen 2 (256×192, MSX1)",
+                fileFormat: ".sc2 (BSAVE)",
+                description: "MSX1 graphics mode using the TMS9918 video chip. 2 colors per 8×1 horizontal line from the fixed 16-color palette. Each 8-pixel horizontal segment has its own foreground and background color.",
+                bestFor: "MSX1 game graphics, colorful images with horizontal color variation",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Error diffusion works well within the 8×1 color constraints."),
+                    OptionHelp(name: "Color Matching", description: "Hue or Chroma recommended to preserve colors with the fixed TMS9918 palette.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "Screen 5 (256×212, MSX2)",
+                fileFormat: ".sc5 (BSAVE)",
+                description: "MSX2 graphics mode using the V9938 video chip. 16 colors selected from a 512-color palette (3 bits per channel). Similar to Atari ST graphics.",
+                bestFor: "MSX2 game graphics, detailed images with custom palette",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Floyd-Steinberg recommended for photos. Bayer for pixel art."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive recommended. Optimal 16 colors are automatically selected from 512.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "Screen 8 (256×212, MSX2)",
+                fileFormat: ".sc8 (BSAVE)",
+                description: "MSX2 256-color mode with fixed 3-3-2 RGB palette (3 bits red, 3 bits green, 2 bits blue). No palette selection needed - colors are directly mapped.",
+                bestFor: "Photographs, images with smooth gradients",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Often not needed with 256 colors. Light dithering can help with banding."),
+                    OptionHelp(name: "Note", description: "Blue channel has only 4 levels (2 bits), so blue gradients may show more banding.")
+                ]
+            )
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("MSX Graphics Evolution")
+                    .font(.headline)
+                Text("MSX1 (1983): TMS9918 - 256×192, 2 colors per 8×1 line from 16")
+                    .foregroundColor(.secondary)
+                Text("MSX2 (1985): V9938 - Multiple modes, 512-color palette")
+                    .foregroundColor(.secondary)
+                Text("MSX2+ (1988): V9958 - Enhanced YJK modes, 19268 colors")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            HStack(spacing: 20) {
+                FileFormatHelp(
+                    extension_: ".sc2",
+                    name: "Screen 2 BSAVE",
+                    size: "~14KB",
+                    description: "MSX BSAVE format with pattern and color tables. Load with BLOAD command."
+                )
+                FileFormatHelp(
+                    extension_: ".sc5",
+                    name: "Screen 5 BSAVE",
+                    size: "~27KB",
+                    description: "MSX2 BSAVE format with palette and 4bpp image data."
+                )
+                FileFormatHelp(
+                    extension_: ".sc8",
+                    name: "Screen 8 BSAVE",
+                    size: "~54KB",
+                    description: "MSX2 BSAVE format with 8bpp image data (3-3-2 RGB)."
+                )
+            }
+        }
+    }
+}
+
 // MARK: - General Options Help
 
 struct GeneralOptionsHelpContent: View {
@@ -983,8 +1086,9 @@ struct GeneralOptionsHelpContent: View {
                     "Jarvis-Judice-Ninke: Spreads error further, smoother gradients",
                     "Stucki: Similar to JJN, slightly different character",
                     "Burkes: Faster variant of Stucki",
-                    "Ordered (Bayer): Pattern-based, good for animations, no crawling",
-                    "Blue Noise: Random-looking dither with pleasing texture",
+                    "Noise: Random dither, adds film grain texture",
+                    "Bayer (2×2 to 16×16): Ordered pattern dither, good for animations",
+                    "Blue Noise (8×8, 16×16): Random-looking with pleasing texture",
                     "None: No dithering, direct color mapping"
                 ]
             )
@@ -1022,6 +1126,7 @@ struct GeneralOptionsHelpContent: View {
                     "Perceptive: Weighted for human perception, recommended",
                     "Luma: Prioritizes brightness matching",
                     "Chroma: Prioritizes color/saturation matching",
+                    "Hue: Preserves color hue, best for saturated images",
                     "Mahalanobis: Statistical color distance"
                 ]
             )

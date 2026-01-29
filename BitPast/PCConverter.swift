@@ -13,7 +13,7 @@ class PCConverter: RetroMachine {
 
     var options: [ConversionOption] = [
         ConversionOption(label: "Mode", key: "mode",
-                        values: ["CGA (4 colors)", "EGA (16 colors)", "VGA (256 colors)", "CGA 80×25 Text", "VESA 132×50 Text"],
+                        values: ["CGA (4 colors)", "EGA (16 colors)", "EGA 64 (16 from 64)", "VGA (256 colors)", "CGA 80×25 Text", "VESA 132×50 Text"],
                         selectedValue: "VGA (256 colors)"),
         ConversionOption(label: "CGA Palette", key: "cga_palette",
                         values: ["Cyan/Magenta/White", "Cyan/Magenta/Gray", "Green/Red/Yellow", "Green/Red/Brown"],
@@ -30,7 +30,7 @@ class PCConverter: RetroMachine {
                         values: ["None", "Lowpass", "Sharpen", "Emboss", "Edge"],
                         selectedValue: "None"),
         ConversionOption(label: "Color Match", key: "color_match",
-                        values: ["Euclidean", "Perceptive", "Luma", "Chroma"],
+                        values: ["Euclidean", "Perceptive", "Luma", "Chroma", "Hue"],
                         selectedValue: "Perceptive"),
         ConversionOption(label: "Saturation", key: "saturation",
                         range: 0.5...2.0, defaultValue: 1.0),
@@ -248,7 +248,9 @@ class PCConverter: RetroMachine {
         case "CGA (4 colors)":
             return try await convertCGA(cgImage: cgImage, paletteChoice: cgaPaletteChoice, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         case "EGA (16 colors)":
-            return try await convertEGA(cgImage: cgImage, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+            return try await convertEGA(cgImage: cgImage, useFixedPalette: true, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+        case "EGA 64 (16 from 64)":
+            return try await convertEGA(cgImage: cgImage, useFixedPalette: false, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         case "VGA (256 colors)":
             return try await convertVGA(cgImage: cgImage, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         case "CGA 80×25 Text":
@@ -299,7 +301,7 @@ class PCConverter: RetroMachine {
 
     // MARK: - EGA 320×200 16-color mode
 
-    private func convertEGA(cgImage: CGImage, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
+    private func convertEGA(cgImage: CGImage, useFixedPalette: Bool, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 320, height = 200
         var pixels = scaleImage(cgImage, toWidth: width, height: height)
 
@@ -309,8 +311,13 @@ class PCConverter: RetroMachine {
         if filter != "None" { applyImageFilter(&pixels, width: width, height: height, filter: filter) }
         if ditherAlg.contains("Bayer") { applyOrderedDither(&pixels, width: width, height: height, ditherType: ditherAlg, amount: ditherAmount) }
 
-        // Use standard fixed 16-color EGA palette (same as CGA 16-color)
-        let selectedPalette = Self.cgaPalette
+        // Use either fixed 16-color EGA palette or select 16 from 64-color EGA palette
+        let selectedPalette: [[UInt8]]
+        if useFixedPalette {
+            selectedPalette = Self.cgaPalette
+        } else {
+            selectedPalette = selectOptimalPalette(pixels: pixels, palette: Self.egaPalette, numColors: 16)
+        }
 
         let (resultPixels, _) = convertToFixedPalette(pixels: pixels, width: width, height: height, palette: selectedPalette, ditherAlg: ditherAlg, ditherAmount: ditherAmount, colorMatch: colorMatch, bitsPerPixel: 4)
 
@@ -684,9 +691,55 @@ class PCConverter: RetroMachine {
             let chromaDist = sqrt((cr1-cr2)*(cr1-cr2) + (cg1-cg2)*(cg1-cg2) + (cb1-cb2)*(cb1-cb2)) * 255.0
             let lumaDist = abs(luma1 - luma2) * 0.2
             return chromaDist + lumaDist
+        case "Hue":
+            // Convert RGB to HSL for hue-preserving matching
+            let (h1, s1, l1) = rgbToHsl(r1, g1, b1)
+            let (h2, s2, l2) = rgbToHsl(r2, g2, b2)
+
+            // Hue difference (circular, 0-360)
+            var hueDiff = abs(h1 - h2)
+            if hueDiff > 180 { hueDiff = 360 - hueDiff }
+
+            // Weight hue heavily, but reduce weight for low saturation (grays)
+            let minSat = min(s1, s2)
+            let hueWeight: Float = 4.0 * minSat  // Hue matters less for grays
+            let satWeight: Float = 1.0
+            let lumWeight: Float = 0.5
+
+            let hueDist = (hueDiff / 180.0) * 255.0 * hueWeight
+            let satDist = abs(s1 - s2) * 255.0 * satWeight
+            let lumDist = abs(l1 - l2) * 255.0 * lumWeight
+
+            return hueDist + satDist + lumDist
         default:
             return sqrt(dr * dr + dg * dg + db * db)
         }
+    }
+
+    private func rgbToHsl(_ r: Float, _ g: Float, _ b: Float) -> (h: Float, s: Float, l: Float) {
+        let rn = r / 255.0, gn = g / 255.0, bn = b / 255.0
+        let maxC = max(rn, gn, bn)
+        let minC = min(rn, gn, bn)
+        let l = (maxC + minC) / 2.0
+
+        if maxC == minC {
+            return (0, 0, l)  // Achromatic (gray)
+        }
+
+        let d = maxC - minC
+        let s = l > 0.5 ? d / (2.0 - maxC - minC) : d / (maxC + minC)
+
+        var h: Float
+        if maxC == rn {
+            h = (gn - bn) / d + (gn < bn ? 6 : 0)
+        } else if maxC == gn {
+            h = (bn - rn) / d + 2
+        } else {
+            h = (rn - gn) / d + 4
+        }
+        h *= 60
+
+        return (h, s, l)
     }
 
     private func findClosestColor(r: Float, g: Float, b: Float, palette: [[UInt8]], method: String) -> Int {
@@ -1083,7 +1136,14 @@ class PCConverter: RetroMachine {
         pcx.append(0x01)  // Encoding (RLE)
 
         // Bits per pixel per plane
-        let bpp: UInt8 = bitsPerPixel == 8 ? 8 : 1
+        // CGA: 2 bpp (4 colors packed), EGA: 1 bpp × 4 planes, VGA: 8 bpp
+        let bpp: UInt8
+        switch bitsPerPixel {
+        case 2: bpp = 2   // CGA: 2 bits per pixel, 1 plane
+        case 4: bpp = 1   // EGA: 1 bit per pixel, 4 planes
+        case 8: bpp = 8   // VGA: 8 bits per pixel, 1 plane
+        default: bpp = UInt8(bitsPerPixel)
+        }
         pcx.append(bpp)
 
         // Window: Xmin, Ymin, Xmax, Ymax (little-endian words)

@@ -27,13 +27,19 @@ class AppleIIGSConverter: RetroMachine {
             label: "Dithering Algo",
             key: "dither",
             values: [
+                "None",
                 "Floyd-Steinberg",
                 "Atkinson",
                 "Jarvis-Judice-Ninke",
                 "Stucki",
                 "Burkes",
-                "Ordered (Bayer 4x4)",
-                "None"
+                "Noise",
+                "Bayer 2x2",
+                "Bayer 4x4",
+                "Bayer 8x8",
+                "Bayer 16x16",
+                "Blue 8x8",
+                "Blue 16x16"
             ],
             selectedValue: "Floyd-Steinberg"
         ),
@@ -79,6 +85,7 @@ class AppleIIGSConverter: RetroMachine {
             key: "preprocess",
             values: [
                 "None",
+                "Lowpass",
                 "Median",
                 "Sharpen",
                 "Sigma",
@@ -190,13 +197,118 @@ class AppleIIGSConverter: RetroMachine {
         }
     }
     
-    // Bayer Matrix
-    private let bayerMatrix: [Double] = [
+    // Bayer Matrices
+    private let bayer2x2: [Double] = [0, 2, 3, 1]
+
+    private let bayer4x4: [Double] = [
          0,  8,  2, 10,
         12,  4, 14,  6,
          3, 11,  1,  9,
         15,  7, 13,  5
     ]
+
+    private let bayer8x8: [Double] = [
+         0, 32,  8, 40,  2, 34, 10, 42,
+        48, 16, 56, 24, 50, 18, 58, 26,
+        12, 44,  4, 36, 14, 46,  6, 38,
+        60, 28, 52, 20, 62, 30, 54, 22,
+         3, 35, 11, 43,  1, 33,  9, 41,
+        51, 19, 59, 27, 49, 17, 57, 25,
+        15, 47,  7, 39, 13, 45,  5, 37,
+        63, 31, 55, 23, 61, 29, 53, 21
+    ]
+
+    private let bayer16x16: [Double] = [
+          0, 128,  32, 160,   8, 136,  40, 168,   2, 130,  34, 162,  10, 138,  42, 170,
+        192,  64, 224,  96, 200,  72, 232, 104, 194,  66, 226,  98, 202,  74, 234, 106,
+         48, 176,  16, 144,  56, 184,  24, 152,  50, 178,  18, 146,  58, 186,  26, 154,
+        240, 112, 208,  80, 248, 120, 216,  88, 242, 114, 210,  82, 250, 122, 218,  90,
+         12, 140,  44, 172,   4, 132,  36, 164,  14, 142,  46, 174,   6, 134,  38, 166,
+        204,  76, 236, 108, 196,  68, 228, 100, 206,  78, 238, 110, 198,  70, 230, 102,
+         60, 188,  28, 156,  52, 180,  20, 148,  62, 190,  30, 158,  54, 182,  22, 150,
+        252, 124, 220,  92, 244, 116, 212,  84, 254, 126, 222,  94, 246, 118, 214,  86,
+          3, 131,  35, 163,  11, 139,  43, 171,   1, 129,  33, 161,   9, 137,  41, 169,
+        195,  67, 227,  99, 203,  75, 235, 107, 193,  65, 225,  97, 201,  73, 233, 105,
+         51, 179,  19, 147,  59, 187,  27, 155,  49, 177,  17, 145,  57, 185,  25, 153,
+        243, 115, 211,  83, 251, 123, 219,  91, 241, 113, 209,  81, 249, 121, 217,  89,
+         15, 143,  47, 175,   7, 135,  39, 167,  13, 141,  45, 173,   5, 133,  37, 165,
+        207,  79, 239, 111, 199,  71, 231, 103, 205,  77, 237, 109, 197,  69, 229, 101,
+         63, 191,  31, 159,  55, 183,  23, 151,  61, 189,  29, 157,  53, 181,  21, 149,
+        255, 127, 223,  95, 247, 119, 215,  87, 253, 125, 221,  93, 245, 117, 213,  85
+    ]
+
+    // Blue noise 8x8 pattern
+    private let blueNoise8x8: [Double] = [
+        34,  29,  17,  21,   2,  37,  25,   9,
+        10,  48,  40,  58,  14,  55,  44,  31,
+        61,   5,  23,  50,  27,  42,   6,  52,
+        19,  32,  12,  38,   0,  18,  63,  35,
+        54,  45,  56,   8,  46,  59,  22,  11,
+        26,   3,  20,  62,  33,  13,  39,  49,
+        41,  60,  36,  15,  24,  51,   1,  28,
+        16,   7,  47,  43,  57,   4,  53,  30
+    ]
+
+    // Blue noise 16x16 pattern (simplified)
+    private let blueNoise16x16: [Double] = [
+        136,  72, 184, 120,  56, 200,  24, 152,  88, 232,  40, 168, 104,  16, 248,   8,
+        216,  32, 160,  96,  48, 144, 112, 240,  64, 176,  80, 224, 128,  48, 192,  64,
+         80, 240,  16, 208, 176,  88,  56, 192,  24, 144, 208,  32, 176,  96, 128, 144,
+        144, 112, 176,  48, 128,   8, 224, 128,  96, 240,  72, 112,  56, 224,  16, 200,
+         24, 192,  64, 224,  80, 160,  40, 168,  48, 184,   8, 160, 136, 168,  72, 112,
+        168, 136,  96,  16, 192, 104, 200,  80, 136, 104, 216, 200,  40,  88, 232,  56,
+         56,  40, 152, 120, 248,  64, 232,  16, 224,  56, 152,  88, 248, 120, 152,  24,
+        208, 232,  80, 200,  40, 144, 112, 176, 168,  24, 128,  16, 184,  48, 176, 136,
+         88,   8, 176, 160,  72, 184,  48, 248,  72, 208,  64, 232,  80, 216, 104,  64,
+        128, 160, 104,  24, 216,  96,  16, 120, 200,  96, 184, 144, 112,   8, 144, 200,
+         48, 216,  56, 240, 136,   0, 240,  64, 152,  40, 168,  24, 192,  56, 240,  32,
+        184, 120,  72, 112,  64, 168, 200,  88,  24, 248, 104,  48, 160, 128,  80, 168,
+          0, 192, 152, 176,  40, 128,  32, 176, 112, 144,  80, 224, 232,  72, 192,  16,
+        144,  32, 248,  16, 200, 232, 152,   8, 232,  56, 200,   8, 176,  40, 112, 208,
+         96,  80, 104, 216,  88,  56, 104, 192,  72, 168, 128,  96, 136, 248, 152,  56,
+        224, 168,  40, 136, 184, 144,  24, 240, 136,  16, 216,  48, 208,  24,  88, 120
+    ]
+
+    // Helper to get dither offset for ordered dithering
+    private func getOrderedDitherOffset(x: Int, y: Int, ditherType: String, amount: Double) -> Double {
+        let spread = 32.0 * amount
+        var val: Double = 0
+        var maxVal: Double = 1
+
+        switch ditherType {
+        case "Bayer 2x2":
+            val = bayer2x2[(y % 2) * 2 + (x % 2)]
+            maxVal = 4
+        case "Bayer 4x4":
+            val = bayer4x4[(y % 4) * 4 + (x % 4)]
+            maxVal = 16
+        case "Bayer 8x8":
+            val = bayer8x8[(y % 8) * 8 + (x % 8)]
+            maxVal = 64
+        case "Bayer 16x16":
+            val = bayer16x16[(y % 16) * 16 + (x % 16)]
+            maxVal = 256
+        case "Blue 8x8":
+            val = blueNoise8x8[(y % 8) * 8 + (x % 8)]
+            maxVal = 64
+        case "Blue 16x16":
+            val = blueNoise16x16[(y % 16) * 16 + (x % 16)]
+            maxVal = 256
+        case "Noise":
+            val = Double.random(in: 0..<1) * maxVal
+            maxVal = 1
+            return (val - 0.5) * spread
+        default:
+            return 0
+        }
+
+        return (val / maxVal - 0.5) * spread
+    }
+
+    // Check if dithering is ordered/noise type
+    private func isOrderedDithering(_ name: String) -> Bool {
+        return name.contains("Bayer") || name.contains("Blue") || name == "Noise"
+    }
     
     // MARK: - Main Conversion
     
@@ -256,7 +368,7 @@ class AppleIIGSConverter: RetroMachine {
         
         // 3. Setup Dither
         let kernel = getDitherKernel(name: ditherName)
-        let isOrdered = ditherName.contains("Ordered")
+        let isOrdered = isOrderedDithering(ditherName)
         let isNone = ditherName == "None"
         
         // 4. Buffers
@@ -426,9 +538,7 @@ class AppleIIGSConverter: RetroMachine {
                     p.b = min(255, max(0, p.b))
 
                     if isOrdered {
-                        let bayerVal = bayerMatrix[(y % 4) * 4 + (x % 4)] / 16.0
-                        let spread = 32.0 * ditherAmount
-                        let offset = (bayerVal - 0.5) * spread
+                        let offset = getOrderedDitherOffset(x: x, y: y, ditherType: ditherName, amount: ditherAmount)
                         p.r = min(255, max(0, p.r + offset))
                         p.g = min(255, max(0, p.g + offset))
                         p.b = min(255, max(0, p.b + offset))
@@ -558,9 +668,7 @@ class AppleIIGSConverter: RetroMachine {
                         p.b = min(255, max(0, p.b))
                         
                         if isOrdered {
-                            let bayerVal = bayerMatrix[(y % 4) * 4 + (x % 4)] / 16.0
-                            let spread = 32.0 * ditherAmount
-                            let offset = (bayerVal - 0.5) * spread
+                            let offset = getOrderedDitherOffset(x: x, y: y, ditherType: ditherName, amount: ditherAmount)
                             p.r = min(255, max(0, p.r + offset))
                             p.g = min(255, max(0, p.g + offset))
                             p.b = min(255, max(0, p.b + offset))
@@ -655,9 +763,7 @@ class AppleIIGSConverter: RetroMachine {
                     p.b = min(255, max(0, p.b))
                     
                     if isOrdered {
-                        let bayerVal = bayerMatrix[(y % 4) * 4 + (x % 4)] / 16.0
-                        let spread = 32.0 * ditherAmount
-                        let offset = (bayerVal - 0.5) * spread
+                        let offset = getOrderedDitherOffset(x: x, y: y, ditherType: ditherName, amount: ditherAmount)
                         p.r = min(255, max(0, p.r + offset))
                         p.g = min(255, max(0, p.g + offset))
                         p.b = min(255, max(0, p.b + offset))
@@ -703,9 +809,7 @@ class AppleIIGSConverter: RetroMachine {
                     p.r = min(255, max(0, p.r)); p.g = min(255, max(0, p.g)); p.b = min(255, max(0, p.b))
                     
                     if isOrdered {
-                        let bayerVal = bayerMatrix[(y % 4) * 4 + (x % 4)] / 16.0
-                        let spread = 32.0 * ditherAmount
-                        let offset = (bayerVal - 0.5) * spread
+                        let offset = getOrderedDitherOffset(x: x, y: y, ditherType: ditherName, amount: ditherAmount)
                         p.r = min(255, max(0, p.r + offset))
                         p.g = min(255, max(0, p.g + offset))
                         p.b = min(255, max(0, p.b + offset))
@@ -812,6 +916,8 @@ class AppleIIGSConverter: RetroMachine {
                              medianSize: String, sharpenStrength: Double, sigmaRange: Double,
                              solarizeThreshold: Double, embossDepth: Double, edgeThreshold: Double) {
         switch filter {
+        case "Lowpass":
+            applyLowpassFilter(&pixels, width: width, height: height)
         case "Median":
             // Parse kernel size from "3x3", "5x5", "7x7"
             let kernelSize = Int(medianSize.prefix(1)) ?? 3
@@ -829,6 +935,29 @@ class AppleIIGSConverter: RetroMachine {
         default:
             break
         }
+    }
+
+    func applyLowpassFilter(_ pixels: inout [PixelFloat], width: Int, height: Int) {
+        var result = pixels
+        // 3x3 box blur kernel (all weights = 1/9)
+        for y in 1..<(height - 1) {
+            for x in 1..<(width - 1) {
+                var r: Double = 0, g: Double = 0, b: Double = 0
+                for ky in -1...1 {
+                    for kx in -1...1 {
+                        let idx = (y + ky) * width + (x + kx)
+                        r += pixels[idx].r
+                        g += pixels[idx].g
+                        b += pixels[idx].b
+                    }
+                }
+                let idx = y * width + x
+                result[idx].r = r / 9.0
+                result[idx].g = g / 9.0
+                result[idx].b = b / 9.0
+            }
+        }
+        pixels = result
     }
 
     func applyMedianFilter(_ pixels: inout [PixelFloat], width: Int, height: Int, kernelSize: Int) {

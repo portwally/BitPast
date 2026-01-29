@@ -12,7 +12,7 @@ struct BitPastApp: App {
             ContentView()
         }
         .commands {
-            // System menu for switching between target systems
+            // System menu for switching between target systems (alphabetical, Apple first)
             CommandMenu("System") {
                 Button("Apple II") {
                     Task { @MainActor in
@@ -36,7 +36,7 @@ struct BitPastApp: App {
                 }
                 .keyboardShortcut("2", modifiers: [.command, .shift])
 
-                Button("C64") {
+                Button("Amiga 500") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 2 && vm.selectedMachineIndex != 2 {
@@ -48,7 +48,7 @@ struct BitPastApp: App {
                 .keyboardShortcut("3", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 2)
 
-                Button("VIC-20") {
+                Button("Amiga 1200") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 3 && vm.selectedMachineIndex != 3 {
@@ -60,7 +60,7 @@ struct BitPastApp: App {
                 .keyboardShortcut("4", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 3)
 
-                Button("ZX Spectrum") {
+                Button("Amstrad CPC") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 4 && vm.selectedMachineIndex != 4 {
@@ -72,7 +72,7 @@ struct BitPastApp: App {
                 .keyboardShortcut("5", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 4)
 
-                Button("Amstrad CPC") {
+                Button("Atari ST") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 5 && vm.selectedMachineIndex != 5 {
@@ -84,7 +84,7 @@ struct BitPastApp: App {
                 .keyboardShortcut("6", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 5)
 
-                Button("Plus/4") {
+                Button("C64") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 6 && vm.selectedMachineIndex != 6 {
@@ -96,7 +96,7 @@ struct BitPastApp: App {
                 .keyboardShortcut("7", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 6)
 
-                Button("Atari ST") {
+                Button("MSX") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 7 && vm.selectedMachineIndex != 7 {
@@ -108,7 +108,7 @@ struct BitPastApp: App {
                 .keyboardShortcut("8", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 7)
 
-                Button("Amiga 500") {
+                Button("PC") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 8 && vm.selectedMachineIndex != 8 {
@@ -120,7 +120,7 @@ struct BitPastApp: App {
                 .keyboardShortcut("9", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 8)
 
-                Button("Amiga 1200") {
+                Button("Plus/4") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 9 && vm.selectedMachineIndex != 9 {
@@ -132,7 +132,7 @@ struct BitPastApp: App {
                 .keyboardShortcut("0", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 9)
 
-                Button("PC") {
+                Button("VIC-20") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 10 && vm.selectedMachineIndex != 10 {
@@ -141,8 +141,20 @@ struct BitPastApp: App {
                         }
                     }
                 }
-                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .keyboardShortcut("v", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 10)
+
+                Button("ZX Spectrum") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 11 && vm.selectedMachineIndex != 11 {
+                            vm.selectedMachineIndex = 11
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("z", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 11)
             }
 
             CommandGroup(replacing: .help) {

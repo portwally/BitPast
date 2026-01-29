@@ -5,28 +5,43 @@ All notable changes to BitPast will be documented in this file.
 ## [3.2] - 2026-01-29
 
 ### Added
+- **MSX Converter** - MSX/MSX2 graphics conversion support:
+  - **Screen 2 (MSX1)** - 256×192, 2 colors per 8×1 line from TMS9918 palette
+  - **Screen 5 (MSX2)** - 256×212, 16 colors from 512-color V9938 palette
+  - **Screen 8 (MSX2)** - 256×212, 256 fixed colors (3-3-2 RGB)
+  - Native .sc2, .sc5, .sc8 file output (BSAVE format)
 - **PC Converter** - IBM PC graphics conversion support:
   - **CGA Mode** - 320×200, 4 colors from fixed CGA palettes
-  - **EGA Mode** - 320×200, 16 colors from 64-color EGA palette
+  - **EGA Mode** - 320×200, fixed 16-color EGA palette
+  - **EGA 64 Mode** - 320×200, 16 colors selected from 64-color EGA palette
   - **VGA Mode 13h** - 320×200, 256 colors from 262,144-color palette
   - **CGA 80×25 Text** - 640×200, character-based display with 16 colors
   - **VESA 132×50 Text** - 1056×400, extended text mode
-  - Native .bin file output
-- **System Menu Update** - PC (⇧⌘P)
+  - Native .pcx file output for graphics modes, .ans for text modes
+- **System Menu Update** - PC (⇧⌘P), MSX (⇧⌘M)
+- **Hue Color Matching** - New color matching algorithm that preserves color hues, best for images with saturated colors
+- **Apple IIgs Enhancements**:
+  - Lowpass preprocessing filter
+  - Extended dithering options: Noise, Bayer 2×2/4×4/8×8/16×16, Blue Noise 8×8/16×16
 - **PC Processing Options**:
   - CGA Palette selection: Cyan/Magenta/White, Cyan/Magenta/Gray, Green/Red/Yellow, Green/Red/Brown
   - Dithering: None, Floyd-Steinberg, Atkinson, Bayer (2×2, 4×4, 8×8)
   - Contrast: None (default), HE, CLAHE, SWAHE
-  - Color Matching: Euclidean, Perceptive, Luma, Chroma
+  - Color Matching: Euclidean, Perceptive, Luma, Chroma, Hue
   - Saturation and Gamma controls
 
+### Fixed
+- **PCX CGA Header** - Fixed bits-per-pixel value (now correctly writes 2bpp for 4-color CGA)
+
 ### Technical
+- Added `MSXConverter.swift` with TMS9918 and V9938 video chip emulation
 - Added `PCConverter.swift` with CGA, EGA, VGA and text mode implementations
+- K-D tree optimization for VGA 256-color palette matching (10-20x faster)
 - CGA 16-color palette and 4-color graphics palettes
 - EGA 64-color palette generation
 - VGA adaptive 256-color palette using median-cut algorithm
 - Character pattern matching for text modes
-- PC icon added to Assets.xcassets
+- MSX and PC icons added to Assets.xcassets
 
 ## [3.1] - 2026-01-29
 
