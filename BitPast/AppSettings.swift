@@ -82,13 +82,13 @@ struct RetroTheme {
     static func font(size: CGFloat) -> Font {
         // Round to nearest supported size for crisp pixels
         let crispSize = roundToPixelPerfect(size)
-        return .custom("Shaston640", size: crispSize)
+        return .custom("Shaston 640", size: crispSize)
     }
 
     static func boldFont(size: CGFloat) -> Font {
         // Shaston doesn't have bold variant, use regular
         let crispSize = roundToPixelPerfect(size)
-        return .custom("Shaston640", size: crispSize)
+        return .custom("Shaston 640", size: crispSize)
     }
 
     // Round font size to nearest multiple of 16 for pixel-perfect rendering
@@ -154,7 +154,7 @@ struct C64Theme {
 
     // PETSCII font - authentic Commodore 64 font
     static func font(size: CGFloat) -> Font {
-        return .custom("PetMe64", size: size)
+        return .custom("Pet Me 64", size: size)
     }
 
     static func boldFont(size: CGFloat) -> Font {
@@ -164,7 +164,7 @@ struct C64Theme {
 
     // NSFont version for AppKit components
     static func nsFont(size: CGFloat) -> NSFont {
-        if let font = NSFont(name: "PetMe64", size: size) {
+        if let font = NSFont(name: "Pet Me 64", size: size) {
             return font
         }
         // Fallback to Menlo monospace

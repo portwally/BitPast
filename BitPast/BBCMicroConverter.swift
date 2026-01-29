@@ -575,7 +575,7 @@ class BBCMicroConverter: RetroMachine {
         case "HE":
             applyHistogramEqualization(&pixels, width: width, height: height)
         case "CLAHE":
-            applyCLAHE(&pixels, width: width, height: height, clipLimit: 2.0, tileSize: 8)
+            applyCLAHE(&pixels, width: width, height: height, clipLimit: 2.0, tileSize: 32)
         case "SWAHE":
             applySWAHE(&pixels, width: width, height: height, windowSize: 64)
         default:
@@ -598,17 +598,24 @@ class BBCMicroConverter: RetroMachine {
 
         let cdfMin = cdf.first(where: { $0 > 0 }) ?? 0
         let totalPixels = width * height
+        let denominator = totalPixels - cdfMin
         var lut = [Float](repeating: 0, count: 256)
         for i in 0..<256 {
-            lut[i] = Float((cdf[i] - cdfMin) * 255 / max(1, totalPixels - cdfMin))
+            if denominator <= 0 {
+                // Uniform image: use identity mapping
+                lut[i] = Float(i)
+            } else {
+                lut[i] = Float(max(0, cdf[i] - cdfMin) * 255 / denominator)
+            }
         }
 
         for i in 0..<pixels.count {
             let luma = Int(max(0, min(255, 0.299 * pixels[i][0] + 0.587 * pixels[i][1] + 0.114 * pixels[i][2])))
-            let ratio = luma > 0 ? lut[luma] / Float(luma) : 1.0
-            pixels[i][0] = max(0, min(255, pixels[i][0] * ratio))
-            pixels[i][1] = max(0, min(255, pixels[i][1] * ratio))
-            pixels[i][2] = max(0, min(255, pixels[i][2] * ratio))
+            // Use additive adjustment instead of ratio to avoid black output
+            let lumaDiff = lut[luma] - Float(luma)
+            pixels[i][0] = max(0, min(255, pixels[i][0] + lumaDiff))
+            pixels[i][1] = max(0, min(255, pixels[i][1] + lumaDiff))
+            pixels[i][2] = max(0, min(255, pixels[i][2] + lumaDiff))
         }
     }
 
@@ -635,7 +642,7 @@ class BBCMicroConverter: RetroMachine {
                     }
                 }
 
-                let clipThreshold = Int(clipLimit * Float(count) / 256.0)
+                let clipThreshold = max(1, Int(clipLimit * Float(count) / 256.0))
                 var excess = 0
                 for i in 0..<256 {
                     if histogram[i] > clipThreshold {
@@ -656,8 +663,14 @@ class BBCMicroConverter: RetroMachine {
                 }
 
                 let cdfMin = cdf.first(where: { $0 > 0 }) ?? 0
+                let denominator = count - cdfMin
                 for i in 0..<256 {
-                    tileLUTs[ty][tx][i] = Float((cdf[i] - cdfMin) * 255 / max(1, count - cdfMin))
+                    if denominator <= 0 {
+                        // Uniform tile: use identity mapping
+                        tileLUTs[ty][tx][i] = Float(i)
+                    } else {
+                        tileLUTs[ty][tx][i] = Float(max(0, cdf[i] - cdfMin) * 255 / denominator)
+                    }
                 }
             }
         }
@@ -671,11 +684,12 @@ class BBCMicroConverter: RetroMachine {
                 let ty = min(y / tileSize, tilesY - 1)
 
                 let newLuma = tileLUTs[ty][tx][luma]
-                let ratio = luma > 0 ? newLuma / Float(luma) : 1.0
+                // Use additive adjustment instead of ratio to avoid black output
+                let lumaDiff = newLuma - Float(luma)
 
-                result[y * width + x][0] = max(0, min(255, pixels[y * width + x][0] * ratio))
-                result[y * width + x][1] = max(0, min(255, pixels[y * width + x][1] * ratio))
-                result[y * width + x][2] = max(0, min(255, pixels[y * width + x][2] * ratio))
+                result[y * width + x][0] = max(0, min(255, pixels[y * width + x][0] + lumaDiff))
+                result[y * width + x][1] = max(0, min(255, pixels[y * width + x][1] + lumaDiff))
+                result[y * width + x][2] = max(0, min(255, pixels[y * width + x][2] + lumaDiff))
             }
         }
 
@@ -707,11 +721,12 @@ class BBCMicroConverter: RetroMachine {
                 }
 
                 let newLuma = Float(cdf * 255 / max(1, pixelCount))
-                let ratio = luma > 0 ? newLuma / Float(luma) : 1.0
+                // Use additive adjustment instead of ratio to avoid black output
+                let lumaDiff = newLuma - Float(luma)
 
-                result[y * width + x][0] = max(0, min(255, pixels[y * width + x][0] * ratio))
-                result[y * width + x][1] = max(0, min(255, pixels[y * width + x][1] * ratio))
-                result[y * width + x][2] = max(0, min(255, pixels[y * width + x][2] * ratio))
+                result[y * width + x][0] = max(0, min(255, pixels[y * width + x][0] + lumaDiff))
+                result[y * width + x][1] = max(0, min(255, pixels[y * width + x][1] + lumaDiff))
+                result[y * width + x][2] = max(0, min(255, pixels[y * width + x][2] + lumaDiff))
 
                 if x + halfWindow < width {
                     for dy in max(0, y - halfWindow)..<min(height, y + halfWindow) {

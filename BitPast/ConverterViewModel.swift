@@ -8,9 +8,43 @@ struct InputImage: Identifiable, Hashable {
     let name: String
     let image: NSImage
     let details: String
-    
+
+    // Extended metadata
+    let fileURL: URL?
+    let fileSize: Int64?        // In bytes
+    let format: String          // File extension (e.g., "JPEG", "PNG")
+    let bitsPerPixel: Int?
+    let colorSpace: String?
+    let dpi: Int?
+    let hasAlpha: Bool
+
+    init(name: String, image: NSImage, details: String, fileURL: URL? = nil, fileSize: Int64? = nil, format: String = "Unknown", bitsPerPixel: Int? = nil, colorSpace: String? = nil, dpi: Int? = nil, hasAlpha: Bool = false) {
+        self.name = name
+        self.image = image
+        self.details = details
+        self.fileURL = fileURL
+        self.fileSize = fileSize
+        self.format = format
+        self.bitsPerPixel = bitsPerPixel
+        self.colorSpace = colorSpace
+        self.dpi = dpi
+        self.hasAlpha = hasAlpha
+    }
+
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
     static func == (lhs: InputImage, rhs: InputImage) -> Bool { lhs.id == rhs.id }
+
+    // Helper to format file size
+    var formattedFileSize: String? {
+        guard let size = fileSize else { return nil }
+        if size < 1024 {
+            return "\(size) bytes"
+        } else if size < 1024 * 1024 {
+            return String(format: "%.1f KB", Double(size) / 1024.0)
+        } else {
+            return String(format: "%.1f MB", Double(size) / (1024.0 * 1024.0))
+        }
+    }
 }
 
 @MainActor
@@ -22,6 +56,7 @@ class ConverterViewModel: ObservableObject {
     
     @Published var inputImages: [InputImage] = []
     @Published var selectedImageId: UUID?
+    @Published var selectedImageIds: Set<UUID> = []
     
     @Published var currentResult: ConversionResult?
     @Published var isConverting: Bool = false
@@ -62,7 +97,243 @@ class ConverterViewModel: ObservableObject {
         get { machines[selectedMachineIndex] }
         set { machines[selectedMachineIndex] = newValue }
     }
-    
+
+    var allImagesSelected: Bool {
+        !inputImages.isEmpty && selectedImageIds.count == inputImages.count
+    }
+
+    var someImagesSelected: Bool {
+        !selectedImageIds.isEmpty && selectedImageIds.count < inputImages.count
+    }
+
+    // Batch export state
+    @Published var isBatchExporting: Bool = false
+    @Published var batchExportProgress: Double = 0
+    @Published var batchExportTotal: Int = 0
+    @Published var batchExportCurrent: Int = 0
+    var lastClickedIndex: Int? = nil
+
+    func toggleSelectAll() {
+        if allImagesSelected {
+            selectedImageIds.removeAll()
+        } else {
+            selectedImageIds = Set(inputImages.map { $0.id })
+        }
+    }
+
+    func toggleImageSelection(_ id: UUID) {
+        if selectedImageIds.contains(id) {
+            selectedImageIds.remove(id)
+        } else {
+            selectedImageIds.insert(id)
+        }
+        // Update last clicked index
+        if let idx = inputImages.firstIndex(where: { $0.id == id }) {
+            lastClickedIndex = idx
+        }
+    }
+
+    func selectRange(to id: UUID) {
+        guard let toIndex = inputImages.firstIndex(where: { $0.id == id }) else { return }
+        let fromIndex = lastClickedIndex ?? 0
+        let range = min(fromIndex, toIndex)...max(fromIndex, toIndex)
+        for i in range {
+            selectedImageIds.insert(inputImages[i].id)
+        }
+        lastClickedIndex = toIndex
+    }
+
+    func removeSelectedImages() {
+        guard !selectedImageIds.isEmpty else { return }
+        inputImages.removeAll { selectedImageIds.contains($0.id) }
+        selectedImageIds.removeAll()
+        lastClickedIndex = nil
+        if !inputImages.isEmpty {
+            selectedImageId = inputImages.first?.id
+            convertImmediately()
+        } else {
+            selectedImageId = nil
+            currentResult = nil
+        }
+    }
+
+    func batchExport() {
+        guard !selectedImageIds.isEmpty else { return }
+
+        // Show folder picker
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Choose Export Folder"
+        panel.message = "Select a folder to save \(selectedImageIds.count) converted images"
+
+        guard panel.runModal() == .OK, let folderURL = panel.url else { return }
+
+        // Get images to export
+        let imagesToExport = inputImages.filter { selectedImageIds.contains($0.id) }
+        batchExportTotal = imagesToExport.count
+        batchExportCurrent = 0
+        batchExportProgress = 0
+        isBatchExporting = true
+
+        Task {
+            for (index, imageItem) in imagesToExport.enumerated() {
+                do {
+                    // Convert the image
+                    let result = try await currentMachine.convert(sourceImage: imageItem.image)
+
+                    // Copy native file to export folder
+                    if let sourceURL = result.fileAssets.first {
+                        let baseName = (imageItem.name as NSString).deletingPathExtension
+                        let fileExtension = sourceURL.pathExtension
+                        let fileName = "\(baseName).\(fileExtension)"
+                        let destURL = folderURL.appendingPathComponent(fileName)
+
+                        // Remove existing file if it exists
+                        if FileManager.default.fileExists(atPath: destURL.path) {
+                            try FileManager.default.removeItem(at: destURL)
+                        }
+                        try FileManager.default.copyItem(at: sourceURL, to: destURL)
+                    }
+
+                    await MainActor.run {
+                        batchExportCurrent = index + 1
+                        batchExportProgress = Double(index + 1) / Double(batchExportTotal)
+                    }
+                } catch {
+                    print("Error exporting \(imageItem.name): \(error)")
+                }
+            }
+
+            await MainActor.run {
+                isBatchExporting = false
+                // Optionally clear selection after export
+                // selectedImageIds.removeAll()
+            }
+        }
+    }
+
+    func batchSaveImages(as type: ImageExportType) {
+        guard !selectedImageIds.isEmpty else { return }
+
+        // Show folder picker
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Choose Export Folder"
+        panel.message = "Save \(selectedImageIds.count) images as \(type.rawValue.uppercased())"
+
+        guard panel.runModal() == .OK, let folderURL = panel.url else { return }
+
+        // Get images to export
+        let imagesToExport = inputImages.filter { selectedImageIds.contains($0.id) }
+        batchExportTotal = imagesToExport.count
+        batchExportCurrent = 0
+        batchExportProgress = 0
+        isBatchExporting = true
+
+        Task {
+            for (index, imageItem) in imagesToExport.enumerated() {
+                do {
+                    // Convert the image
+                    let result = try await currentMachine.convert(sourceImage: imageItem.image)
+
+                    // Save as specified image format
+                    let baseName = (imageItem.name as NSString).deletingPathExtension
+                    let fileName = "\(baseName).\(type.rawValue.lowercased())"
+                    let destURL = folderURL.appendingPathComponent(fileName)
+
+                    var props: [NSBitmapImageRep.PropertyKey : Any] = [:]
+                    var fileType: NSBitmapImageRep.FileType = .png
+
+                    switch type {
+                    case .png: fileType = .png
+                    case .jpg: fileType = .jpeg; props[.compressionFactor] = 0.9
+                    case .gif: fileType = .gif
+                    case .tiff: fileType = .tiff
+                    }
+
+                    if let tiffData = result.previewImage.tiffRepresentation,
+                       let bitmap = NSBitmapImageRep(data: tiffData),
+                       let fileData = bitmap.representation(using: fileType, properties: props) {
+                        try fileData.write(to: destURL)
+                    }
+
+                    await MainActor.run {
+                        batchExportCurrent = index + 1
+                        batchExportProgress = Double(index + 1) / Double(batchExportTotal)
+                    }
+                } catch {
+                    print("Error exporting \(imageItem.name): \(error)")
+                }
+            }
+
+            await MainActor.run {
+                isBatchExporting = false
+            }
+        }
+    }
+
+    func batchSaveNativeFiles() {
+        guard !selectedImageIds.isEmpty else { return }
+
+        // Show folder picker
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.canCreateDirectories = true
+        panel.prompt = "Choose Export Folder"
+        panel.message = "Save \(selectedImageIds.count) images in native format"
+
+        guard panel.runModal() == .OK, let folderURL = panel.url else { return }
+
+        // Get images to export (this is same as batchExport)
+        let imagesToExport = inputImages.filter { selectedImageIds.contains($0.id) }
+        batchExportTotal = imagesToExport.count
+        batchExportCurrent = 0
+        batchExportProgress = 0
+        isBatchExporting = true
+
+        Task {
+            for (index, imageItem) in imagesToExport.enumerated() {
+                do {
+                    // Convert the image
+                    let result = try await currentMachine.convert(sourceImage: imageItem.image)
+
+                    // Copy native file to export folder
+                    if let sourceURL = result.fileAssets.first {
+                        let baseName = (imageItem.name as NSString).deletingPathExtension
+                        let fileExtension = sourceURL.pathExtension
+                        let fileName = "\(baseName).\(fileExtension)"
+                        let destURL = folderURL.appendingPathComponent(fileName)
+
+                        // Remove existing file if it exists
+                        if FileManager.default.fileExists(atPath: destURL.path) {
+                            try FileManager.default.removeItem(at: destURL)
+                        }
+                        try FileManager.default.copyItem(at: sourceURL, to: destURL)
+                    }
+
+                    await MainActor.run {
+                        batchExportCurrent = index + 1
+                        batchExportProgress = Double(index + 1) / Double(batchExportTotal)
+                    }
+                } catch {
+                    print("Error exporting \(imageItem.name): \(error)")
+                }
+            }
+
+            await MainActor.run {
+                isBatchExporting = false
+            }
+        }
+    }
+
     // MARK: - File Loading
     
     func selectImagesFromFinder() {
@@ -87,7 +358,40 @@ class ConverterViewModel: ObservableObject {
                     if let img = image as? NSImage {
                         DispatchQueue.main.async {
                             let info = "PASTE • \(Int(img.size.width))x\(Int(img.size.height))"
-                            let newItem = InputImage(name: "Dropped Image", image: img, details: info)
+
+                            // Extract metadata from pasted image
+                            var bitsPerPixel: Int? = nil
+                            var colorSpace: String? = nil
+                            var hasAlpha = false
+
+                            if let rep = img.representations.first as? NSBitmapImageRep {
+                                bitsPerPixel = rep.bitsPerPixel
+                                hasAlpha = rep.hasAlpha
+                                let csName = rep.colorSpaceName
+                                switch csName {
+                                case .calibratedRGB, .deviceRGB:
+                                    colorSpace = "RGB"
+                                case .calibratedWhite, .deviceWhite:
+                                    colorSpace = "Grayscale"
+                                case .deviceCMYK:
+                                    colorSpace = "CMYK"
+                                default:
+                                    colorSpace = "sRGB"
+                                }
+                            }
+
+                            let newItem = InputImage(
+                                name: "Pasted Image",
+                                image: img,
+                                details: info,
+                                fileURL: nil,
+                                fileSize: nil,
+                                format: "Clipboard",
+                                bitsPerPixel: bitsPerPixel,
+                                colorSpace: colorSpace,
+                                dpi: 72,
+                                hasAlpha: hasAlpha
+                            )
                             self.inputImages.append(newItem)
                             if self.inputImages.count == 1 { self.selectedImageId = newItem.id; self.convertImmediately() }
                         }
@@ -104,7 +408,57 @@ class ConverterViewModel: ObservableObject {
             let name = url.lastPathComponent
             let ext = url.pathExtension.uppercased()
             let info = "\(ext.isEmpty ? "?" : ext) • \(Int(img.size.width))x\(Int(img.size.height))"
-            let newItem = InputImage(name: name, image: img, details: info)
+
+            // Extract file size
+            var fileSize: Int64? = nil
+            if let attrs = try? FileManager.default.attributesOfItem(atPath: url.path),
+               let size = attrs[.size] as? Int64 {
+                fileSize = size
+            }
+
+            // Extract image metadata from bitmap representation
+            var bitsPerPixel: Int? = nil
+            var colorSpace: String? = nil
+            var dpi: Int? = nil
+            var hasAlpha = false
+
+            if let rep = img.representations.first as? NSBitmapImageRep {
+                bitsPerPixel = rep.bitsPerPixel
+                hasAlpha = rep.hasAlpha
+
+                // Get color space name
+                let csName = rep.colorSpaceName
+                switch csName {
+                case .calibratedRGB, .deviceRGB:
+                    colorSpace = "RGB"
+                case .calibratedWhite, .deviceWhite:
+                    colorSpace = "Grayscale"
+                case .deviceCMYK:
+                    colorSpace = "CMYK"
+                default:
+                    colorSpace = "sRGB"
+                }
+
+                // Calculate DPI from pixels per unit
+                let pixelsWide = rep.pixelsWide
+                let pointsWide = rep.size.width
+                if pointsWide > 0 {
+                    dpi = Int(Double(pixelsWide) / pointsWide * 72.0)
+                }
+            }
+
+            let newItem = InputImage(
+                name: name,
+                image: img,
+                details: info,
+                fileURL: url,
+                fileSize: fileSize,
+                format: ext.isEmpty ? "Unknown" : ext,
+                bitsPerPixel: bitsPerPixel,
+                colorSpace: colorSpace,
+                dpi: dpi,
+                hasAlpha: hasAlpha
+            )
             self.inputImages.append(newItem)
             if selectedImageId == nil {
                 selectedImageId = newItem.id

@@ -192,7 +192,24 @@ struct ContentView: View {
                             .font(isRetro ? retroBoldFont : .system(size: 13, weight: .semibold))
                             .foregroundColor(isRetro ? retroTextColor : .secondary)
                         Spacer()
-                        if viewModel.selectedImageId != nil {
+                        // Select all checkbox
+                        if !viewModel.inputImages.isEmpty {
+                            Button(action: { viewModel.toggleSelectAll() }) {
+                                Image(systemName: viewModel.allImagesSelected ? "checkmark.square.fill" :
+                                      (viewModel.someImagesSelected ? "minus.square.fill" : "square"))
+                                    .foregroundStyle(isRetro ? retroTextColor : .secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .help(viewModel.allImagesSelected ? "Deselect all" : "Select all")
+                        }
+                        if !viewModel.selectedImageIds.isEmpty {
+                            Button(action: { viewModel.removeSelectedImages() }) {
+                                Image(systemName: "trash")
+                                    .foregroundStyle(isRetro ? retroTextColor : .secondary)
+                            }
+                            .buttonStyle(.plain)
+                            .help("Remove selected images (\(viewModel.selectedImageIds.count))")
+                        } else if viewModel.selectedImageId != nil {
                             Button(action: { viewModel.removeSelectedImage() }) {
                                 Image(systemName: "trash")
                                     .foregroundStyle(isRetro ? retroTextColor : .secondary)
@@ -230,6 +247,7 @@ struct ContentView: View {
                     }
                     .frame(height: 38)
                     .padding(.horizontal, 12)
+                    .padding(.vertical, 3)
                     .background(isRetro ? retroWindowBg : Color(NSColor.controlBackgroundColor).opacity(0.5))
 
                     if isRetro {
@@ -274,11 +292,24 @@ struct ContentView: View {
                         ScrollView {
                             LazyVGrid(columns: columns, spacing: 10) {
                                 ForEach(viewModel.inputImages) { item in
-                                    ImageGridItem(item: item, isSelected: viewModel.selectedImageId == item.id, isRetro: isRetro, isAppleII: isAppleII)
-                                        .onTapGesture {
-                                            viewModel.selectedImageId = item.id
-                                            viewModel.convertImmediately()
+                                    ImageGridItem(
+                                        item: item,
+                                        isSelected: viewModel.selectedImageId == item.id,
+                                        isMultiSelected: viewModel.selectedImageIds.contains(item.id),
+                                        isRetro: isRetro,
+                                        isAppleII: isAppleII,
+                                        onToggleSelection: {
+                                            viewModel.toggleImageSelection(item.id)
                                         }
+                                    )
+                                    .onTapGesture {
+                                        viewModel.selectedImageId = item.id
+                                        viewModel.lastClickedIndex = viewModel.inputImages.firstIndex(where: { $0.id == item.id })
+                                        viewModel.convertImmediately()
+                                    }
+                                    .gesture(TapGesture().modifiers(.shift).onEnded {
+                                        viewModel.selectRange(to: item.id)
+                                    })
                                 }
                             }.padding(10)
                         }.background(isRetro ? retroBgColor : Color(NSColor.controlBackgroundColor))
@@ -286,6 +317,28 @@ struct ContentView: View {
                 }
                 .frame(minWidth: 200, maxWidth: 450)
                 .onDrop(of: [.fileURL], isTargeted: $isDropTarget) { providers in return viewModel.handleDrop(providers: providers) }
+                .overlay(
+                    Group {
+                        if viewModel.isBatchExporting {
+                            ZStack {
+                                Color.black.opacity(0.6)
+                                VStack(spacing: 16) {
+                                    ProgressView(value: viewModel.batchExportProgress)
+                                        .progressViewStyle(.linear)
+                                        .frame(width: 200)
+                                    Text("Exporting \(viewModel.batchExportCurrent)/\(viewModel.batchExportTotal)...")
+                                        .font(isRetro ? retroSmallFont : .caption)
+                                        .foregroundColor(.white)
+                                }
+                                .padding(24)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .fill(Color(NSColor.windowBackgroundColor))
+                                )
+                            }
+                        }
+                    }
+                )
 
                 // RECHTER BEREICH: VORSCHAU
                 VStack(spacing: 0) {
@@ -614,21 +667,30 @@ struct ContentView: View {
                         if isRetro {
                             // Retro-styled Save Menu
                             RetroActionMenu(
-                                title: "Save Image...",
+                                title: viewModel.selectedImageIds.isEmpty ? "Save Image..." : "Save \(viewModel.selectedImageIds.count) Images...",
                                 isAppleII: isAppleII,
                                 isC64: isC64,
-                                isDisabled: viewModel.convertedImage == nil,
+                                isDisabled: viewModel.selectedImageIds.isEmpty && viewModel.convertedImage == nil,
                                 menuItems: {
-                                    Button("PNG") { viewModel.saveImage(as: .png) }
-                                    Button("JPG") { viewModel.saveImage(as: .jpg) }
-                                    Button("GIF") { viewModel.saveImage(as: .gif) }
-                                    Button("TIFF") { viewModel.saveImage(as: .tiff) }
-                                    Divider()
-                                    if let asset = viewModel.currentResult?.fileAssets.first {
-                                        let ext = asset.pathExtension.uppercased()
-                                        Button("Native Format (.\(ext))") { viewModel.saveNativeFile() }
+                                    if viewModel.selectedImageIds.isEmpty {
+                                        Button("PNG") { viewModel.saveImage(as: .png) }
+                                        Button("JPG") { viewModel.saveImage(as: .jpg) }
+                                        Button("GIF") { viewModel.saveImage(as: .gif) }
+                                        Button("TIFF") { viewModel.saveImage(as: .tiff) }
+                                        Divider()
+                                        if let asset = viewModel.currentResult?.fileAssets.first {
+                                            let ext = asset.pathExtension.uppercased()
+                                            Button("Native Format (.\(ext))") { viewModel.saveNativeFile() }
+                                        } else {
+                                            Button("Native Format") { }.disabled(true)
+                                        }
                                     } else {
-                                        Button("Native Format") { }.disabled(true)
+                                        Button("PNG") { viewModel.batchSaveImages(as: .png) }
+                                        Button("JPG") { viewModel.batchSaveImages(as: .jpg) }
+                                        Button("GIF") { viewModel.batchSaveImages(as: .gif) }
+                                        Button("TIFF") { viewModel.batchSaveImages(as: .tiff) }
+                                        Divider()
+                                        Button("Native Format") { viewModel.batchSaveNativeFiles() }
                                     }
                                 }
                             )
@@ -659,24 +721,33 @@ struct ContentView: View {
                         } else {
                             // Standard macOS buttons
                             Menu {
-                                Button("PNG") { viewModel.saveImage(as: .png) }
-                                Button("JPG") { viewModel.saveImage(as: .jpg) }
-                                Button("GIF") { viewModel.saveImage(as: .gif) }
-                                Button("TIFF") { viewModel.saveImage(as: .tiff) }
-                                Divider()
-                                if let asset = viewModel.currentResult?.fileAssets.first {
-                                    let ext = asset.pathExtension.uppercased()
-                                    Button("Native Format (.\(ext))") { viewModel.saveNativeFile() }
+                                if viewModel.selectedImageIds.isEmpty {
+                                    Button("PNG") { viewModel.saveImage(as: .png) }
+                                    Button("JPG") { viewModel.saveImage(as: .jpg) }
+                                    Button("GIF") { viewModel.saveImage(as: .gif) }
+                                    Button("TIFF") { viewModel.saveImage(as: .tiff) }
+                                    Divider()
+                                    if let asset = viewModel.currentResult?.fileAssets.first {
+                                        let ext = asset.pathExtension.uppercased()
+                                        Button("Native Format (.\(ext))") { viewModel.saveNativeFile() }
+                                    } else {
+                                        Button("Native Format") { }.disabled(true)
+                                    }
                                 } else {
-                                    Button("Native Format") { }.disabled(true)
+                                    Button("PNG") { viewModel.batchSaveImages(as: .png) }
+                                    Button("JPG") { viewModel.batchSaveImages(as: .jpg) }
+                                    Button("GIF") { viewModel.batchSaveImages(as: .gif) }
+                                    Button("TIFF") { viewModel.batchSaveImages(as: .tiff) }
+                                    Divider()
+                                    Button("Native Format") { viewModel.batchSaveNativeFiles() }
                                 }
                             } label: {
-                                Label("Save Image...", systemImage: "square.and.arrow.down")
+                                Label(viewModel.selectedImageIds.isEmpty ? "Save Image..." : "Save \(viewModel.selectedImageIds.count) Images...", systemImage: "square.and.arrow.down")
                                     .frame(maxWidth: .infinity)
                             }
                             .menuStyle(.borderedButton)
                             .controlSize(.regular)
-                            .disabled(viewModel.convertedImage == nil)
+                            .disabled(viewModel.selectedImageIds.isEmpty && viewModel.convertedImage == nil)
 
                             Button(action: { showDiskSheet = true }) {
                                 Label("ProDOS Disk", systemImage: "externaldrive")
@@ -1289,8 +1360,10 @@ struct DiskExportSheet: View {
 struct ImageGridItem: View {
     let item: InputImage
     let isSelected: Bool
+    var isMultiSelected: Bool = false
     var isRetro: Bool = false
     var isAppleII: Bool = false
+    var onToggleSelection: (() -> Void)? = nil
 
     // Theme-aware colors
     var themeBgColor: Color { isAppleII ? AppleIITheme.windowBackground : RetroTheme.windowBackground }
@@ -1315,16 +1388,43 @@ struct ImageGridItem: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 70)
                     .padding(4)
+
+                // Selection circle overlay (top-right corner)
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: { onToggleSelection?() }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.white)
+                                    .frame(width: 20, height: 20)
+                                    .shadow(color: .black.opacity(0.2), radius: 1, x: 0, y: 1)
+                                if isMultiSelected {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.system(size: 18))
+                                        .foregroundColor(.accentColor)
+                                } else {
+                                    Circle()
+                                        .stroke(Color.gray.opacity(0.5), lineWidth: 1.5)
+                                        .frame(width: 16, height: 16)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .padding(4)
+                    }
+                    Spacer()
+                }
             }
             .frame(height: 80)
             .overlay(
                 Group {
                     if isRetro {
                         Rectangle()
-                            .stroke(isSelected ? themeBorderColor : Color.clear, lineWidth: 2)
+                            .stroke(isSelected || isMultiSelected ? themeBorderColor : Color.clear, lineWidth: 2)
                     } else {
                         RoundedRectangle(cornerRadius: 8)
-                            .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2.5)
+                            .stroke(isSelected ? Color.accentColor : (isMultiSelected ? Color.accentColor.opacity(0.7) : Color.clear), lineWidth: 2.5)
                     }
                 }
             )
@@ -1333,10 +1433,10 @@ struct ImageGridItem: View {
                 .font(isRetro ? (isAppleII ? AppleIITheme.font(size: 10) : RetroTheme.font(size: 10)) : .caption)
                 .lineLimit(1)
                 .truncationMode(.middle)
-                .foregroundColor(isRetro ? themeTextColor : (isSelected ? .primary : .secondary))
+                .foregroundColor(isRetro ? themeTextColor : (isSelected || isMultiSelected ? .primary : .secondary))
         }
         .padding(6)
-        .background(isSelected ? (isRetro ? themeBgColor : Color.accentColor.opacity(0.12)) : Color.clear)
+        .background(isSelected ? (isRetro ? themeBgColor : Color.accentColor.opacity(0.12)) : (isMultiSelected ? Color.accentColor.opacity(0.08) : Color.clear))
         .cornerRadius(isRetro ? 0 : 10)
     }
 }
@@ -1786,14 +1886,14 @@ struct ImageInfoPanel: View {
         return RetroTheme.textColor
     }
     var themeFont: Font {
-        if isC64 { return C64Theme.font(size: 11) }
-        if isAppleII { return AppleIITheme.font(size: 11) }
-        return RetroTheme.font(size: 10)
+        if isC64 { return C64Theme.font(size: 9) }
+        if isAppleII { return AppleIITheme.font(size: 9) }
+        return .custom("Shaston 640", size: 10)  // Smaller Shaston for compact display
     }
     var themeBoldFont: Font {
-        if isC64 { return C64Theme.boldFont(size: 11) }
-        if isAppleII { return AppleIITheme.boldFont(size: 11) }
-        return RetroTheme.boldFont(size: 11)
+        if isC64 { return C64Theme.boldFont(size: 9) }
+        if isAppleII { return AppleIITheme.boldFont(size: 9) }
+        return .custom("Shaston 640", size: 10)
     }
 
     var selectedImage: InputImage? {
@@ -1801,32 +1901,111 @@ struct ImageInfoPanel: View {
         return viewModel.inputImages.first(where: { $0.id == id })
     }
 
+    // Get current mode from machine options
+    var currentMode: String? {
+        viewModel.currentMachine.options.first(where: { $0.key == "mode" })?.selectedValue
+    }
+
+    // Get color count from mode name or palette
+    var colorCount: String? {
+        if let result = viewModel.currentResult, !result.palettes.isEmpty {
+            let count = result.palettes.first?.count ?? 0
+            return "\(count)"
+        }
+        // Try to parse from mode name (e.g., "Mode 2 (8 colors)")
+        if let mode = currentMode {
+            if let range = mode.range(of: #"(\d+)\s*colors?"#, options: .regularExpression) {
+                let match = mode[range]
+                if let numRange = match.range(of: #"\d+"#, options: .regularExpression) {
+                    return String(match[numRange])
+                }
+            }
+            // Check for common patterns
+            if mode.contains("2 colors") || mode.contains("Mono") || mode.contains("HiRes") { return "2" }
+            if mode.contains("4 colors") { return "4" }
+            if mode.contains("8 colors") { return "8" }
+            if mode.contains("16 colors") || mode.contains("16 shades") || mode.contains("16 hues") { return "16" }
+            if mode.contains("256") { return "256" }
+        }
+        return nil
+    }
+
+    // Format output file size
+    func formatFileSize(_ bytes: Int64) -> String {
+        if bytes < 1024 {
+            return "\(bytes) bytes"
+        } else if bytes < 1024 * 1024 {
+            return String(format: "%.1f KB", Double(bytes) / 1024.0)
+        } else {
+            return String(format: "%.1f MB", Double(bytes) / (1024.0 * 1024.0))
+        }
+    }
+
+    // Get output file size
+    var outputFileSize: String? {
+        guard let fileUrl = viewModel.currentResult?.fileAssets.first,
+              let attrs = try? FileManager.default.attributesOfItem(atPath: fileUrl.path),
+              let size = attrs[.size] as? Int64 else { return nil }
+        return formatFileSize(size)
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("IMAGE INFO")
-                .font(isRetro ? themeFont : .system(size: 11, weight: .semibold))
+        VStack(alignment: .leading, spacing: 4) {
+            // INPUT SECTION
+            Text(isRetro ? "INPUT" : "INPUT")
+                .font(isRetro ? themeFont : .system(size: 9, weight: .semibold))
                 .foregroundColor(isRetro ? themeTextColor : .secondary)
                 .tracking(0.5)
 
             if let img = selectedImage {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 2) {
                     InfoRow(label: "File", value: img.name, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
                     InfoRow(label: "Size", value: "\(Int(img.image.size.width))×\(Int(img.image.size.height))", isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                    if let fileSize = img.formattedFileSize {
+                        InfoRow(label: "FileSize", value: fileSize, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                    }
+                    InfoRow(label: "Format", value: img.format, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                    if let bpp = img.bitsPerPixel {
+                        let alphaStr = img.hasAlpha ? " (α)" : ""
+                        InfoRow(label: "Depth", value: "\(bpp)-bit\(alphaStr)", isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                    }
+                }
 
-                    if let result = viewModel.currentResult {
-                        Divider().opacity(isRetro ? 0 : 1)
-                        if isRetro {
-                            Rectangle().fill(themeTextColor.opacity(0.3)).frame(height: 1)
+                // OUTPUT SECTION
+                if let result = viewModel.currentResult {
+                    if isRetro {
+                        Rectangle().fill(themeTextColor.opacity(0.3)).frame(height: 1).padding(.vertical, 2)
+                    } else {
+                        Divider().padding(.vertical, 2)
+                    }
+
+                    Text(isRetro ? "OUTPUT" : "OUTPUT")
+                        .font(isRetro ? themeFont : .system(size: 9, weight: .semibold))
+                        .foregroundColor(isRetro ? themeTextColor : .secondary)
+                        .tracking(0.5)
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        InfoRow(label: "System", value: viewModel.currentMachine.name, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                        if let mode = currentMode {
+                            // Shorten mode name for display
+                            let shortMode = mode.replacingOccurrences(of: " (", with: "\n(").components(separatedBy: "\n").first ?? mode
+                            InfoRow(label: "Mode", value: shortMode, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
                         }
-                        InfoRow(label: "Output", value: "\(result.imageWidth)×\(result.imageHeight)", isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                        InfoRow(label: "Size", value: "\(result.imageWidth)×\(result.imageHeight)", isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                        if let colors = colorCount {
+                            InfoRow(label: "Colors", value: colors, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                        }
                         if let fileUrl = result.fileAssets.first {
-                            InfoRow(label: "Format", value: fileUrl.pathExtension.uppercased(), isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                            InfoRow(label: "Format", value: ".\(fileUrl.pathExtension)", isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                        }
+                        if let fileSize = outputFileSize {
+                            InfoRow(label: "FileSize", value: fileSize, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
                         }
                     }
                 }
             } else {
                 Text(isRetro ? "NO IMAGE" : "No image selected")
-                    .font(isRetro ? themeFont : .system(size: 11))
+                    .font(isRetro ? themeFont : .system(size: 9))
                     .foregroundColor(isRetro ? themeTextColor.opacity(0.5) : .secondary)
             }
 
@@ -1849,19 +2028,19 @@ struct InfoRow: View {
         return RetroTheme.textColor
     }
     var themeFont: Font {
-        if isC64 { return C64Theme.font(size: 10) }
-        if isAppleII { return AppleIITheme.font(size: 10) }
-        return RetroTheme.font(size: 9)
+        if isC64 { return C64Theme.font(size: 8) }
+        if isAppleII { return AppleIITheme.font(size: 8) }
+        return .custom("Shaston 640", size: 9)  // Smaller Shaston for compact display
     }
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 2) {
             Text(isRetro ? "\(label.uppercased()):" : "\(label):")
-                .font(isRetro ? themeFont : .system(size: 10))
+                .font(isRetro ? themeFont : .system(size: 9))
                 .foregroundColor(isRetro ? themeTextColor.opacity(0.6) : .secondary)
-                .frame(width: 50, alignment: .leading)
+                .frame(width: 44, alignment: .leading)
             Text(value)
-                .font(isRetro ? themeFont : .system(size: 10, weight: .medium))
+                .font(isRetro ? themeFont : .system(size: 9, weight: .medium))
                 .foregroundColor(isRetro ? themeTextColor : .primary)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -1881,7 +2060,7 @@ struct GSOSPopupPicker: View {
     private var calculatedWidth: CGFloat {
         let longestValue = values.max(by: { $0.count < $1.count }) ?? ""
         // Measure actual text width with Shaston font
-        let font = NSFont(name: "Shaston640", size: 16) ?? NSFont.systemFont(ofSize: 16)
+        let font = NSFont(name: "Shaston 640", size: 16) ?? NSFont.systemFont(ofSize: 16)
         let attributes: [NSAttributedString.Key: Any] = [.font: font]
         let textSize = (longestValue as NSString).size(withAttributes: attributes)
         return max(140, textSize.width + 40)  // Add padding for dropdown arrow and borders
@@ -1921,7 +2100,7 @@ struct GSOSPopupButtonRepresentable: NSViewRepresentable {
         popup.isBordered = false  // Remove default border, we draw our own
 
         // Set Shaston font for the button title
-        if let shastonFont = NSFont(name: "Shaston640", size: 16) {
+        if let shastonFont = NSFont(name: "Shaston 640", size: 16) {
             popup.font = shastonFont
         }
 
@@ -1948,7 +2127,7 @@ struct GSOSPopupButtonRepresentable: NSViewRepresentable {
         // Add items with Shaston font
         for value in values {
             popup.addItem(withTitle: value)
-            if let item = popup.lastItem, let shastonFont = NSFont(name: "Shaston640", size: 16) {
+            if let item = popup.lastItem, let shastonFont = NSFont(name: "Shaston 640", size: 16) {
                 let attributes: [NSAttributedString.Key: Any] = [.font: shastonFont]
                 item.attributedTitle = NSAttributedString(string: value, attributes: attributes)
             }
