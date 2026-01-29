@@ -22,6 +22,9 @@ class Amiga1200Converter: RetroMachine {
         ConversionOption(label: "Contrast", key: "contrast",
                         values: ["None", "HE", "CLAHE", "SWAHE"],
                         selectedValue: "None"),
+        ConversionOption(label: "Filter", key: "filter",
+                        values: ["None", "Lowpass", "Sharpen", "Emboss", "Edge"],
+                        selectedValue: "None"),
         ConversionOption(label: "Color Match", key: "color_match",
                         values: ["Euclidean", "Perceptive", "Luma", "Chroma"],
                         selectedValue: "Perceptive"),
@@ -37,6 +40,7 @@ class Amiga1200Converter: RetroMachine {
         let ditherAlg = options.first(where: { $0.key == "dither" })?.selectedValue ?? "Floyd-Steinberg"
         let ditherAmount = Double(options.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "0.5") ?? 0.5
         let contrast = options.first(where: { $0.key == "contrast" })?.selectedValue ?? "None"
+        let filterMode = options.first(where: { $0.key == "filter" })?.selectedValue ?? "None"
         let colorMatch = options.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
         let saturation = Double(options.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
         let gamma = Double(options.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
@@ -59,6 +63,7 @@ class Amiga1200Converter: RetroMachine {
         if saturation != 1.0 { applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { applyGamma(&pixels, width: width, height: height, gamma: gamma) }
         if contrast != "None" { applyContrast(&pixels, width: width, height: height, method: contrast) }
+        if filterMode != "None" { applyImageFilter(&pixels, width: width, height: height, filter: filterMode) }
 
         if ditherAlg.contains("Bayer") {
             applyOrderedDither(&pixels, width: width, height: height, ditherType: ditherAlg, amount: ditherAmount)
@@ -268,11 +273,30 @@ class Amiga1200Converter: RetroMachine {
 
     private func colorDistance(_ r1: Float, _ g1: Float, _ b1: Float, _ r2: Float, _ g2: Float, _ b2: Float, _ method: String) -> Float {
         let dr = r1 - r2, dg = g1 - g2, db = b1 - b2
-        if method == "Perceptive" {
+        switch method {
+        case "Perceptive":
+            // Weighted for human color perception
             let rmean = (r1 + r2) / 2.0
             return sqrt((2.0 + rmean / 256.0) * dr * dr + 4.0 * dg * dg + (2.0 + (255.0 - rmean) / 256.0) * db * db)
+        case "Luma":
+            // Strongly prioritize brightness matching, ignore color differences
+            let luma1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1
+            let luma2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2
+            let dLuma = luma1 - luma2
+            return abs(dLuma) * 3.0 + sqrt(dr * dr + dg * dg + db * db) * 0.1
+        case "Chroma":
+            // Prioritize hue/saturation matching, tolerate brightness differences
+            let luma1 = 0.299 * r1 + 0.587 * g1 + 0.114 * b1
+            let luma2 = 0.299 * r2 + 0.587 * g2 + 0.114 * b2
+            // Normalize to remove brightness, compare chrominance
+            let cr1 = luma1 > 1 ? r1 / luma1 : 0, cg1 = luma1 > 1 ? g1 / luma1 : 0, cb1 = luma1 > 1 ? b1 / luma1 : 0
+            let cr2 = luma2 > 1 ? r2 / luma2 : 0, cg2 = luma2 > 1 ? g2 / luma2 : 0, cb2 = luma2 > 1 ? b2 / luma2 : 0
+            let chromaDist = sqrt((cr1-cr2)*(cr1-cr2) + (cg1-cg2)*(cg1-cg2) + (cb1-cb2)*(cb1-cb2)) * 255.0
+            let lumaDist = abs(luma1 - luma2) * 0.2
+            return chromaDist + lumaDist
+        default: // Euclidean
+            return sqrt(dr * dr + dg * dg + db * db)
         }
-        return sqrt(dr * dr + dg * dg + db * db)
     }
 
     private func findClosestColor(r: Float, g: Float, b: Float, palette: [[UInt8]], method: String) -> Int {
@@ -433,25 +457,134 @@ class Amiga1200Converter: RetroMachine {
     }
 
     private func applyContrast(_ pixels: inout [[Float]], width: Int, height: Int, method: String) {
+        switch method {
+        case "HE": applyHistogramEqualization(&pixels, width: width, height: height)
+        case "CLAHE": applyCLAHE(&pixels, width: width, height: height, clipLimit: 3.0)
+        case "SWAHE": applySWAHE(&pixels, width: width, height: height, windowSize: 40)
+        default: break
+        }
+    }
+
+    private func applyHistogramEqualization(_ pixels: inout [[Float]], width: Int, height: Int) {
+        let total = width * height
         var histogram = [Int](repeating: 0, count: 256)
-        for p in pixels {
-            let luma = Int(max(0, min(255, 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2])))
-            histogram[luma] += 1
+        for i in 0..<total { histogram[Int(max(0, min(255, 0.299 * pixels[i][0] + 0.587 * pixels[i][1] + 0.114 * pixels[i][2])))] += 1 }
+        var cdf = [Float](repeating: 0, count: 256)
+        var cumulative = 0
+        for i in 0..<256 { cumulative += histogram[i]; cdf[i] = Float(cumulative) / Float(total) * 255.0 }
+        for i in 0..<total {
+            let r = pixels[i][0], g = pixels[i][1], b = pixels[i][2]
+            let luma = 0.299 * r + 0.587 * g + 0.114 * b
+            let newLuma = cdf[Int(max(0, min(255, luma)))]
+            if luma > 0.001 { let scale = newLuma / luma; pixels[i][0] = max(0, min(255, r * scale)); pixels[i][1] = max(0, min(255, g * scale)); pixels[i][2] = max(0, min(255, b * scale)) }
         }
-        var cdf = [Int](repeating: 0, count: 256)
-        cdf[0] = histogram[0]
-        for i in 1..<256 { cdf[i] = cdf[i-1] + histogram[i] }
-        let cdfMin = cdf.first(where: { $0 > 0 }) ?? 0
-        let total = pixels.count
-        var lut = [Float](repeating: 0, count: 256)
-        for i in 0..<256 { lut[i] = Float((cdf[i] - cdfMin) * 255 / max(1, total - cdfMin)) }
-        for i in 0..<pixels.count {
-            let luma = Int(max(0, min(255, 0.299 * pixels[i][0] + 0.587 * pixels[i][1] + 0.114 * pixels[i][2])))
-            let ratio = luma > 0 ? lut[luma] / Float(luma) : 1.0
-            pixels[i][0] = max(0, min(255, pixels[i][0] * ratio))
-            pixels[i][1] = max(0, min(255, pixels[i][1] * ratio))
-            pixels[i][2] = max(0, min(255, pixels[i][2] * ratio))
+    }
+
+    private func applyCLAHE(_ pixels: inout [[Float]], width: Int, height: Int, clipLimit: Float) {
+        let tileWidth = 40, tileHeight = 32
+        let tilesX = (width + tileWidth - 1) / tileWidth, tilesY = (height + tileHeight - 1) / tileHeight
+        for ty in 0..<tilesY {
+            for tx in 0..<tilesX {
+                let startX = tx * tileWidth, startY = ty * tileHeight
+                let endX = min(startX + tileWidth, width), endY = min(startY + tileHeight, height)
+                let tilePixels = (endX - startX) * (endY - startY)
+                var histogram = [Int](repeating: 0, count: 256)
+                for y in startY..<endY { for x in startX..<endX { histogram[Int(max(0, min(255, 0.299 * pixels[y * width + x][0] + 0.587 * pixels[y * width + x][1] + 0.114 * pixels[y * width + x][2])))] += 1 } }
+                let clipThreshold = Int(clipLimit * Float(tilePixels) / 256.0)
+                var excess = 0
+                for i in 0..<256 { if histogram[i] > clipThreshold { excess += histogram[i] - clipThreshold; histogram[i] = clipThreshold } }
+                for i in 0..<256 { histogram[i] += excess / 256 }
+                var cdf = [Float](repeating: 0, count: 256)
+                var cumulative = 0
+                for i in 0..<256 { cumulative += histogram[i]; cdf[i] = Float(cumulative) / Float(tilePixels) * 255.0 }
+                for y in startY..<endY {
+                    for x in startX..<endX {
+                        let idx = y * width + x
+                        let r = pixels[idx][0], g = pixels[idx][1], b = pixels[idx][2]
+                        let luma = 0.299 * r + 0.587 * g + 0.114 * b
+                        let newLuma = cdf[Int(max(0, min(255, luma)))]
+                        if luma > 0.001 { let scale = newLuma / luma; pixels[idx][0] = max(0, min(255, r * scale)); pixels[idx][1] = max(0, min(255, g * scale)); pixels[idx][2] = max(0, min(255, b * scale)) }
+                    }
+                }
+            }
         }
+    }
+
+    private func applySWAHE(_ pixels: inout [[Float]], width: Int, height: Int, windowSize: Int) {
+        let halfWindow = windowSize / 2
+        var result = pixels
+        var lumaBins = [Int](repeating: 0, count: width * height)
+        for i in 0..<pixels.count { lumaBins[i] = Int(max(0, min(255, 0.299 * pixels[i][0] + 0.587 * pixels[i][1] + 0.114 * pixels[i][2]))) }
+        for y in 0..<height {
+            let startY = max(0, y - halfWindow), endY = min(height, y + halfWindow + 1)
+            var histogram = [Int](repeating: 0, count: 256)
+            var windowPixels = 0
+            for wy in startY..<endY { for wx in 0..<min(width, halfWindow + 1) { histogram[lumaBins[wy * width + wx]] += 1; windowPixels += 1 } }
+            for x in 0..<width {
+                if x > 0 {
+                    if x + halfWindow < width { for wy in startY..<endY { histogram[lumaBins[wy * width + x + halfWindow]] += 1; windowPixels += 1 } }
+                    if x - halfWindow - 1 >= 0 { for wy in startY..<endY { histogram[lumaBins[wy * width + x - halfWindow - 1]] -= 1; windowPixels -= 1 } }
+                }
+                let idx = y * width + x
+                var cumulative = 0; for i in 0...lumaBins[idx] { cumulative += histogram[i] }
+                let newLuma = Float(cumulative) / Float(windowPixels) * 255.0
+                let luma = 0.299 * pixels[idx][0] + 0.587 * pixels[idx][1] + 0.114 * pixels[idx][2]
+                if luma > 0.001 { let scale = newLuma / luma; result[idx][0] = max(0, min(255, pixels[idx][0] * scale)); result[idx][1] = max(0, min(255, pixels[idx][1] * scale)); result[idx][2] = max(0, min(255, pixels[idx][2] * scale)) }
+            }
+        }
+        pixels = result
+    }
+
+    // MARK: - Image Filters
+
+    private func applyImageFilter(_ pixels: inout [[Float]], width: Int, height: Int, filter: String) {
+        let lowpassKernel: [[Float]] = [[1.0/9,1.0/9,1.0/9],[1.0/9,1.0/9,1.0/9],[1.0/9,1.0/9,1.0/9]]
+        let sharpenKernel: [[Float]] = [[0,-1,0],[-1,5,-1],[0,-1,0]]
+        let embossKernel: [[Float]] = [[-2,-1,0],[-1,1,1],[0,1,2]]
+        switch filter {
+        case "Lowpass": applyConvolution(&pixels, width: width, height: height, kernel: lowpassKernel)
+        case "Sharpen": applyConvolution(&pixels, width: width, height: height, kernel: sharpenKernel)
+        case "Emboss": applyConvolution(&pixels, width: width, height: height, kernel: embossKernel)
+        case "Edge": applyEdgeFilter(&pixels, width: width, height: height)
+        default: break
+        }
+    }
+
+    private func applyConvolution(_ pixels: inout [[Float]], width: Int, height: Int, kernel: [[Float]]) {
+        let kSize = kernel.count, kHalf = kSize / 2
+        var result = pixels
+        for y in kHalf..<(height - kHalf) {
+            for x in kHalf..<(width - kHalf) {
+                var sumR: Float = 0, sumG: Float = 0, sumB: Float = 0
+                for ky in 0..<kSize { for kx in 0..<kSize {
+                    let idx = (y + ky - kHalf) * width + (x + kx - kHalf)
+                    sumR += pixels[idx][0] * kernel[ky][kx]; sumG += pixels[idx][1] * kernel[ky][kx]; sumB += pixels[idx][2] * kernel[ky][kx]
+                }}
+                let idx = y * width + x
+                result[idx][0] = max(0, min(255, sumR)); result[idx][1] = max(0, min(255, sumG)); result[idx][2] = max(0, min(255, sumB))
+            }
+        }
+        pixels = result
+    }
+
+    private func applyEdgeFilter(_ pixels: inout [[Float]], width: Int, height: Int) {
+        let sobelX: [[Float]] = [[-1,0,1],[-2,0,2],[-1,0,1]], sobelY: [[Float]] = [[-1,-2,-1],[0,0,0],[1,2,1]]
+        var result = pixels
+        for y in 1..<(height - 1) {
+            for x in 1..<(width - 1) {
+                var gxR: Float = 0, gxG: Float = 0, gxB: Float = 0, gyR: Float = 0, gyG: Float = 0, gyB: Float = 0
+                for ky in 0..<3 { for kx in 0..<3 {
+                    let idx = (y + ky - 1) * width + (x + kx - 1)
+                    gxR += pixels[idx][0] * sobelX[ky][kx]; gxG += pixels[idx][1] * sobelX[ky][kx]; gxB += pixels[idx][2] * sobelX[ky][kx]
+                    gyR += pixels[idx][0] * sobelY[ky][kx]; gyG += pixels[idx][1] * sobelY[ky][kx]; gyB += pixels[idx][2] * sobelY[ky][kx]
+                }}
+                let idx = y * width + x
+                result[idx][0] = max(0, min(255, (pixels[idx][0] + sqrt(gxR*gxR + gyR*gyR)) * 0.5))
+                result[idx][1] = max(0, min(255, (pixels[idx][1] + sqrt(gxG*gxG + gyG*gyG)) * 0.5))
+                result[idx][2] = max(0, min(255, (pixels[idx][2] + sqrt(gxB*gxB + gyB*gyB)) * 0.5))
+            }
+        }
+        pixels = result
     }
 
     private func applyOrderedDither(_ pixels: inout [[Float]], width: Int, height: Int, ditherType: String, amount: Double) {

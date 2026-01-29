@@ -2,6 +2,32 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [3.2] - 2026-01-29
+
+### Added
+- **PC Converter** - IBM PC graphics conversion support:
+  - **CGA Mode** - 320×200, 4 colors from fixed CGA palettes
+  - **EGA Mode** - 320×200, 16 colors from 64-color EGA palette
+  - **VGA Mode 13h** - 320×200, 256 colors from 262,144-color palette
+  - **CGA 80×25 Text** - 640×200, character-based display with 16 colors
+  - **VESA 132×50 Text** - 1056×400, extended text mode
+  - Native .bin file output
+- **System Menu Update** - PC (⇧⌘P)
+- **PC Processing Options**:
+  - CGA Palette selection: Cyan/Magenta/White, Cyan/Magenta/Gray, Green/Red/Yellow, Green/Red/Brown
+  - Dithering: None, Floyd-Steinberg, Atkinson, Bayer (2×2, 4×4, 8×8)
+  - Contrast: None (default), HE, CLAHE, SWAHE
+  - Color Matching: Euclidean, Perceptive, Luma, Chroma
+  - Saturation and Gamma controls
+
+### Technical
+- Added `PCConverter.swift` with CGA, EGA, VGA and text mode implementations
+- CGA 16-color palette and 4-color graphics palettes
+- EGA 64-color palette generation
+- VGA adaptive 256-color palette using median-cut algorithm
+- Character pattern matching for text modes
+- PC icon added to Assets.xcassets
+
 ## [3.1] - 2026-01-29
 
 ### Added

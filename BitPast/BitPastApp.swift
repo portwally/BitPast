@@ -131,6 +131,18 @@ struct BitPastApp: App {
                 }
                 .keyboardShortcut("0", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 9)
+
+                Button("PC") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 10 && vm.selectedMachineIndex != 10 {
+                            vm.selectedMachineIndex = 10
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 10)
             }
 
             CommandGroup(replacing: .help) {

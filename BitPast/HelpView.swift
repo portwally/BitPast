@@ -11,6 +11,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
     case atariST = "Atari ST"
     case amiga500 = "Amiga 500"
     case amiga1200 = "Amiga 1200"
+    case pc = "PC"
     case generalOptions = "General Options"
     case filters = "Preprocessing Filters"
 
@@ -28,6 +29,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
         case .atariST: return "desktopcomputer"
         case .amiga500: return "desktopcomputer"
         case .amiga1200: return "desktopcomputer"
+        case .pc: return "desktopcomputer"
         case .generalOptions: return "slider.horizontal.3"
         case .filters: return "camera.filters"
         }
@@ -41,7 +43,7 @@ struct HelpView: View {
         NavigationSplitView {
             List(selection: $selectedSection) {
                 Section("Systems") {
-                    ForEach([HelpSection.appleII, .appleIIgs, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atariST, .amiga500, .amiga1200], id: \.self) { section in
+                    ForEach([HelpSection.appleII, .appleIIgs, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atariST, .amiga500, .amiga1200, .pc], id: \.self) { section in
                         Label(section.rawValue, systemImage: section.iconName)
                             .tag(section)
                     }
@@ -90,6 +92,8 @@ struct HelpView: View {
             Amiga500HelpContent()
         case .amiga1200:
             Amiga1200HelpContent()
+        case .pc:
+            PCHelpContent()
         case .generalOptions:
             GeneralOptionsHelpContent()
         case .filters:
@@ -852,6 +856,114 @@ struct Amiga1200HelpContent: View {
                 size: "Variable",
                 description: "Standard Amiga image format. Compatible with all AGA-capable Amiga software including Personal Paint and ADPro."
             )
+        }
+    }
+}
+
+// MARK: - PC Help
+
+struct PCHelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "PC", subtitle: "CGA, EGA, VGA and text modes")
+
+            ModeHelpSection(
+                title: "CGA Mode (320×200, 4 colors)",
+                fileFormat: ".pcx (PC Paintbrush)",
+                description: "Color Graphics Adapter mode with 4 colors from fixed palettes. The iconic PC graphics standard from 1981.",
+                bestFor: "Classic PC game graphics, retro DOS aesthetics",
+                options: [
+                    OptionHelp(name: "CGA Palette", description: "Cyan/Magenta/White (high intensity), Cyan/Magenta/Gray (low), Green/Red/Yellow (high), Green/Red/Brown (low)"),
+                    OptionHelp(name: "Dithering", description: "Floyd-Steinberg strongly recommended due to limited 4-color palette.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "EGA Mode (320×200, 16 colors)",
+                fileFormat: ".pcx (PC Paintbrush)",
+                description: "Enhanced Graphics Adapter mode with 16 colors selected from the 64-color EGA palette. Popular from 1984-1990.",
+                bestFor: "DOS game graphics, Sierra adventure games aesthetic",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Ordered dithering (Bayer) often produces good results. 16 colors allow reasonable color reproduction."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive recommended. Optimal 16 colors are automatically selected from the 64-color EGA palette.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "VGA Mode 13h (320×200, 256 colors)",
+                fileFormat: ".pcx (PC Paintbrush)",
+                description: "The legendary VGA Mode 13h with 256 colors from the full 262,144-color VGA palette. The standard for DOS games from 1987-1997.",
+                bestFor: "DOS game graphics, pixel art, photographs",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Often not needed with 256 colors. Use sparingly for photographs."),
+                    OptionHelp(name: "Color Matching", description: "Uses adaptive palette generation (median cut) for optimal 256-color palette.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "CGA 80×25 Text Mode",
+                fileFormat: ".ans (ANSI art)",
+                description: "Classic DOS text mode using 8×8 character cells. 80 columns × 25 rows with 16 foreground and 8 background colors. Resolution: 640×200 pixels.",
+                bestFor: "ASCII art, BBS graphics, ANSI art aesthetics",
+                options: [
+                    OptionHelp(name: "Characters", description: "Uses block characters and shading patterns to approximate image content"),
+                    OptionHelp(name: "Colors", description: "16 foreground colors, 8 background colors per character cell")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "VESA 132×50 Text Mode",
+                fileFormat: ".ans (ANSI art)",
+                description: "Extended VESA text mode with 132 columns × 50 rows. Higher resolution text display (1056×400 pixels) for more detailed ASCII art.",
+                bestFor: "High-detail ASCII art, detailed text mode graphics",
+                options: [
+                    OptionHelp(name: "Characters", description: "Same block characters as CGA text mode but with more cells for finer detail"),
+                    OptionHelp(name: "Resolution", description: "132×50 characters = 1056×400 pixels")
+                ]
+            )
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("PC Graphics Evolution")
+                    .font(.headline)
+                Text("CGA (1981): 4 colors from fixed palettes, 320×200")
+                    .foregroundColor(.secondary)
+                Text("EGA (1984): 16 from 64 colors, 320×200 or 640×350")
+                    .foregroundColor(.secondary)
+                Text("VGA (1987): 256 from 262,144 colors, 320×200 Mode 13h")
+                    .foregroundColor(.secondary)
+                Text("Text modes: Character-based display using 8×8 font cells")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            HStack(spacing: 20) {
+                FileFormatHelp(
+                    extension_: ".pcx",
+                    name: "PC Paintbrush",
+                    size: "Variable (RLE compressed)",
+                    description: "Standard DOS graphics format from 1985. Compatible with Deluxe Paint, PC Paintbrush, and all DOS image viewers."
+                )
+                FileFormatHelp(
+                    extension_: ".ans",
+                    name: "ANSI Art",
+                    size: "Variable",
+                    description: "BBS-standard text art format using ANSI escape codes. Compatible with all ANSI viewers and terminals."
+                )
+            }
         }
     }
 }
