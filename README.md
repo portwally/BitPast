@@ -4,7 +4,7 @@
 ![Language](https://img.shields.io/badge/language-Swift%20%7C%20C-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**BitPast** is a modern, native macOS application for converting images into authentic retro computer graphic formats including **Apple II**, **Apple IIgs**, **Commodore 64**, **VIC-20**, **ZX Spectrum**, **Amstrad CPC**, **Plus/4**, **Atari ST**, **Amiga 500**, **Amiga 1200**, **IBM PC**, and **MSX**.
+**BitPast** is a modern, native macOS application for converting images into authentic retro computer graphic formats including **Apple II**, **Apple IIgs**, **BBC Micro**, **Commodore 64**, **VIC-20**, **ZX Spectrum**, **Amstrad CPC**, **Plus/4**, **Atari 800**, **Atari ST**, **Amiga 500**, **Amiga 1200**, **IBM PC**, and **MSX**.
 
 ![Apple IIgs 3200 Color Mode](screenshot-iigs-dark.png)
 
@@ -42,6 +42,16 @@ Powered by a **native Swift engine** featuring advanced color quantization:
 - **640x200 Modes:** 4-color, Enhanced, and Desktop variants.
 - **Output:** `.SHR` and `.3200` files.
 
+#### 📺 BBC Micro
+Acorn BBC Micro graphics with 8-color palette:
+- **Mode 0:** 640×256, 2 colors (high-resolution).
+- **Mode 1:** 320×256, 4 colors from 8-color palette.
+- **Mode 2:** 160×256, 8 colors (full palette).
+- **Mode 4:** 320×256, 2 colors (compact memory).
+- **Mode 5:** 160×256, 4 colors (compact memory).
+- **8-color fixed palette** (Black, Red, Green, Yellow, Blue, Magenta, Cyan, White).
+- **Output:** `.bbc` (raw screen memory).
+
 #### 💾 Commodore 64
 Full VIC-II graphics support:
 - **HiRes Mode:** 320×200, 2 colors per 8×8 character cell.
@@ -76,6 +86,16 @@ TED chip graphics with extended palette:
 - **Multicolor Mode:** 160×200, 4 colors per 4×8 cell.
 - **128-color TED palette** (16 hues × 8 luminance levels).
 - **Output:** `.prg` (10,000 bytes: nibble + screen + bitmap).
+
+#### 🕹️ Atari 800
+ANTIC/GTIA graphics with 128-color palette:
+- **Graphics 8:** 320×192, 2 colors (high-resolution monochrome).
+- **Graphics 15:** 160×192, 4 colors from 128-color palette.
+- **Graphics 9:** 80×192, 16 shades (GTIA grayscale mode).
+- **Graphics 10:** 80×192, 9 colors from 128-color palette (GTIA color mode).
+- **Graphics 11:** 80×192, 16 hues at one luminance (GTIA hue mode).
+- **128-color palette** (16 hues × 8 luminances).
+- **Output:** `.gr8`, `.gr15`, `.gr9`, `.gr10`, `.gr11` (raw graphics).
 
 #### 🖱️ Atari ST
 16-bit graphics with 512-color palette:
@@ -136,7 +156,7 @@ TMS9918 and V9938 video chip graphics:
 
 1. **Drag Images** into the left "Image Browser" panel.
 2. Select an image to preview it.
-3. Choose your **System** from the horizontal bar at the top (Apple II, Apple IIgs, C64, VIC-20, ZX Spectrum, Amstrad CPC, Plus/4, Atari ST, Amiga 500, Amiga 1200, PC, MSX).
+3. Choose your **System** from the horizontal bar at the top (Apple II, Apple IIgs, BBC Micro, C64, VIC-20, ZX Spectrum, Amstrad CPC, Plus/4, Atari 800, Atari ST, Amiga 500, Amiga 1200, PC, MSX).
 4. Select the **Mode** and tweak **Dither**, **Contrast**, and other settings.
 5. Click **Export** in the bottom right corner.
    - Choose **PNG/JPG** for a visual preview.

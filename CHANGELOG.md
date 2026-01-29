@@ -2,6 +2,42 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [3.4] - 2026-01-29
+
+### Added
+- **BBC Micro Converter** - Acorn BBC Micro graphics conversion support:
+  - **Mode 0** - 640×256, 2 colors (high-resolution)
+  - **Mode 1** - 320×256, 4 colors from 8-color palette
+  - **Mode 2** - 160×256, 8 colors (full palette)
+  - **Mode 4** - 320×256, 2 colors (compact memory)
+  - **Mode 5** - 160×256, 4 colors (compact memory)
+  - Native .bbc file output (raw screen memory)
+- **System Menu Update** - BBC Micro (⇧⌘8), keyboard shortcuts reorganized
+
+### Technical
+- Added `BBCMicroConverter.swift` with 6845 CRTC video emulation
+- 8-color fixed palette (Black, Red, Green, Yellow, Blue, Magenta, Cyan, White)
+- Interleaved memory layout for authentic BBC Micro screen format
+- BBC Micro icon added to Assets.xcassets
+
+## [3.3] - 2026-01-29
+
+### Added
+- **Atari 800 Converter** - Atari 8-bit computer graphics conversion support:
+  - **Graphics 8** - 320×192, 2 colors (high-resolution monochrome)
+  - **Graphics 15** - 160×192, 4 colors from 128-color GTIA palette
+  - **Graphics 9** - 80×192, 16 shades (GTIA grayscale mode)
+  - **Graphics 10** - 80×192, 9 colors from 128-color palette (GTIA color mode)
+  - **Graphics 11** - 80×192, 16 hues at one luminance (GTIA hue mode)
+  - Native .gr8, .gr15, .gr9, .gr10, .gr11 file output
+- **System Menu Update** - Atari 800 (⇧⌘6), keyboard shortcuts reorganized
+
+### Technical
+- Added `Atari800Converter.swift` with ANTIC/GTIA video chip emulation
+- 128-color palette (16 hues × 8 luminances) with NTSC color approximation
+- All five GTIA graphics modes fully implemented
+- Atari 800 icon added to Assets.xcassets
+
 ## [3.2] - 2026-01-29
 
 ### Added

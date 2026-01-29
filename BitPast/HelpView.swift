@@ -3,11 +3,13 @@ import SwiftUI
 enum HelpSection: String, CaseIterable, Identifiable {
     case appleII = "Apple II"
     case appleIIgs = "Apple IIgs"
+    case bbcMicro = "BBC Micro"
     case c64 = "Commodore 64"
     case vic20 = "VIC-20"
     case zxSpectrum = "ZX Spectrum"
     case amstradCPC = "Amstrad CPC"
     case plus4 = "Plus/4"
+    case atari800 = "Atari 800"
     case atariST = "Atari ST"
     case amiga500 = "Amiga 500"
     case amiga1200 = "Amiga 1200"
@@ -22,11 +24,13 @@ enum HelpSection: String, CaseIterable, Identifiable {
         switch self {
         case .appleII: return "desktopcomputer"
         case .appleIIgs: return "desktopcomputer"
+        case .bbcMicro: return "desktopcomputer"
         case .c64: return "tv"
         case .vic20: return "tv"
         case .zxSpectrum: return "tv"
         case .amstradCPC: return "tv"
         case .plus4: return "tv"
+        case .atari800: return "desktopcomputer"
         case .atariST: return "desktopcomputer"
         case .amiga500: return "desktopcomputer"
         case .amiga1200: return "desktopcomputer"
@@ -45,7 +49,7 @@ struct HelpView: View {
         NavigationSplitView {
             List(selection: $selectedSection) {
                 Section("Systems") {
-                    ForEach([HelpSection.appleII, .appleIIgs, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atariST, .amiga500, .amiga1200, .pc, .msx], id: \.self) { section in
+                    ForEach([HelpSection.appleII, .appleIIgs, .bbcMicro, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atari800, .atariST, .amiga500, .amiga1200, .pc, .msx], id: \.self) { section in
                         Label(section.rawValue, systemImage: section.iconName)
                             .tag(section)
                     }
@@ -78,6 +82,8 @@ struct HelpView: View {
             AppleIIHelpContent()
         case .appleIIgs:
             AppleIIgsHelpContent()
+        case .bbcMicro:
+            BBCMicroHelpContent()
         case .c64:
             C64HelpContent()
         case .vic20:
@@ -88,6 +94,8 @@ struct HelpView: View {
             AmstradCPCHelpContent()
         case .plus4:
             Plus4HelpContent()
+        case .atari800:
+            Atari800HelpContent()
         case .atariST:
             AtariSTHelpContent()
         case .amiga500:
@@ -667,6 +675,201 @@ struct AtariSTHelpContent: View {
                 name: "DEGAS Elite",
                 size: "32,034 bytes",
                 description: "Standard Atari ST low-res image format. Compatible with DEGAS, NEOchrome, and ST emulators."
+            )
+        }
+    }
+}
+
+// MARK: - Atari 800 Help
+
+struct Atari800HelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "Atari 800", subtitle: "ANTIC/GTIA with 128-color palette")
+
+            ModeHelpSection(
+                title: "Graphics 8 (320×192, 2 colors)",
+                fileFormat: ".gr8 (7,680 bytes)",
+                description: "High-resolution monochrome mode. 320×192 pixels with 2 colors (background + foreground). Best for line art and high-contrast images.",
+                bestFor: "Line art, text, high contrast images",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Bayer dithering creates good patterns in monochrome."),
+                    OptionHelp(name: "Contrast", description: "HE or CLAHE can improve detail in photos.")
+                ]
+            )
+
+            ModeHelpSection(
+                title: "Graphics 15 (160×192, 4 colors)",
+                fileFormat: ".gr15 (7,680 bytes)",
+                description: "Medium-resolution mode with 160×192 pixels and 4 colors from the 128-color palette. Double-wide pixels. Most versatile mode for general images.",
+                bestFor: "General graphics, photos, colorful images",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Bayer 4×4 is default. Floyd-Steinberg also works well."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive recommended for photos.")
+                ]
+            )
+
+            ModeHelpSection(
+                title: "Graphics 9 (80×192, 16 shades)",
+                fileFormat: ".gr9 (7,680 bytes)",
+                description: "GTIA mode with 80×192 pixels and 16 shades of grayscale. Quad-wide pixels. Excellent for photographic images.",
+                bestFor: "Photos, portraits, grayscale images",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Minimal dithering often best. Try Floyd-Steinberg for smoother gradients."),
+                    OptionHelp(name: "Contrast", description: "CLAHE can enhance detail in low-contrast photos.")
+                ]
+            )
+
+            ModeHelpSection(
+                title: "Graphics 10 (80×192, 9 colors)",
+                fileFormat: ".gr10 (7,680 bytes)",
+                description: "GTIA color mode with 80×192 pixels and 9 colors selected from the 128-color palette. Quad-wide pixels. Good for colorful images with limited detail needs.",
+                bestFor: "Colorful low-res images, artistic graphics",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Bayer dithering recommended. Error diffusion may produce visible artifacts."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive recommended for natural color selection from the 128-color palette.")
+                ]
+            )
+
+            ModeHelpSection(
+                title: "Graphics 11 (80×192, 16 hues)",
+                fileFormat: ".gr11 (7,680 bytes)",
+                description: "GTIA hue mode with 80×192 pixels and 16 different hues at one luminance level. Quad-wide pixels. All colors have the same brightness.",
+                bestFor: "Images with many different colors but uniform brightness, artistic effects",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Bayer dithering works well. Hue-based dithering preserves color variety."),
+                    OptionHelp(name: "Note", description: "All 16 colors share the same luminance, so contrast comes from hue differences only.")
+                ]
+            )
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Atari 800 128-Color Palette")
+                    .font(.headline)
+                Text("The GTIA chip provides 128 colors:")
+                    .foregroundColor(.secondary)
+                Text("• 16 hues (0 = grayscale, 1-15 = colors)")
+                    .foregroundColor(.secondary)
+                Text("• 8 luminance levels per hue")
+                    .foregroundColor(.secondary)
+                Text("• NTSC color generation via phase shifts")
+                    .foregroundColor(.secondary)
+                Text("GTIA modes (9, 10, 11) use different subsets:")
+                    .foregroundColor(.secondary)
+                    .padding(.top, 4)
+                Text("• Graphics 9: 16 shades of one hue (grayscale)")
+                    .foregroundColor(.secondary)
+                Text("• Graphics 10: 9 colors from full 128-color palette")
+                    .foregroundColor(.secondary)
+                Text("• Graphics 11: 16 hues at one luminance level")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            FileFormatHelp(
+                extension_: ".gr8, .gr9, .gr10, .gr11, .gr15",
+                name: "Raw Graphics",
+                size: "7,680 bytes",
+                description: "Raw bitmap data for Atari 800 graphics modes. Compatible with Atari emulators and graphics programs."
+            )
+        }
+    }
+}
+
+// MARK: - BBC Micro Help
+
+struct BBCMicroHelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "BBC Micro", subtitle: "6845 CRTC with 8-color palette")
+
+            ModeHelpSection(
+                title: "Mode 0 (640×256, 2 colors)",
+                fileFormat: ".bbc (20,480 bytes)",
+                description: "High-resolution monochrome mode with 640×256 pixels. 2 colors selected from the 8-color palette. 80 bytes per line.",
+                bestFor: "Text, line art, high-resolution graphics",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Bayer dithering creates good patterns in 2-color mode."),
+                    OptionHelp(name: "Contrast", description: "HE or CLAHE can improve detail in photos.")
+                ]
+            )
+
+            ModeHelpSection(
+                title: "Mode 1 (320×256, 4 colors)",
+                fileFormat: ".bbc (20,480 bytes)",
+                description: "Medium-resolution mode with 320×256 pixels. 4 colors selected from the 8-color palette. Good balance of resolution and color.",
+                bestFor: "General graphics, games, colorful images",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Floyd-Steinberg or Bayer 4×4 recommended."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive recommended for natural color selection.")
+                ]
+            )
+
+            ModeHelpSection(
+                title: "Mode 2 (160×256, 8 colors)",
+                fileFormat: ".bbc (20,480 bytes)",
+                description: "Low-resolution mode with 160×256 pixels and all 8 colors available. Quad-wide pixels. Most colorful BBC Micro mode.",
+                bestFor: "Colorful images, photos, artwork needing full palette",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Often not needed with 8 colors. Light dithering can help gradients."),
+                    OptionHelp(name: "Color Matching", description: "Hue matching preserves colors well with this saturated palette.")
+                ]
+            )
+
+            ModeHelpSection(
+                title: "Mode 4 (320×256, 2 colors)",
+                fileFormat: ".bbc (10,240 bytes)",
+                description: "Medium-resolution monochrome mode. Same resolution as Mode 1 but with only 2 colors, using half the memory.",
+                bestFor: "Line art, text, when memory is limited",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Bayer dithering recommended for photos.")
+                ]
+            )
+
+            ModeHelpSection(
+                title: "Mode 5 (160×256, 4 colors)",
+                fileFormat: ".bbc (10,240 bytes)",
+                description: "Low-resolution mode with 4 colors. Same resolution as Mode 2 but with fewer colors, using half the memory.",
+                bestFor: "Colorful graphics when memory is limited",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Floyd-Steinberg recommended for photos.")
+                ]
+            )
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("BBC Micro 8-Color Palette")
+                    .font(.headline)
+                Text("The BBC Micro has a fixed 8-color palette:")
+                    .foregroundColor(.secondary)
+                Text("• 0: Black, 1: Red, 2: Green, 3: Yellow")
+                    .foregroundColor(.secondary)
+                Text("• 4: Blue, 5: Magenta, 6: Cyan, 7: White")
+                    .foregroundColor(.secondary)
+                Text("Modes with fewer colors select from this palette.")
+                    .foregroundColor(.secondary)
+                    .padding(.top, 4)
+                Text("Note: Flashing colors (8-15) are not supported in static images.")
+                    .foregroundColor(.secondary)
+                    .italic()
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            FileFormatHelp(
+                extension_: ".bbc",
+                name: "Raw Screen",
+                size: "10,240-20,480 bytes",
+                description: "Raw screen memory dump. Compatible with BBC Micro emulators like BeebEm and b-em."
             )
         }
     }

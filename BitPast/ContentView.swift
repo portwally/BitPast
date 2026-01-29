@@ -175,6 +175,7 @@ struct ContentView: View {
 
             // 0. SYSTEM BAR (Horizontal at top)
             HorizontalSystemBar(viewModel: viewModel, isRetro: isRetro, isAppleII: isAppleII, isC64: isC64)
+                .padding(.bottom, 4)
 
             if isRetro {
                 Rectangle().fill(retroBorderColor).frame(height: isAppleII ? AppleIITheme.dividerThickness : (isC64 ? C64Theme.dividerThickness : RetroTheme.dividerThickness))
@@ -356,44 +357,45 @@ struct ContentView: View {
                         }
 
                         // Zoom Controls
-                        HStack(spacing: 4) {
+                        HStack(spacing: 6) {
                             Button(action: { if zoomLevel > 0.2 { zoomLevel -= 0.2 } }) {
                                 if isRetro {
                                     Text("-")
                                         .font(retroBoldFont)
                                         .foregroundColor(retroTextColor)
-                                        .frame(width: 20)
+                                        .frame(width: 24)
                                 } else {
                                     Image(systemName: "minus.magnifyingglass")
                                 }
                             }
                             .buttonStyle(.bordered)
-                            .controlSize(.small)
+                            .controlSize(.regular)
                             .help("Zoom out")
 
                             Text("\(Int(zoomLevel * 100))%")
                                 .monospacedDigit()
-                                .font(isRetro ? retroSmallFont : .caption)
+                                .font(isRetro ? retroSmallFont : .system(size: 12))
                                 .foregroundColor(isRetro ? retroTextColor : .secondary)
-                                .frame(width: 45)
+                                .frame(width: 50)
 
                             Button(action: { if zoomLevel < 5.0 { zoomLevel += 0.2 } }) {
                                 if isRetro {
                                     Text("+")
                                         .font(retroBoldFont)
                                         .foregroundColor(retroTextColor)
-                                        .frame(width: 20)
+                                        .frame(width: 24)
                                 } else {
                                     Image(systemName: "plus.magnifyingglass")
                                 }
                             }
                             .buttonStyle(.bordered)
-                            .controlSize(.small)
+                            .controlSize(.regular)
                             .help("Zoom in")
                         }
                     }
                     .frame(height: 38)
                     .padding(.horizontal, 12)
+                    .padding(.vertical, 3)
                     .background(isRetro ? retroWindowBg : Color(NSColor.controlBackgroundColor).opacity(0.5))
 
                     if isRetro {
@@ -1663,7 +1665,7 @@ struct HorizontalSystemBar: View {
         return RetroTheme.font(size: 10)
     }
 
-    private let systemIcons = ["icon_apple2", "icon_iigs", "icon_Amiga500", "icon_Amiga1200", "icon_AmstradCPC", "icon_AtariST", "icon_C64", "icon_MSX", "icon_PC", "icon_commodoreplus4", "icon_vic20", "icon_ZXSpectrum"]
+    private let systemIcons = ["icon_apple2", "icon_iigs", "icon_Amiga500", "icon_Amiga1200", "icon_AmstradCPC", "icon_Atari800", "icon_AtariST", "icon_BBCmicro", "icon_C64", "icon_MSX", "icon_PC", "icon_commodoreplus4", "icon_vic20", "icon_ZXSpectrum"]
 
     var body: some View {
         HStack(spacing: 0) {
