@@ -175,7 +175,6 @@ If this does not work then:
 ## 👏 Credits
 
 - **Bill Buckels**: For creating the original **b2d** (Bmp2DHR) command-line tool. [Visit AppleOldies.ca](https://www.appleoldies.ca/bmp2dhr/).
-- **Maciej Małecki (mmalecki)**: For the **retropic** Java reference implementation used for C64, VIC-20, ZX Spectrum, Amstrad CPC, and Plus/4 converters.
 
 
 ## 📄 License
