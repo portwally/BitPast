@@ -1663,7 +1663,7 @@ struct HorizontalSystemBar: View {
         return RetroTheme.font(size: 10)
     }
 
-    private let systemIcons = ["icon_apple2", "icon_iigs", "icon_C64", "icon_vic20", "icon_ZXSpectrum", "icon_AmstradCPC", "icon_commodoreplus4"]
+    private let systemIcons = ["icon_apple2", "icon_iigs", "icon_C64", "icon_vic20", "icon_ZXSpectrum", "icon_AmstradCPC", "icon_commodoreplus4", "icon_AtariST", "icon_Amiga500", "icon_Amiga1200"]
 
     var body: some View {
         HStack(spacing: 0) {

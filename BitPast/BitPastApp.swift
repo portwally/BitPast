@@ -95,6 +95,42 @@ struct BitPastApp: App {
                 }
                 .keyboardShortcut("7", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 6)
+
+                Button("Atari ST") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 7 && vm.selectedMachineIndex != 7 {
+                            vm.selectedMachineIndex = 7
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("8", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 7)
+
+                Button("Amiga 500") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 8 && vm.selectedMachineIndex != 8 {
+                            vm.selectedMachineIndex = 8
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("9", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 8)
+
+                Button("Amiga 1200") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 9 && vm.selectedMachineIndex != 9 {
+                            vm.selectedMachineIndex = 9
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("0", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 9)
             }
 
             CommandGroup(replacing: .help) {

@@ -2,6 +2,31 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [3.1] - 2026-01-29
+
+### Added
+- **Amiga 500 Converter** - Full Amiga 500 OCS/ECS graphics conversion support:
+  - **Standard Mode** - 320×256/320×512, 32 colors from 4096-color palette (5 bitplanes)
+  - **HAM6 Mode** - 320×256/320×512, up to 4096 colors via hold-and-modify (6 bitplanes)
+  - Native .iff file output (IFF ILBM format)
+- **Amiga 1200 Converter** - Full Amiga 1200 AGA graphics conversion support:
+  - **Standard Mode** - 320×256/320×512/640×512, 256 colors from 24-bit palette (8 bitplanes)
+  - **HAM8 Mode** - 320×256/320×512/640×512, up to 262144 colors via hold-and-modify (8 bitplanes)
+  - Native .iff file output (IFF ILBM format)
+- **System Menu Update** - Amiga 500 (⇧⌘9), Amiga 1200 (⇧⌘0)
+- **Amiga Processing Options**:
+  - Dithering: None, Floyd-Steinberg, Atkinson, Noise, Bayer (2×2-16×16), Blue Noise
+  - Contrast: None (default), HE, CLAHE, SWAHE
+  - Color Matching: Euclidean, Perceptive, Luma, Chroma, Mahalanobis
+  - Saturation and Gamma controls
+
+### Technical
+- Added `Amiga500Converter.swift` with OCS 4096-color palette and HAM6 encoding
+- Added `Amiga1200Converter.swift` with AGA 24-bit palette and HAM8 encoding
+- IFF ILBM file format writer with BMHD, CMAP, CAMG, BODY chunks
+- Amiga 500 and Amiga 1200 icons added to Assets.xcassets
+- Interleaved bitplane encoding for authentic Amiga graphics format
+
 ## [3.0] - 2026-01-29
 
 ### Added
@@ -19,7 +44,11 @@ All notable changes to BitPast will be documented in this file.
   - **Multicolor Mode** - 160×200, 4 colors per 4×8 character cell (2 global + 2 per cell)
   - 128-color palette (16 hues × 8 luminance levels)
   - Native .prg file output (10000 bytes: nibble + screen + bitmap)
-- **System Menu Update** - ZX Spectrum (⇧⌘5), Amstrad CPC (⇧⌘6), Plus/4 (⇧⌘7)
+- **Atari ST Converter** - Full Atari ST graphics conversion support:
+  - 320×200 resolution with 16 colors from 512-color palette
+  - 512-color hardware palette (8 levels R × 8 levels G × 8 levels B)
+  - Native .pi1 file output (DEGAS Elite format, 32034 bytes)
+- **System Menu Update** - ZX Spectrum (⇧⌘5), Amstrad CPC (⇧⌘6), Plus/4 (⇧⌘7), Atari ST (⇧⌘8)
 - **ZX Spectrum Processing Options**:
   - Dithering: None, Floyd-Steinberg, Atkinson, Noise, Bayer (2×2-16×16), Blue Noise
   - Contrast: None (default), HE, CLAHE, SWAHE
@@ -32,6 +61,9 @@ All notable changes to BitPast will be documented in this file.
 - **Plus/4 Processing Options**:
   - Same dithering, contrast, filter, and color matching options as ZX Spectrum
   - Pixel Merge option for Multicolor mode (Average/Brightest)
+- **Atari ST Processing Options**:
+  - Same dithering, contrast, filter, and color matching options as ZX Spectrum
+  - Automatic optimal 16-color palette selection from 512 colors
 
 ### Changed
 - **UI Redesign** - System selector moved to horizontal bar at top
@@ -40,7 +72,7 @@ All notable changes to BitPast will be documented in this file.
 - **Mode Labels with Resolution** - VIC-20 and C64 mode labels now show resolution:
   - VIC-20: "HiRes (176×184)", "LowRes (88×184)"
   - C64: "HiRes (320×200)", "Multicolor (160×200)"
-- **Default Presets** - VIC-20, C64, ZX Spectrum, Amstrad CPC, Plus/4 now default to:
+- **Default Presets** - VIC-20, C64, ZX Spectrum, Amstrad CPC, Plus/4, Atari ST now default to:
   - Contrast: None
   - Dither Amount: 0.5
 
@@ -51,7 +83,8 @@ All notable changes to BitPast will be documented in this file.
 - Added `ZXSpectrumConverter.swift` with attribute-based conversion
 - Added `AmstradCPCConverter.swift` with optimal palette selection from 27-color hardware palette
 - Added `Plus4Converter.swift` with 128-color TED palette and HiRes/Multicolor modes
-- ZX Spectrum, Amstrad CPC, and Plus/4 icons added to Assets.xcassets
+- Added `AtariSTConverter.swift` with 512-color palette and DEGAS PI1 output
+- ZX Spectrum, Amstrad CPC, Plus/4, and Atari ST icons added to Assets.xcassets
 - Added `HorizontalSystemBar` and `ImageInfoPanel` components
 - ZX Spectrum interleaved memory format for authentic screen layout
 - Amstrad CPC interleaved memory format with AMSDOS file headers

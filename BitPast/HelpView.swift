@@ -8,6 +8,9 @@ enum HelpSection: String, CaseIterable, Identifiable {
     case zxSpectrum = "ZX Spectrum"
     case amstradCPC = "Amstrad CPC"
     case plus4 = "Plus/4"
+    case atariST = "Atari ST"
+    case amiga500 = "Amiga 500"
+    case amiga1200 = "Amiga 1200"
     case generalOptions = "General Options"
     case filters = "Preprocessing Filters"
 
@@ -22,6 +25,9 @@ enum HelpSection: String, CaseIterable, Identifiable {
         case .zxSpectrum: return "tv"
         case .amstradCPC: return "tv"
         case .plus4: return "tv"
+        case .atariST: return "desktopcomputer"
+        case .amiga500: return "desktopcomputer"
+        case .amiga1200: return "desktopcomputer"
         case .generalOptions: return "slider.horizontal.3"
         case .filters: return "camera.filters"
         }
@@ -35,7 +41,7 @@ struct HelpView: View {
         NavigationSplitView {
             List(selection: $selectedSection) {
                 Section("Systems") {
-                    ForEach([HelpSection.appleII, .appleIIgs, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4], id: \.self) { section in
+                    ForEach([HelpSection.appleII, .appleIIgs, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atariST, .amiga500, .amiga1200], id: \.self) { section in
                         Label(section.rawValue, systemImage: section.iconName)
                             .tag(section)
                     }
@@ -78,6 +84,12 @@ struct HelpView: View {
             AmstradCPCHelpContent()
         case .plus4:
             Plus4HelpContent()
+        case .atariST:
+            AtariSTHelpContent()
+        case .amiga500:
+            Amiga500HelpContent()
+        case .amiga1200:
+            Amiga1200HelpContent()
         case .generalOptions:
             GeneralOptionsHelpContent()
         case .filters:
@@ -572,6 +584,273 @@ struct Plus4HelpContent: View {
                 name: "Plus/4 Executable",
                 size: "10,000 bytes",
                 description: "Native format: nibble (1000) + screen (1000) + bitmap (8000) bytes. Self-displaying program."
+            )
+        }
+    }
+}
+
+// MARK: - Atari ST Help
+
+struct AtariSTHelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "Atari ST", subtitle: "16 colors from 512-color palette")
+
+            ModeHelpSection(
+                title: "Low-Res Mode (320×200)",
+                fileFormat: ".pi1 (32,034 bytes)",
+                description: "Atari ST low-resolution mode with 320×200 pixels and 16 colors selected from the 512-color hardware palette. Uses DEGAS Elite format.",
+                bestFor: "General graphics, photos, colorful images",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Bayer 4×4 is default. Error diffusion (Floyd-Steinberg, Atkinson) also works well."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive recommended. The converter automatically selects optimal 16 colors from 512.")
+                ]
+            )
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Atari ST 512-Color Palette")
+                    .font(.headline)
+                Text("The ST's Shifter chip provides 512 colors:")
+                    .foregroundColor(.secondary)
+                Text("• 8 levels each for Red, Green, Blue (3 bits per channel)")
+                    .foregroundColor(.secondary)
+                Text("• 8 × 8 × 8 = 512 total colors")
+                    .foregroundColor(.secondary)
+                Text("• 16 colors can be displayed simultaneously")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("DEGAS Format")
+                    .font(.headline)
+                Text("The PI1 file format (DEGAS Elite):")
+                    .foregroundColor(.secondary)
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("2 bytes: Resolution (0x0000 = low-res)")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("32 bytes: Palette (16 colors × 2 bytes)")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("32,000 bytes: Bitplane data (4 interleaved planes)")
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            FileFormatHelp(
+                extension_: ".pi1",
+                name: "DEGAS Elite",
+                size: "32,034 bytes",
+                description: "Standard Atari ST low-res image format. Compatible with DEGAS, NEOchrome, and ST emulators."
+            )
+        }
+    }
+}
+
+// MARK: - Amiga 500 Help
+
+struct Amiga500HelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "Amiga 500", subtitle: "OCS/ECS chipset with 4096-color palette")
+
+            ModeHelpSection(
+                title: "Standard Mode (32 colors)",
+                fileFormat: ".iff (IFF ILBM)",
+                description: "Standard Amiga OCS mode with 32 colors selected from the 4096-color hardware palette. Uses 5 bitplanes for 32 simultaneous colors.",
+                bestFor: "General graphics, games, images with limited color range",
+                options: [
+                    OptionHelp(name: "Resolution", description: "320×256 (PAL standard) or 320×512 (interlaced)"),
+                    OptionHelp(name: "Dithering", description: "Bayer 4×4 is default. Error diffusion also works well."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive recommended. Automatically selects optimal 32 colors.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "HAM6 Mode (4096 colors)",
+                fileFormat: ".iff (IFF ILBM)",
+                description: "Hold-And-Modify mode allows up to 4096 colors on screen. Each pixel can either use a palette color or modify one RGB channel from the previous pixel. Uses 6 bitplanes.",
+                bestFor: "Photographs, gradients, images requiring many colors",
+                options: [
+                    OptionHelp(name: "Resolution", description: "320×256 (PAL standard) or 320×512 (interlaced)"),
+                    OptionHelp(name: "Dithering", description: "Usually not needed due to high color count. Subtle dithering can help with gradients.")
+                ]
+            )
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Amiga OCS 4096-Color Palette")
+                    .font(.headline)
+                Text("The Original Chip Set provides 4096 colors:")
+                    .foregroundColor(.secondary)
+                Text("• 4 bits each for Red, Green, Blue (12-bit color)")
+                    .foregroundColor(.secondary)
+                Text("• 16 × 16 × 16 = 4096 total colors")
+                    .foregroundColor(.secondary)
+                Text("• Standard: 32 colors displayed simultaneously (5 bitplanes)")
+                    .foregroundColor(.secondary)
+                Text("• HAM6: Up to 4096 colors with hold-and-modify (6 bitplanes)")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("IFF ILBM Format")
+                    .font(.headline)
+                Text("Interchange File Format - Interleaved Bitmap:")
+                    .foregroundColor(.secondary)
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("BMHD chunk: Bitmap header (dimensions, depth, compression)")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("CMAP chunk: Color map (palette)")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("CAMG chunk: Amiga viewport mode")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("BODY chunk: Interleaved bitplane data")
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            FileFormatHelp(
+                extension_: ".iff",
+                name: "IFF ILBM",
+                size: "Variable",
+                description: "Standard Amiga image format. Compatible with Deluxe Paint, Personal Paint, and all Amiga software."
+            )
+        }
+    }
+}
+
+// MARK: - Amiga 1200 Help
+
+struct Amiga1200HelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "Amiga 1200", subtitle: "AGA chipset with 16.7 million colors")
+
+            ModeHelpSection(
+                title: "Standard Mode (256 colors)",
+                fileFormat: ".iff (IFF ILBM)",
+                description: "AGA mode with 256 colors selected from the full 24-bit palette. Uses 8 bitplanes for 256 simultaneous colors.",
+                bestFor: "General graphics, games, images with moderate color range",
+                options: [
+                    OptionHelp(name: "Resolution", description: "320×256, 320×512 (interlaced), or 640×512 (hi-res interlaced)"),
+                    OptionHelp(name: "Dithering", description: "Bayer 4×4 is default. With 256 colors, less dithering is usually needed."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive recommended. Automatically selects optimal 256 colors.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "HAM8 Mode (262144 colors)",
+                fileFormat: ".iff (IFF ILBM)",
+                description: "AGA Hold-And-Modify mode allows up to 262,144 colors on screen. Each pixel can either use a palette color or modify one RGB channel (6 bits per channel) from the previous pixel. Uses 8 bitplanes.",
+                bestFor: "Photographs, photorealistic images, gradients",
+                options: [
+                    OptionHelp(name: "Resolution", description: "320×256, 320×512 (interlaced), or 640×512 (hi-res interlaced)"),
+                    OptionHelp(name: "Dithering", description: "Rarely needed. HAM8 provides excellent color reproduction.")
+                ]
+            )
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Amiga AGA 24-bit Palette")
+                    .font(.headline)
+                Text("The Advanced Graphics Architecture provides 16.7 million colors:")
+                    .foregroundColor(.secondary)
+                Text("• 8 bits each for Red, Green, Blue (24-bit color)")
+                    .foregroundColor(.secondary)
+                Text("• 256 × 256 × 256 = 16,777,216 total colors")
+                    .foregroundColor(.secondary)
+                Text("• Standard: 256 colors displayed simultaneously (8 bitplanes)")
+                    .foregroundColor(.secondary)
+                Text("• HAM8: Up to 262,144 colors with 6 bits per channel modification")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("IFF ILBM Format")
+                    .font(.headline)
+                Text("Interchange File Format - Interleaved Bitmap:")
+                    .foregroundColor(.secondary)
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("BMHD chunk: Bitmap header (dimensions, depth, compression)")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("CMAP chunk: Color map (palette)")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("CAMG chunk: Amiga viewport mode (AGA modes)")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("BODY chunk: Interleaved bitplane data (8 planes)")
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            FileFormatHelp(
+                extension_: ".iff",
+                name: "IFF ILBM",
+                size: "Variable",
+                description: "Standard Amiga image format. Compatible with all AGA-capable Amiga software including Personal Paint and ADPro."
             )
         }
     }
