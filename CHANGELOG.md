@@ -2,6 +2,25 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [3.1] - 2026-01-30
+
+### Fixed
+- **PC Text Mode ANSI Output** - Fixed .ans file export for ANSI art viewers:
+  - Now uses valid CP437 block characters (░▒▓█▄▌▐▀) instead of control characters
+  - Proper ANSI.SYS escape sequences with bold attribute for bright colors
+  - Added SAUCE metadata record for viewer compatibility
+  - CGA to ANSI color mapping corrected
+- **Retro Theme Fonts** - Fixed font loading for retro appearance modes:
+  - Apple IIgs theme now correctly uses "Shaston 640" font
+  - Commodore 64 theme now correctly uses "Pet Me 64" font
+  - Apple II theme uses "Print Char 21" font
+  - Added ATSApplicationFontsPath to Info.plist for proper font discovery
+
+### Technical
+- Refactored `findBestCharacter()` to only match valid CP437 block characters
+- Added `ansiBlockChars` array with correct CP437 codes and bitmap patterns
+- Separated SAUCE record generation into `createSAUCERecord()` function
+
 ## [3.4] - 2026-01-29
 
 ### Added

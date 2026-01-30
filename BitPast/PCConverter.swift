@@ -161,71 +161,35 @@ class PCConverter: RetroMachine {
         }
     }
 
-    // CP437 charset (8x8 bitmap font) - simplified subset for text rendering
-    static let charset: [[UInt8]] = {
-        // Generate basic charset patterns for characters 0-255
-        // This is a simplified version - real implementation would use actual CP437 bitmaps
-        var chars: [[UInt8]] = []
-        for _ in 0..<256 {
-            chars.append([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-        }
-        // Space (32)
-        chars[32] = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        // Full block (219)
-        chars[219] = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]
-        // Upper half block (223)
-        chars[223] = [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00]
-        // Lower half block (220)
-        chars[220] = [0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF]
-        // Light shade (176)
-        chars[176] = [0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA]
-        // Medium shade (177)
-        chars[177] = [0x55, 0xFF, 0xAA, 0xFF, 0x55, 0xFF, 0xAA, 0xFF]
-        // Dark shade (178)
-        chars[178] = [0xFF, 0xAA, 0xFF, 0x55, 0xFF, 0xAA, 0xFF, 0x55]
-        // Left half block (221)
-        chars[221] = [0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0]
-        // Right half block (222)
-        chars[222] = [0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F]
-        // Quadrant patterns (often needed for good matching)
-        chars[1] = [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00]   // Upper half
-        chars[2] = [0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF]   // Lower half
-        chars[3] = [0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0]   // Left half
-        chars[4] = [0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F]   // Right half
-        chars[5] = [0xF0, 0xF0, 0xF0, 0xF0, 0x00, 0x00, 0x00, 0x00]   // Upper left
-        chars[6] = [0x0F, 0x0F, 0x0F, 0x0F, 0x00, 0x00, 0x00, 0x00]   // Upper right
-        chars[7] = [0x00, 0x00, 0x00, 0x00, 0xF0, 0xF0, 0xF0, 0xF0]   // Lower left
-        chars[8] = [0x00, 0x00, 0x00, 0x00, 0x0F, 0x0F, 0x0F, 0x0F]   // Lower right
-        // Gradients
-        chars[9] = [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]
-        chars[10] = [0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0, 0xC0]
-        chars[11] = [0xE0, 0xE0, 0xE0, 0xE0, 0xE0, 0xE0, 0xE0, 0xE0]
-        chars[12] = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]
-        chars[13] = [0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03]
-        chars[14] = [0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07]
-        // Horizontal lines
-        chars[15] = [0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
-        chars[16] = [0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00]
-        chars[17] = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF]
-        chars[18] = [0xFF, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00]
-        chars[19] = [0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00]
-        // Vertical lines
-        chars[20] = [0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80]
-        chars[21] = [0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08, 0x08]
-        chars[22] = [0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01]
-        chars[23] = [0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88, 0x88]
-        chars[24] = [0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA]
-        // Diagonal patterns
-        chars[25] = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80]
-        chars[26] = [0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01]
-        // Dots
-        chars[27] = [0x00, 0x00, 0x00, 0x18, 0x18, 0x00, 0x00, 0x00]
-        chars[28] = [0x18, 0x18, 0x00, 0x00, 0x00, 0x00, 0x18, 0x18]
-        // More shade variations
-        chars[29] = [0x11, 0x44, 0x11, 0x44, 0x11, 0x44, 0x11, 0x44]
-        chars[30] = [0x22, 0x88, 0x22, 0x88, 0x22, 0x88, 0x22, 0x88]
-        chars[31] = [0x33, 0xCC, 0x33, 0xCC, 0x33, 0xCC, 0x33, 0xCC]
+    // Valid CP437 block characters for ANSI art
+    // Only using characters that work in ANSI viewers: space, shades, and block characters
+    static let ansiBlockChars: [(code: UInt8, pattern: [UInt8])] = [
+        // Space (32) - empty
+        (32, [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]),
+        // Light shade (176) ░
+        (176, [0x22, 0x88, 0x22, 0x88, 0x22, 0x88, 0x22, 0x88]),
+        // Medium shade (177) ▒
+        (177, [0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA]),
+        // Dark shade (178) ▓
+        (178, [0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD]),
+        // Full block (219) █
+        (219, [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]),
+        // Lower half block (220) ▄
+        (220, [0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF]),
+        // Left half block (221) ▌
+        (221, [0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0, 0xF0]),
+        // Right half block (222) ▐
+        (222, [0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F, 0x0F]),
+        // Upper half block (223) ▀
+        (223, [0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00]),
+    ]
 
+    // Build full charset for preview rendering (indexed by CP437 code)
+    static let charset: [[UInt8]] = {
+        var chars: [[UInt8]] = Array(repeating: [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], count: 256)
+        for (code, pattern) in ansiBlockChars {
+            chars[Int(code)] = pattern
+        }
         return chars
     }()
 
@@ -472,11 +436,11 @@ class PCConverter: RetroMachine {
 
                 // Store screen data (character code + attribute)
                 let addr = (row * cols + col) * 2
-                screenData[addr] = UInt8(charCode)
+                screenData[addr] = charCode
                 screenData[addr + 1] = UInt8((bgIdx << 4) | fgIdx)
 
                 // Render to preview
-                let charBitmap = Self.charset[charCode]
+                let charBitmap = Self.charset[Int(charCode)]
                 for ty in 0..<8 {
                     let charByte = charBitmap[ty]
                     for tx in 0..<8 {
@@ -508,20 +472,20 @@ class PCConverter: RetroMachine {
         return ConversionResult(previewImage: previewImage, fileAssets: [nativeUrl], palettes: [], pixelIndices: [], imageWidth: width, imageHeight: height)
     }
 
-    private func findBestCharacter(pattern: [UInt8]) -> Int {
-        var bestChar = 32  // Default to space
+    private func findBestCharacter(pattern: [UInt8]) -> UInt8 {
+        var bestChar: UInt8 = 32  // Default to space
         var bestScore = Int.max
 
-        for charIdx in 0..<256 {
-            let charBitmap = Self.charset[charIdx]
+        // Only search valid CP437 block characters for ANSI compatibility
+        for (code, charPattern) in Self.ansiBlockChars {
             var score = 0
             for y in 0..<8 {
-                let diff = pattern[y] ^ charBitmap[y]
+                let diff = pattern[y] ^ charPattern[y]
                 score += diff.nonzeroBitCount
             }
             if score < bestScore {
                 bestScore = score
-                bestChar = charIdx
+                bestChar = code
             }
         }
 
@@ -1365,35 +1329,12 @@ class PCConverter: RetroMachine {
     private func createANSIData(screenData: Data, cols: Int, rows: Int) -> Data {
         var ansi = Data()
 
-        // ANSI color codes mapping from CGA attribute to ANSI
-        // CGA colors: 0=black, 1=blue, 2=green, 3=cyan, 4=red, 5=magenta, 6=brown, 7=white
-        //             8=gray, 9=lt blue, 10=lt green, 11=lt cyan, 12=lt red, 13=lt magenta, 14=yellow, 15=white
-        // ANSI foreground: 30-37 (dark), 90-97 (bright)
-        // ANSI background: 40-47
-
-        let ansiFg: [Int] = [30, 34, 32, 36, 31, 35, 33, 37, 90, 94, 92, 96, 91, 95, 93, 97]
-        let ansiBg: [Int] = [40, 44, 42, 46, 41, 45, 43, 47]
-
-        // CP437 to Unicode mapping for common block characters
-        func cp437ToUtf8(_ char: UInt8) -> [UInt8] {
-            switch char {
-            case 176: return [0xE2, 0x96, 0x91]  // ░ Light shade
-            case 177: return [0xE2, 0x96, 0x92]  // ▒ Medium shade
-            case 178: return [0xE2, 0x96, 0x93]  // ▓ Dark shade
-            case 219: return [0xE2, 0x96, 0x88]  // █ Full block
-            case 220: return [0xE2, 0x96, 0x84]  // ▄ Lower half
-            case 221: return [0xE2, 0x96, 0x8C]  // ▌ Left half
-            case 222: return [0xE2, 0x96, 0x90]  // ▐ Right half
-            case 223: return [0xE2, 0x96, 0x80]  // ▀ Upper half
-            case 32: return [0x20]               // Space
-            default:
-                if char >= 32 && char < 127 {
-                    return [char]  // ASCII printable
-                } else {
-                    return [0x20]  // Replace unprintable with space
-                }
-            }
-        }
+        // ANSI.SYS color mapping (DOS standard)
+        // CGA: 0=black, 1=blue, 2=green, 3=cyan, 4=red, 5=magenta, 6=brown, 7=white
+        // ANSI: 30=black, 31=red, 32=green, 33=yellow, 34=blue, 35=magenta, 36=cyan, 37=white
+        // Map CGA index to ANSI code
+        let cgaToAnsiFg: [Int] = [30, 34, 32, 36, 31, 35, 33, 37]
+        let cgaToAnsiBg: [Int] = [40, 44, 42, 46, 41, 45, 43, 47]
 
         var lastFg = -1
         var lastBg = -1
@@ -1406,28 +1347,105 @@ class PCConverter: RetroMachine {
 
                 let fg = Int(attr & 0x0F)
                 let bg = Int((attr >> 4) & 0x07)
+                let isBright = fg >= 8
+                let fgBase = fg & 0x07
 
                 // Output ANSI escape sequence if colors changed
                 if fg != lastFg || bg != lastBg {
-                    let esc = "\u{1B}[\(ansiFg[fg]);\(ansiBg[bg])m"
-                    ansi.append(contentsOf: esc.utf8)
+                    // ESC[<attrs>m format
+                    if isBright {
+                        // Bright foreground: use bold attribute
+                        let seq = "\u{1B}[0;1;\(cgaToAnsiFg[fgBase]);\(cgaToAnsiBg[bg])m"
+                        ansi.append(contentsOf: Array(seq.utf8))
+                    } else {
+                        // Normal foreground
+                        let seq = "\u{1B}[0;\(cgaToAnsiFg[fgBase]);\(cgaToAnsiBg[bg])m"
+                        ansi.append(contentsOf: Array(seq.utf8))
+                    }
                     lastFg = fg
                     lastBg = bg
                 }
 
-                // Output character
-                let utf8Bytes = cp437ToUtf8(char)
-                ansi.append(contentsOf: utf8Bytes)
+                // Output raw CP437 character byte
+                ansi.append(char)
             }
-            // Newline
-            ansi.append(contentsOf: "\u{1B}[0m\r\n".utf8)
-            lastFg = -1
-            lastBg = -1
+            // End of row - no color reset, just newline
+            // Note: Some viewers expect no newlines for 80-col, but SAUCE tells the width
         }
 
-        // Reset at end
-        ansi.append(contentsOf: "\u{1B}[0m".utf8)
+        // Reset colors at end
+        ansi.append(contentsOf: Array("\u{1B}[0m".utf8))
+
+        // Add SAUCE record for proper viewer support
+        let sauceData = createSAUCERecord(cols: cols, rows: rows, dataSize: ansi.count)
+        ansi.append(contentsOf: sauceData)
 
         return ansi
+    }
+
+    private func createSAUCERecord(cols: Int, rows: Int, dataSize: Int) -> Data {
+        var sauce = Data()
+
+        // EOF marker
+        sauce.append(0x1A)
+
+        // SAUCE ID and version
+        sauce.append(contentsOf: Array("SAUCE00".utf8))
+
+        // Title (35 bytes)
+        var title = Array("BitPast Export".utf8)
+        title.append(contentsOf: [UInt8](repeating: 0x20, count: 35 - title.count))
+        sauce.append(contentsOf: title.prefix(35))
+
+        // Author (20 bytes)
+        var author = Array("BitPast".utf8)
+        author.append(contentsOf: [UInt8](repeating: 0x20, count: 20 - author.count))
+        sauce.append(contentsOf: author.prefix(20))
+
+        // Group (20 bytes)
+        sauce.append(contentsOf: [UInt8](repeating: 0x20, count: 20))
+
+        // Date CCYYMMDD (8 bytes)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd"
+        let dateStr = formatter.string(from: Date())
+        sauce.append(contentsOf: Array(dateStr.utf8))
+
+        // FileSize (4 bytes little-endian)
+        let size = UInt32(dataSize)
+        sauce.append(UInt8(size & 0xFF))
+        sauce.append(UInt8((size >> 8) & 0xFF))
+        sauce.append(UInt8((size >> 16) & 0xFF))
+        sauce.append(UInt8((size >> 24) & 0xFF))
+
+        // DataType: 1 = Character
+        sauce.append(1)
+
+        // FileType: 1 = ANSi
+        sauce.append(1)
+
+        // TInfo1: width (2 bytes)
+        sauce.append(UInt8(cols & 0xFF))
+        sauce.append(UInt8((cols >> 8) & 0xFF))
+
+        // TInfo2: height (2 bytes)
+        sauce.append(UInt8(rows & 0xFF))
+        sauce.append(UInt8((rows >> 8) & 0xFF))
+
+        // TInfo3, TInfo4 (4 bytes)
+        sauce.append(contentsOf: [UInt8](repeating: 0, count: 4))
+
+        // Comments: 0
+        sauce.append(0)
+
+        // TFlags: 0 (no special flags)
+        sauce.append(0)
+
+        // TInfoS: font name (22 bytes, null-padded)
+        var font = Array("IBM VGA".utf8)
+        font.append(contentsOf: [UInt8](repeating: 0, count: 22 - font.count))
+        sauce.append(contentsOf: font.prefix(22))
+
+        return sauce
     }
 }
