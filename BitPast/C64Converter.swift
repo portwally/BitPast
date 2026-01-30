@@ -4,11 +4,11 @@ class C64Converter: RetroMachine {
     var name: String = "C64"
 
     var options: [ConversionOption] = [
-        // 1. GRAPHICS MODE (from C64Config.java: HIRES, MULTICOLOR)
+        // 1. GRAPHICS MODE (from C64Config.java: HIRES, MULTICOLOR, PETSCII)
         ConversionOption(
             label: "Graphics Mode",
             key: "mode",
-            values: ["HiRes (320×200)", "Multicolor (160×200)"],
+            values: ["HiRes (320×200)", "Multicolor (160×200)", "PETSCII (40×25)"],
             selectedValue: "Multicolor (160×200)"
         ),
 
@@ -88,6 +88,18 @@ class C64Converter: RetroMachine {
         )
     ]
 
+    // PETSCII charset (256 characters × 8 bytes each = 2048 bytes)
+    // The C64 ROM contains two charsets (4096 bytes total) - we use the first one (uppercase/graphics)
+    static let petsciiCharset: [UInt8] = {
+        guard let url = Bundle.main.url(forResource: "c64petscii", withExtension: "bin"),
+              let data = try? Data(contentsOf: url) else {
+            // Fallback: return empty charset (will use space character patterns)
+            return [UInt8](repeating: 0, count: 2048)
+        }
+        // Use first 2048 bytes (uppercase/graphics charset)
+        return [UInt8](data.prefix(2048))
+    }()
+
     // C64 fixed 16-color palette (VICE/Pepto palette - widely accepted as accurate)
     static let c64Palette: [[Int]] = [
         [0x00, 0x00, 0x00],  // 0  Black
@@ -156,6 +168,10 @@ class C64Converter: RetroMachine {
                                                        ditherAlg: ditherAlg, ditherAmount: ditherAmount,
                                                        colorMatch: colorMatch)
             fileExtension = "art"
+        } else if mode.contains("PETSCII") {
+            (resultPixels, nativeData) = convertPETSCII(pixels: pixels, width: width, height: height,
+                                                         colorMatch: colorMatch)
+            fileExtension = "prg"
         } else { // Multicolor
             (resultPixels, nativeData) = convertMulticolor(pixels: pixels, width: width, height: height,
                                                             ditherAlg: ditherAlg, ditherAmount: ditherAmount,
@@ -481,6 +497,268 @@ class C64Converter: RetroMachine {
         koalaData.append(backgroundColor)
 
         return (result, koalaData)
+    }
+
+    // MARK: - PETSCII Mode (40x25 characters, 2 colors per character)
+
+    private func convertPETSCII(pixels: [[Float]], width: Int, height: Int,
+                                 colorMatch: String) -> ([UInt8], Data) {
+        var result = [UInt8](repeating: 0, count: width * height * 3)
+        var screenRAM = [UInt8](repeating: 32, count: 1000)  // 40x25 character codes (default space)
+        var colorRAM = [UInt8](repeating: 0, count: 1000)    // 40x25 foreground colors
+
+        // Find global background color (most common dark color)
+        var colorOccurrence = [Int](repeating: 0, count: 16)
+        for pixel in pixels {
+            let colorIdx = findNearestColor(r: pixel[0], g: pixel[1], b: pixel[2], colorMatch: colorMatch)
+            let luma = 0.299 * pixel[0] + 0.587 * pixel[1] + 0.114 * pixel[2]
+            // Weight by darkness (darker colors more likely to be background)
+            colorOccurrence[colorIdx] += Int((1.0 - luma) * 255)
+        }
+
+        var backgroundColor = 0
+        var maxOccurrence = 0
+        for i in 0..<16 {
+            if colorOccurrence[i] > maxOccurrence {
+                maxOccurrence = colorOccurrence[i]
+                backgroundColor = i
+            }
+        }
+
+        let bgColor = C64Converter.c64Palette[backgroundColor]
+        let bgLuma = Float(bgColor[0]) * 0.299 + Float(bgColor[1]) * 0.587 + Float(bgColor[2]) * 0.114
+
+        // Process each 8x8 character cell
+        for cellY in 0..<25 {
+            for cellX in 0..<40 {
+                // Extract 8x8 tile and find best foreground color
+                var foregroundColor = 1  // Default white
+                var maxDistance: Float = 0
+
+                // Find brightest/most contrasting color for foreground
+                for py in 0..<8 {
+                    for px in 0..<8 {
+                        let x = cellX * 8 + px
+                        let y = cellY * 8 + py
+                        let pixel = pixels[y * width + x]
+                        let pixelLuma = pixel[0] * 0.299 + pixel[1] * 0.587 + pixel[2] * 0.114
+
+                        let distance = abs(pixelLuma * 255 - bgLuma)
+                        if distance > maxDistance {
+                            maxDistance = distance
+                            foregroundColor = findNearestColor(r: pixel[0], g: pixel[1], b: pixel[2], colorMatch: colorMatch)
+                        }
+                    }
+                }
+
+                // If foreground same as background, pick a contrasting color
+                if foregroundColor == backgroundColor {
+                    foregroundColor = backgroundColor < 8 ? 1 : 0  // White or black
+                }
+
+                let fgColor = C64Converter.c64Palette[foregroundColor]
+
+                // Create binary pattern for this tile
+                var pattern = [UInt8](repeating: 0, count: 8)
+                for py in 0..<8 {
+                    var byteval: UInt8 = 0
+                    for px in 0..<8 {
+                        let x = cellX * 8 + px
+                        let y = cellY * 8 + py
+                        let pixel = pixels[y * width + x]
+
+                        // Distance to foreground vs background
+                        let dfR = pixel[0] - Float(fgColor[0]) / 255.0
+                        let dfG = pixel[1] - Float(fgColor[1]) / 255.0
+                        let dfB = pixel[2] - Float(fgColor[2]) / 255.0
+                        let distFg = dfR * dfR + dfG * dfG + dfB * dfB
+
+                        let dbR = pixel[0] - Float(bgColor[0]) / 255.0
+                        let dbG = pixel[1] - Float(bgColor[1]) / 255.0
+                        let dbB = pixel[2] - Float(bgColor[2]) / 255.0
+                        let distBg = dbR * dbR + dbG * dbG + dbB * dbB
+
+                        // Set bit if closer to foreground
+                        if distFg <= distBg {
+                            byteval |= (1 << (7 - px))
+                        }
+                    }
+                    pattern[py] = byteval
+                }
+
+                // Find best matching PETSCII character
+                let charCode = findBestPETSCIIChar(pattern: pattern)
+
+                // Store screen and color RAM
+                let cellIdx = cellY * 40 + cellX
+                screenRAM[cellIdx] = charCode
+                colorRAM[cellIdx] = UInt8(foregroundColor)
+
+                // Render character to preview
+                for py in 0..<8 {
+                    let charByte = C64Converter.petsciiCharset[Int(charCode) * 8 + py]
+                    for px in 0..<8 {
+                        let x = cellX * 8 + px
+                        let y = cellY * 8 + py
+                        let offset = (y * width + x) * 3
+
+                        let bit = (charByte >> (7 - px)) & 1
+                        let color = bit == 1 ? fgColor : bgColor
+
+                        result[offset] = UInt8(color[0])
+                        result[offset + 1] = UInt8(color[1])
+                        result[offset + 2] = UInt8(color[2])
+                    }
+                }
+            }
+        }
+
+        // Create C64 PRG file
+        let prgData = createPETSCIIPRG(screenRAM: screenRAM, colorRAM: colorRAM, backgroundColor: UInt8(backgroundColor))
+
+        return (result, prgData)
+    }
+
+    private func findBestPETSCIIChar(pattern: [UInt8]) -> UInt8 {
+        var bestChar: UInt8 = 32  // Default to space
+        var bestScore = Int.max
+
+        // Search all 256 PETSCII characters
+        for charCode in 0..<256 {
+            var score = 0
+            for row in 0..<8 {
+                let charByte = C64Converter.petsciiCharset[charCode * 8 + row]
+                let diff = pattern[row] ^ charByte
+                score += Int(diff.nonzeroBitCount)
+            }
+            if score < bestScore {
+                bestScore = score
+                bestChar = UInt8(charCode)
+            }
+        }
+
+        return bestChar
+    }
+
+    private func createPETSCIIPRG(screenRAM: [UInt8], colorRAM: [UInt8], backgroundColor: UInt8) -> Data {
+        // Create a simple but correct C64 PRG that displays the PETSCII image
+        // Structure: Load address + BASIC stub + ML viewer + Screen data + Color data
+
+        var prg = Data()
+
+        // PRG load address: $0801 (BASIC start)
+        prg.append(contentsOf: [0x01, 0x08])
+
+        // BASIC stub: 10 SYS 2064
+        // $0801: 0C 08 - pointer to next line ($080C)
+        // $0803: 0A 00 - line number 10
+        // $0805: 9E    - SYS token
+        // $0806: 32 30 36 34 - "2064" in PETSCII
+        // $080A: 00    - end of line
+        // $080B: 00 00 - end of BASIC program
+        prg.append(contentsOf: [
+            0x0C, 0x08,                   // Next line pointer
+            0x0A, 0x00,                   // Line number 10
+            0x9E,                         // SYS token
+            0x32, 0x30, 0x36, 0x34,       // "2064"
+            0x00,                         // End of line
+            0x00, 0x00                    // End of BASIC
+        ])
+
+        // Machine code starts at $0810 (2064 decimal)
+        // Set border and background color
+        prg.append(0xA9); prg.append(backgroundColor)  // LDA #bg
+        prg.append(0x8D); prg.append(0x20); prg.append(0xD0)  // STA $D020 (border)
+        prg.append(0x8D); prg.append(0x21); prg.append(0xD0)  // STA $D021 (background)
+
+        // Calculate where data will be placed (after all ML code)
+        // We'll use 4 copy loops for screen (256+256+256+232=1000) and 4 for color
+        // Each loop is about 13 bytes, plus setup
+        // Total ML after color set: ~110 bytes + JMP
+        // Data starts around $0880
+
+        let mlStartOffset = prg.count  // Current position in prg (after BASIC)
+        let dataOffset = 0x0880  // Fixed data start address
+        let screenDataAddr = dataOffset
+        let colorDataAddr = dataOffset + 1000
+
+        // Copy screen RAM to $0400 using 4 loops (256+256+256+232 bytes)
+        let screenPages: [(dst: Int, src: Int, count: Int)] = [
+            (0x0400, screenDataAddr, 256),
+            (0x0500, screenDataAddr + 256, 256),
+            (0x0600, screenDataAddr + 512, 256),
+            (0x0700, screenDataAddr + 768, 232)
+        ]
+
+        for page in screenPages {
+            // LDX #0
+            prg.append(0xA2); prg.append(0x00)
+            // loop: LDA src,X
+            prg.append(0xBD)
+            prg.append(UInt8(page.src & 0xFF))
+            prg.append(UInt8((page.src >> 8) & 0xFF))
+            // STA dst,X
+            prg.append(0x9D)
+            prg.append(UInt8(page.dst & 0xFF))
+            prg.append(UInt8((page.dst >> 8) & 0xFF))
+            // INX
+            prg.append(0xE8)
+            // CPX #count (or BNE for 256)
+            if page.count == 256 {
+                // BNE loop (-11 bytes back)
+                prg.append(0xD0); prg.append(0xF5)
+            } else {
+                // CPX #count; BNE loop
+                prg.append(0xE0); prg.append(UInt8(page.count))
+                prg.append(0xD0); prg.append(0xF3)
+            }
+        }
+
+        // Copy color RAM to $D800
+        let colorPages: [(dst: Int, src: Int, count: Int)] = [
+            (0xD800, colorDataAddr, 256),
+            (0xD900, colorDataAddr + 256, 256),
+            (0xDA00, colorDataAddr + 512, 256),
+            (0xDB00, colorDataAddr + 768, 232)
+        ]
+
+        for page in colorPages {
+            prg.append(0xA2); prg.append(0x00)
+            prg.append(0xBD)
+            prg.append(UInt8(page.src & 0xFF))
+            prg.append(UInt8((page.src >> 8) & 0xFF))
+            prg.append(0x9D)
+            prg.append(UInt8(page.dst & 0xFF))
+            prg.append(UInt8((page.dst >> 8) & 0xFF))
+            prg.append(0xE8)
+            if page.count == 256 {
+                prg.append(0xD0); prg.append(0xF5)
+            } else {
+                prg.append(0xE0); prg.append(UInt8(page.count))
+                prg.append(0xD0); prg.append(0xF3)
+            }
+        }
+
+        // Infinite loop (wait forever showing the image)
+        let loopAddr = 0x0801 + prg.count - 2  // JMP to itself
+        prg.append(0x4C)  // JMP
+        prg.append(UInt8((0x0801 + prg.count) & 0xFF))
+        prg.append(UInt8(((0x0801 + prg.count) >> 8) & 0xFF))
+
+        // Pad with zeros until we reach the data offset
+        let currentAddr = 0x0801 + prg.count - 2  // -2 for load address
+        let paddingNeeded = dataOffset - currentAddr - 2
+        if paddingNeeded > 0 {
+            prg.append(contentsOf: [UInt8](repeating: 0xEA, count: paddingNeeded))  // NOP padding
+        }
+
+        // Append screen RAM (1000 bytes)
+        prg.append(contentsOf: screenRAM)
+
+        // Append color RAM (1000 bytes)
+        prg.append(contentsOf: colorRAM)
+
+        return prg
     }
 
     // MARK: - Color Matching

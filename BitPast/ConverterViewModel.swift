@@ -699,7 +699,389 @@ class ConverterViewModel: ObservableObject {
             }
         }
     }
-    
+
+    // MARK: - Universal Disk Image Creation
+
+    func createDiskImage(configuration: DiskConfiguration) {
+        // Route to appropriate disk writer based on system
+        switch configuration.system {
+        case .appleII, .appleIIgs:
+            // Convert DiskConfiguration to existing ProDOS types
+            let proDOSSize: DiskSize
+            switch configuration.size {
+            case .kb140: proDOSSize = .kb140
+            case .kb800: proDOSSize = .kb800
+            case .mb32: proDOSSize = .mb32
+            default: proDOSSize = .kb140
+            }
+
+            let proDOSFormat: DiskFormat
+            switch configuration.format {
+            case .po: proDOSFormat = .po
+            case .twoMG: proDOSFormat = .twoMG
+            case .hdv: proDOSFormat = .hdv
+            default: proDOSFormat = .po
+            }
+
+            createProDOSDisk(size: proDOSSize, format: proDOSFormat, volumeName: configuration.volumeName)
+
+        case .c64, .vic20, .plus4:
+            createCBMDisk(configuration: configuration)
+
+        case .amiga500, .amiga1200:
+            createAmigaDisk(configuration: configuration)
+
+        case .atari800:
+            createAtariDisk(configuration: configuration)
+
+        case .atariST:
+            createAtariSTDisk(configuration: configuration)
+
+        case .msx:
+            createMSXDisk(configuration: configuration)
+
+        case .amstradCPC:
+            createCPCDisk(configuration: configuration)
+
+        case .zxSpectrum:
+            createSpectrumDisk(configuration: configuration)
+
+        case .bbcMicro:
+            createBBCDisk(configuration: configuration)
+
+        case .pc:
+            createPCDisk(configuration: configuration)
+        }
+    }
+
+    // MARK: - Commodore Disk (D64/D71/D81)
+
+    private func createCBMDisk(configuration: DiskConfiguration) {
+        guard let result = currentResult else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: configuration.format.fileExtension) ?? .data]
+        panel.nameFieldStringValue = "\(getBaseName()).\(configuration.format.fileExtension)"
+        panel.title = "Create Commodore Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run { self.isConverting = true }
+                    defer { Task { await MainActor.run { self.isConverting = false } } }
+
+                    if result.fileAssets.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    // Create D64/D71/D81 disk image
+                    let success = D64Writer.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        format: configuration.format,
+                        size: configuration.size,
+                        files: result.fileAssets
+                    )
+
+                    if !success {
+                        await MainActor.run { self.errorMessage = "Failed to create Commodore disk image" }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Amiga Disk (ADF)
+
+    private func createAmigaDisk(configuration: DiskConfiguration) {
+        guard let result = currentResult else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "adf") ?? .data]
+        panel.nameFieldStringValue = "\(getBaseName()).adf"
+        panel.title = "Create Amiga Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run { self.isConverting = true }
+                    defer { Task { await MainActor.run { self.isConverting = false } } }
+
+                    if result.fileAssets.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    let success = ADFWriter.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        size: configuration.size,
+                        files: result.fileAssets
+                    )
+
+                    if !success {
+                        await MainActor.run { self.errorMessage = "Failed to create Amiga disk image" }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Atari 800 Disk (ATR)
+
+    private func createAtariDisk(configuration: DiskConfiguration) {
+        guard let result = currentResult else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "atr") ?? .data]
+        panel.nameFieldStringValue = "\(getBaseName()).atr"
+        panel.title = "Create Atari 800 Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run { self.isConverting = true }
+                    defer { Task { await MainActor.run { self.isConverting = false } } }
+
+                    if result.fileAssets.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    let success = ATRWriter.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        size: configuration.size,
+                        files: result.fileAssets
+                    )
+
+                    if !success {
+                        await MainActor.run { self.errorMessage = "Failed to create Atari disk image" }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Atari ST Disk (ST)
+
+    private func createAtariSTDisk(configuration: DiskConfiguration) {
+        guard let result = currentResult else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "st") ?? .data]
+        panel.nameFieldStringValue = "\(getBaseName()).st"
+        panel.title = "Create Atari ST Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run { self.isConverting = true }
+                    defer { Task { await MainActor.run { self.isConverting = false } } }
+
+                    if result.fileAssets.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    let success = STWriter.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        size: configuration.size,
+                        files: result.fileAssets
+                    )
+
+                    if !success {
+                        await MainActor.run { self.errorMessage = "Failed to create Atari ST disk image" }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - MSX Disk (DSK)
+
+    private func createMSXDisk(configuration: DiskConfiguration) {
+        guard let result = currentResult else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "dsk") ?? .data]
+        panel.nameFieldStringValue = "\(getBaseName()).dsk"
+        panel.title = "Create MSX Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run { self.isConverting = true }
+                    defer { Task { await MainActor.run { self.isConverting = false } } }
+
+                    if result.fileAssets.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    let success = MSXDiskWriter.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        size: configuration.size,
+                        files: result.fileAssets
+                    )
+
+                    if !success {
+                        await MainActor.run { self.errorMessage = "Failed to create MSX disk image" }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Amstrad CPC Disk (DSK)
+
+    private func createCPCDisk(configuration: DiskConfiguration) {
+        guard let result = currentResult else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "dsk") ?? .data]
+        panel.nameFieldStringValue = "\(getBaseName()).dsk"
+        panel.title = "Create Amstrad CPC Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run { self.isConverting = true }
+                    defer { Task { await MainActor.run { self.isConverting = false } } }
+
+                    if result.fileAssets.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    let success = CPCDiskWriter.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        size: configuration.size,
+                        files: result.fileAssets
+                    )
+
+                    if !success {
+                        await MainActor.run { self.errorMessage = "Failed to create Amstrad CPC disk image" }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - ZX Spectrum Disk (TRD/DSK)
+
+    private func createSpectrumDisk(configuration: DiskConfiguration) {
+        guard let result = currentResult else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: configuration.format.fileExtension) ?? .data]
+        panel.nameFieldStringValue = "\(getBaseName()).\(configuration.format.fileExtension)"
+        panel.title = "Create ZX Spectrum Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run { self.isConverting = true }
+                    defer { Task { await MainActor.run { self.isConverting = false } } }
+
+                    if result.fileAssets.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    let success = TRDWriter.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        format: configuration.format,
+                        size: configuration.size,
+                        files: result.fileAssets
+                    )
+
+                    if !success {
+                        await MainActor.run { self.errorMessage = "Failed to create ZX Spectrum disk image" }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - BBC Micro Disk (SSD/DSD)
+
+    private func createBBCDisk(configuration: DiskConfiguration) {
+        guard let result = currentResult else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: configuration.format.fileExtension) ?? .data]
+        panel.nameFieldStringValue = "\(getBaseName()).\(configuration.format.fileExtension)"
+        panel.title = "Create BBC Micro Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run { self.isConverting = true }
+                    defer { Task { await MainActor.run { self.isConverting = false } } }
+
+                    if result.fileAssets.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    let success = BBCDiskWriter.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        format: configuration.format,
+                        size: configuration.size,
+                        files: result.fileAssets
+                    )
+
+                    if !success {
+                        await MainActor.run { self.errorMessage = "Failed to create BBC Micro disk image" }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - PC Disk (IMG)
+
+    private func createPCDisk(configuration: DiskConfiguration) {
+        guard let result = currentResult else { return }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "img") ?? .data]
+        panel.nameFieldStringValue = "\(getBaseName()).img"
+        panel.title = "Create PC Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run { self.isConverting = true }
+                    defer { Task { await MainActor.run { self.isConverting = false } } }
+
+                    if result.fileAssets.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    let success = IMGWriter.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        size: configuration.size,
+                        files: result.fileAssets
+                    )
+
+                    if !success {
+                        await MainActor.run { self.errorMessage = "Failed to create PC disk image" }
+                    }
+                }
+            }
+        }
+    }
+
     private func getBaseName() -> String {
         if let id = self.selectedImageId, let item = self.inputImages.first(where: {$0.id == id}) {
             return item.name.replacingOccurrences(of: ".[^.]+$", with: "", options: .regularExpression).replacingOccurrences(of: " ", with: "_")

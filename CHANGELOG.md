@@ -2,7 +2,53 @@
 
 All notable changes to BitPast will be documented in this file.
 
-## [3.1] - 2026-01-30
+## [4.0] - 2026-01-30
+
+### Added
+- **Universal Create Disk Feature** - Create disk images for ALL supported retro systems:
+  - **Commodore 64/VIC-20/Plus4**: D64 (170KB), D71 (340KB), D81 (800KB) - CBM DOS format
+  - **Amiga 500/1200**: ADF (880KB, 1.76MB HD) - OFS filesystem
+  - **Atari 800**: ATR (90KB, 130KB, 180KB, 360KB) - Atari DOS 2.0S format
+  - **Atari ST**: ST (360KB, 720KB, 1.44MB) - FAT12 filesystem
+  - **BBC Micro**: SSD (100KB, 200KB), DSD (200KB, 400KB) - Acorn DFS format
+  - **MSX**: DSK (360KB, 720KB) - MSX-DOS FAT12 format
+  - **Amstrad CPC**: DSK (180KB, 360KB) - CPCEMU extended format
+  - **ZX Spectrum**: TRD (640KB), DSK (180KB) - TR-DOS format
+  - **PC**: IMG (360KB, 720KB, 1.2MB, 1.44MB) - DOS FAT12/FAT16 format
+  - **Apple II/IIgs**: PO, 2MG, HDV (140KB, 800KB, 32MB) - ProDOS format (existing)
+- **Create Disk Sheet** - New unified UI with:
+  - Horizontal system icon bar showing all 14 systems
+  - Pre-selects currently active conversion system
+  - Dynamic format and size options per system
+  - System-specific volume name validation
+  - Volume name character set enforcement per platform
+
+### Changed
+- **ProDOS Button renamed to Create Disk** - Now supports all systems, not just Apple II/IIgs
+
+### Technical
+- Added `DiskFormats.swift` with centralized disk system/format/size enumerations
+- Added `CreateDiskSheet.swift` with unified disk creation UI
+- Added `D64Writer.swift` for Commodore D64/D71/D81 disk images (CBM DOS with BAM)
+- Added `ADFWriter.swift` for Amiga ADF disk images (OFS filesystem)
+- Added `ATRWriter.swift` for Atari 800 ATR disk images (Atari DOS 2.0S)
+- Added `STWriter.swift` for Atari ST disk images (FAT12)
+- Added `BBCDiskWriter.swift` for BBC Micro SSD/DSD disk images (Acorn DFS)
+- Added `MSXDiskWriter.swift` for MSX DSK disk images (MSX-DOS)
+- Added `CPCDiskWriter.swift` for Amstrad CPC DSK disk images (CPCEMU format)
+- Added `TRDWriter.swift` for ZX Spectrum TRD disk images (TR-DOS)
+- Added `IMGWriter.swift` for PC IMG disk images (DOS FAT12/FAT16)
+- Added `createDiskImage(configuration:)` routing method to ConverterViewModel
+
+## [3.2] - 2026-01-30
+
+### Added
+- **C64 PETSCII Mode** - Character-based graphics conversion for Commodore 64:
+  - **PETSCII (40×25)** - 40×25 character grid (320×200 with 8×8 character cells)
+  - 2 colors per character cell: 1 global background + 1 foreground per character
+  - XOR-based pattern matching to find best PETSCII character for each 8×8 tile
+  - Automatic background color selection (most common dark color)
+  - **Output:** `.prg` (self-displaying executable with BASIC loader)
 
 ### Fixed
 - **PC Text Mode ANSI Output** - Fixed .ans file export for ANSI art viewers:
@@ -17,6 +63,9 @@ All notable changes to BitPast will be documented in this file.
   - Added ATSApplicationFontsPath to Info.plist for proper font discovery
 
 ### Technical
+- Added `convertPETSCII()`, `findBestPETSCIIChar()`, and `createPETSCIIPRG()` functions to C64Converter
+- PETSCII charset loaded from `c64petscii.bin` bundle resource (2048 bytes)
+- PRG file includes BASIC stub loader and machine code viewer
 - Refactored `findBestCharacter()` to only match valid CP437 block characters
 - Added `ansiBlockChars` array with correct CP437 codes and bitmap patterns
 - Separated SAUCE record generation into `createSAUCERecord()` function

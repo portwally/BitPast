@@ -15,6 +15,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
     case amiga1200 = "Amiga 1200"
     case pc = "PC"
     case msx = "MSX"
+    case diskImages = "Disk Images"
     case generalOptions = "General Options"
     case filters = "Preprocessing Filters"
 
@@ -36,6 +37,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
         case .amiga1200: return "desktopcomputer"
         case .pc: return "desktopcomputer"
         case .msx: return "tv"
+        case .diskImages: return "externaldrive"
         case .generalOptions: return "slider.horizontal.3"
         case .filters: return "camera.filters"
         }
@@ -56,7 +58,7 @@ struct HelpView: View {
                 }
 
                 Section("Reference") {
-                    ForEach([HelpSection.generalOptions, .filters], id: \.self) { section in
+                    ForEach([HelpSection.diskImages, .generalOptions, .filters], id: \.self) { section in
                         Label(section.rawValue, systemImage: section.iconName)
                             .tag(section)
                     }
@@ -106,6 +108,8 @@ struct HelpView: View {
             PCHelpContent()
         case .msx:
             MSXHelpContent()
+        case .diskImages:
+            DiskImagesHelpContent()
         case .generalOptions:
             GeneralOptionsHelpContent()
         case .filters:
@@ -274,6 +278,20 @@ struct C64HelpContent: View {
 
             Divider()
 
+            ModeHelpSection(
+                title: "PETSCII Mode (40×25)",
+                fileFormat: ".prg (executable)",
+                description: "Character-based graphics using the C64's built-in PETSCII character set. 40×25 character cells (320×200 pixels). Each 8×8 cell displays one of 256 PETSCII characters with 2 colors: global background + per-cell foreground.",
+                bestFor: "ASCII/ANSI-style art, BBS graphics, text-based imagery, retro terminal aesthetics",
+                options: [
+                    OptionHelp(name: "Pattern Matching", description: "XOR-based algorithm finds the best matching PETSCII character for each 8×8 tile."),
+                    OptionHelp(name: "Color Selection", description: "Background: most common dark color. Foreground: most contrasting color per cell."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive matching recommended for best character/color selection.")
+                ]
+            )
+
+            Divider()
+
             VStack(alignment: .leading, spacing: 12) {
                 Text("C64 Palette (VICE/Pepto)")
                     .font(.headline)
@@ -298,6 +316,12 @@ struct C64HelpContent: View {
                     name: "Koala Painter",
                     size: "10,003 bytes",
                     description: "Multicolor bitmap format compatible with Koala Painter and most C64 tools."
+                )
+                FileFormatHelp(
+                    extension_: ".prg",
+                    name: "PETSCII Executable",
+                    size: "~2,200 bytes",
+                    description: "Self-displaying program with BASIC loader. Screen RAM (1000) + Color RAM (1000) + viewer code."
                 )
             }
         }
@@ -1271,6 +1295,247 @@ struct MSXHelpContent: View {
                 )
             }
         }
+    }
+}
+
+// MARK: - Disk Images Help
+
+struct DiskImagesHelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "Disk Images", subtitle: "Create virtual disk images for all supported systems")
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Overview")
+                    .font(.headline)
+                Text("BitPast can create authentic virtual disk images containing your converted files. These disk images can be loaded directly into emulators or transferred to real hardware via flash devices.")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            DiskFormatHelpSection(
+                system: "Apple II / Apple IIgs",
+                formats: ".PO, .2MG, .HDV",
+                sizes: "140KB, 800KB, 32MB",
+                filesystem: "ProDOS",
+                description: "Apple ProDOS disk images. 140KB for 5.25\" floppy, 800KB for 3.5\" floppy, 32MB for hard disk images.",
+                emulators: "AppleWin, KEGS, GSport, Virtual II"
+            )
+
+            DiskFormatHelpSection(
+                system: "Commodore 64 / VIC-20 / Plus4",
+                formats: ".D64, .D71, .D81",
+                sizes: "170KB, 340KB, 800KB",
+                filesystem: "CBM DOS",
+                description: "Commodore disk images. D64 (1541 drive, 35 tracks), D71 (1571 drive, 70 tracks), D81 (1581 drive, 80 tracks). Files are stored as PRG type.",
+                emulators: "VICE (x64, x128, xvic, xplus4)"
+            )
+
+            DiskFormatHelpSection(
+                system: "Amiga 500 / Amiga 1200",
+                formats: ".ADF",
+                sizes: "880KB, 1.76MB",
+                filesystem: "OFS (Original File System)",
+                description: "Amiga Disk File format. 880KB for standard DD disks, 1.76MB for HD disks. Uses Amiga OFS filesystem with hash table directory.",
+                emulators: "FS-UAE, WinUAE, Amiberry"
+            )
+
+            DiskFormatHelpSection(
+                system: "Atari 800",
+                formats: ".ATR",
+                sizes: "90KB, 130KB, 180KB, 360KB",
+                filesystem: "Atari DOS 2.0S",
+                description: "ATR format with 16-byte header. Supports single density (90KB), enhanced density (130KB), and double density (180KB, 360KB).",
+                emulators: "Altirra, Atari800"
+            )
+
+            DiskFormatHelpSection(
+                system: "Atari ST",
+                formats: ".ST",
+                sizes: "360KB, 720KB, 1.44MB",
+                filesystem: "FAT12",
+                description: "Raw sector disk images with FAT12 filesystem. Compatible with TOS/GEM desktop. Standard PC floppy geometry.",
+                emulators: "Hatari, Steem"
+            )
+
+            DiskFormatHelpSection(
+                system: "BBC Micro",
+                formats: ".SSD, .DSD",
+                sizes: "100KB, 200KB, 400KB",
+                filesystem: "Acorn DFS",
+                description: "SSD (Single-Sided Disk) and DSD (Double-Sided Disk). Uses Acorn Disc Filing System with catalog in sectors 0-1. Maximum 31 files per disk.",
+                emulators: "BeebEm, b-em, JSBeeb"
+            )
+
+            DiskFormatHelpSection(
+                system: "MSX",
+                formats: ".DSK",
+                sizes: "360KB, 720KB",
+                filesystem: "MSX-DOS (FAT12)",
+                description: "MSX disk images using FAT12 filesystem compatible with MSX-DOS. Standard PC-compatible 3.5\" floppy format.",
+                emulators: "openMSX, blueMSX, fMSX"
+            )
+
+            DiskFormatHelpSection(
+                system: "Amstrad CPC",
+                formats: ".DSK",
+                sizes: "180KB, 360KB",
+                filesystem: "AMSDOS",
+                description: "CPCEMU extended DSK format with track headers. Uses AMSDOS filesystem with CP/M-style directory entries.",
+                emulators: "WinAPE, Arnold, Caprice32"
+            )
+
+            DiskFormatHelpSection(
+                system: "ZX Spectrum",
+                formats: ".TRD, .DSK",
+                sizes: "640KB, 180KB",
+                filesystem: "TR-DOS",
+                description: "TR-DOS format for Beta Disk interface. 640KB uses 80 tracks, double-sided. File types: B (BASIC), C (Code), D (Data), # (Screen).",
+                emulators: "Fuse, ZX Spin, SpecEmu"
+            )
+
+            DiskFormatHelpSection(
+                system: "PC",
+                formats: ".IMG",
+                sizes: "360KB, 720KB, 1.2MB, 1.44MB",
+                filesystem: "FAT12/FAT16",
+                description: "Raw sector disk images with DOS FAT filesystem. Compatible with MS-DOS, PC-DOS, and FreeDOS. Standard PC floppy formats.",
+                emulators: "DOSBox, PCem, 86Box"
+            )
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("How to Use")
+                    .font(.headline)
+                HStack(alignment: .top, spacing: 8) {
+                    Text("1.")
+                        .fontWeight(.medium)
+                    Text("Convert an image to your target system format")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("2.")
+                        .fontWeight(.medium)
+                    Text("Click the \"Create Disk\" button in the export area")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("3.")
+                        .fontWeight(.medium)
+                    Text("Select the target system from the icon bar (pre-selected to match current conversion)")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("4.")
+                        .fontWeight(.medium)
+                    Text("Enter a volume name and choose disk format/size")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("5.")
+                        .fontWeight(.medium)
+                    Text("Click \"Create Disk Image\" to save the disk file")
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Volume Name Rules")
+                    .font(.headline)
+                Text("Each system has specific rules for volume names:")
+                    .foregroundColor(.secondary)
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("Apple II/IIgs: 15 chars, A-Z 0-9 period, must start with letter")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("Commodore: 16 chars, most printable PETSCII characters")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("Amiga: 30 chars, most ASCII except : and /")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("Atari/PC/MSX: 8-11 chars, A-Z 0-9 only")
+                        .foregroundColor(.secondary)
+                }
+                HStack(alignment: .top, spacing: 8) {
+                    Text("•")
+                    Text("BBC Micro: 12 chars, alphanumeric")
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+        }
+    }
+}
+
+struct DiskFormatHelpSection: View {
+    let system: String
+    let formats: String
+    let sizes: String
+    let filesystem: String
+    let description: String
+    let emulators: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(system)
+                    .font(.headline)
+                Spacer()
+                Text(formats)
+                    .font(.system(.caption, design: .monospaced))
+                    .fontWeight(.medium)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.accentColor.opacity(0.1))
+                    .cornerRadius(4)
+            }
+
+            Text(description)
+                .foregroundColor(.secondary)
+
+            HStack(spacing: 20) {
+                HStack {
+                    Text("Sizes:")
+                        .fontWeight(.medium)
+                    Text(sizes)
+                        .foregroundColor(.secondary)
+                }
+                HStack {
+                    Text("Filesystem:")
+                        .fontWeight(.medium)
+                    Text(filesystem)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            HStack(alignment: .top) {
+                Text("Emulators:")
+                    .fontWeight(.medium)
+                Text(emulators)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        .cornerRadius(8)
     }
 }
 

@@ -53,11 +53,10 @@ struct ContentView: View {
     @State private var isDropTarget = false
     @State private var zoomLevel: CGFloat = 1.0
 
-    // ProDOS Sheet State
+    // Create Disk Sheet State
     @State private var showDiskSheet = false
-    @State private var selectedDiskSize: ConverterViewModel.DiskSize = .kb140
-    @State private var selectedDiskFormat: ConverterViewModel.DiskFormat = .po
-    @State private var diskVolumeName: String = "BITPAST"
+    @State private var selectedDiskSystemIndex: Int = 0
+    @State private var diskConfiguration = DiskConfiguration(system: .appleII)
 
     // Palette Editor State
     @State private var editablePalettes: [[PaletteColor]] = []
@@ -695,27 +694,27 @@ struct ContentView: View {
                                 }
                             )
 
-                            // Retro-styled ProDOS Disk Button
+                            // Retro-styled Create Disk Button
                             RetroActionButton(
-                                title: "ProDOS Disk",
+                                title: "Create Disk",
                                 isAppleII: isAppleII,
                                 isC64: isC64,
                                 isDisabled: viewModel.convertedImage == nil
                             ) {
+                                // Pre-select current system
+                                selectedDiskSystemIndex = viewModel.selectedMachineIndex
+                                if let system = DiskSystem(rawValue: viewModel.selectedMachineIndex) {
+                                    diskConfiguration = DiskConfiguration(system: system)
+                                }
                                 showDiskSheet = true
                             }
                             .sheet(isPresented: $showDiskSheet) {
-                                DiskExportSheet(
+                                CreateDiskSheet(
                                     isPresented: $showDiskSheet,
-                                    selectedSize: $selectedDiskSize,
-                                    selectedFormat: $selectedDiskFormat,
-                                    volumeName: $diskVolumeName
-                                ) {
-                                    viewModel.createProDOSDisk(
-                                        size: selectedDiskSize,
-                                        format: selectedDiskFormat,
-                                        volumeName: diskVolumeName
-                                    )
+                                    selectedSystemIndex: $selectedDiskSystemIndex,
+                                    viewModel: viewModel
+                                ) { config in
+                                    viewModel.createDiskImage(configuration: config)
                                 }
                             }
                         } else {
@@ -749,24 +748,27 @@ struct ContentView: View {
                             .controlSize(.regular)
                             .disabled(viewModel.selectedImageIds.isEmpty && viewModel.convertedImage == nil)
 
-                            Button(action: { showDiskSheet = true }) {
-                                Label("ProDOS Disk", systemImage: "externaldrive")
+                            Button(action: {
+                                // Pre-select current system
+                                selectedDiskSystemIndex = viewModel.selectedMachineIndex
+                                if let system = DiskSystem(rawValue: viewModel.selectedMachineIndex) {
+                                    diskConfiguration = DiskConfiguration(system: system)
+                                }
+                                showDiskSheet = true
+                            }) {
+                                Label("Create Disk", systemImage: "externaldrive")
                                     .frame(maxWidth: .infinity)
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.regular)
                             .disabled(viewModel.convertedImage == nil)
                             .sheet(isPresented: $showDiskSheet) {
-                                DiskExportSheet(
+                                CreateDiskSheet(
                                     isPresented: $showDiskSheet,
-                                    selectedSize: $selectedDiskSize,
-                                    selectedFormat: $selectedDiskFormat,
-                                    volumeName: $diskVolumeName
-                                ) {
-                                    viewModel.createProDOSDisk(
-                                        size: selectedDiskSize,
-                                        format: selectedDiskFormat,
-                                        volumeName: diskVolumeName
+                                    selectedSystemIndex: $selectedDiskSystemIndex,
+                                    viewModel: viewModel
+                                ) { config in
+                                    viewModel.createDiskImage(configuration: config
                                     )
                                 }
                             }
@@ -1843,11 +1845,10 @@ struct HorizontalSystemButton: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(height: 46)
-                    .opacity(isSelected ? 1.0 : 0.5)
 
                 Text(machineName)
                     .font(isRetro ? themeFont : .system(size: 9, weight: isSelected ? .semibold : .regular))
-                    .foregroundColor(isRetro ? themeTextColor.opacity(isSelected ? 1.0 : 0.6) : (isSelected ? .primary : .secondary))
+                    .foregroundColor(isRetro ? themeTextColor : (isSelected ? .primary : .secondary))
                     .lineLimit(1)
             }
             .frame(width: 90)

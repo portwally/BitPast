@@ -56,8 +56,9 @@ Acorn BBC Micro graphics with 8-color palette:
 Full VIC-II graphics support:
 - **HiRes Mode:** 320×200, 2 colors per 8×8 character cell.
 - **Multicolor Mode:** 160×200, 4 colors per 4×8 character cell.
+- **PETSCII Mode:** 40×25 character-based graphics using PETSCII charset.
 - **16-color VICE/Pepto palette.**
-- **Output:** `.art` (Art Studio) and `.kla` (Koala Painter) formats.
+- **Output:** `.art` (Art Studio), `.kla` (Koala Painter), `.prg` (PETSCII executable).
 
 #### 📺 VIC-20
 Character-based graphics with full color support:
@@ -150,7 +151,20 @@ TMS9918 and V9938 video chip graphics:
 ### 💾 Export Formats
 - **Modern Previews:** Export as PNG, JPG, GIF, or TIFF for web use.
 - **Native Formats:** Each system exports its authentic file format.
-- **ProDOS Disk Images:** Create bootable `.PO`, `.2MG`, or `.HDV` disk images (Apple II/IIgs).
+- **Virtual Disk Images:** Create disk images for ALL supported systems:
+
+| System | Formats | Sizes |
+|--------|---------|-------|
+| Apple II/IIgs | .PO, .2MG, .HDV | 140KB, 800KB, 32MB |
+| Commodore 64/VIC-20/Plus4 | .D64, .D71, .D81 | 170KB, 340KB, 800KB |
+| Amiga 500/1200 | .ADF | 880KB, 1.76MB |
+| Atari 800 | .ATR | 90KB, 130KB, 180KB, 360KB |
+| Atari ST | .ST | 360KB, 720KB, 1.44MB |
+| BBC Micro | .SSD, .DSD | 100KB, 200KB, 400KB |
+| MSX | .DSK | 360KB, 720KB |
+| Amstrad CPC | .DSK | 180KB, 360KB |
+| ZX Spectrum | .TRD, .DSK | 640KB, 180KB |
+| PC | .IMG | 360KB, 720KB, 1.2MB, 1.44MB |
 
 ## 🚀 How to Use
 
@@ -161,7 +175,7 @@ TMS9918 and V9938 video chip graphics:
 5. Click **Export** in the bottom right corner.
    - Choose **PNG/JPG** for a visual preview.
    - Choose **Native Format** to save the raw file for the target system.
-   - Choose **Create ProDOS Disk** to package Apple II/IIgs files onto a disk image.
+   - Choose **Create Disk** to package converted files onto a virtual disk image for any system.
 
 ## 🛠️ Technical Details
 
