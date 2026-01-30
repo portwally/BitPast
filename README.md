@@ -6,15 +6,15 @@
 
 **BitPast** is a modern, native macOS application for converting images into authentic retro computer graphic formats including **Apple II**, **Apple IIgs**, **BBC Micro**, **Commodore 64**, **VIC-20**, **ZX Spectrum**, **Amstrad CPC**, **Plus/4**, **Atari 800**, **Atari ST**, **Amiga 500**, **Amiga 1200**, **IBM PC**, and **MSX**.
 
-![Apple IIgs 3200 Color Mode](screenshot-iigs-dark.png)
+![Apple IIgs 3200 Color Mode](rsc/screenshot-iigs-dark.png)
 
-![Apple IIgs GS/OS Theme](screenshot-iigs-light.png)
+![Apple IIgs GS/OS Theme](rsc/screenshot-iigs-light.png)
 
-![Apple II Green Phosphor Theme](screenshot-apple2.png)
+![Apple II Green Phosphor Theme](rsc/screenshot-apple2.png)
 
-![Commodore 64 Blue Theme](screenshot-c64.png)
+![Commodore 64 Blue Theme](rsc/screenshot-c64.png)
 
-![Palette Editor](screenshot-palette-editor.png)
+![Palette Editor](rsc/screenshot-palette-editor.png)
 
 
 ## ✨ Features
