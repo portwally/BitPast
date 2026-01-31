@@ -31,6 +31,10 @@ All notable changes to BitPast will be documented in this file.
   - Now uses correct unshifted PETSCII range ($41-$5A) that displays properly on C64
   - Fixed BAM format with proper $A0 shifted space padding bytes
   - Filenames and block counts now display correctly in VICE and VirtualC64
+- **D64/D71 Sector Allocation** - Fixed broken interleave logic that wasted disk space:
+  - Previous code only used ~3 sectors per track before moving to next track
+  - Now uses sequential allocation, utilizing all sectors per track
+  - D64 can now fit ~16 files instead of 2-3
 - **Batch Conversion for Disk Images** - All selected images are now converted when creating a disk image (previously only converted one)
 - **Image Count Display** - CreateDiskSheet now shows correct number of selected images
 

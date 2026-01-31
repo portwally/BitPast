@@ -532,17 +532,19 @@ class D64Writer {
     }
 
     private func nextFreeSector(track: Int, sector: Int) -> (Int, Int) {
-        // Simple interleave: next sector + 10
-        var newSector = (sector + 10) % sectorsPerTrack[track - 1]
+        // Sequential sector allocation (simpler and more space-efficient)
+        var newSector = sector + 1
         var newTrack = track
 
-        if newSector <= sector {
+        // Check if we've exceeded sectors on this track
+        if newSector >= sectorsPerTrack[track - 1] {
             newTrack += 1
-            if newTrack == 18 { newTrack = 19 }  // Skip directory track
-            if newTrack > d64TracksPerSide {
-                return (d64TracksPerSide + 1, 0)  // Disk full
-            }
             newSector = 0
+            if newTrack == 18 { newTrack = 19 }  // Skip directory track
+        }
+
+        if newTrack > d64TracksPerSide {
+            return (d64TracksPerSide + 1, 0)  // Disk full
         }
 
         return (newTrack, newSector)
@@ -550,16 +552,17 @@ class D64Writer {
 
     private func nextFreeSectorD71(track: Int, sector: Int) -> (Int, Int) {
         let maxSectors = track <= 35 ? sectorsPerTrack[track - 1] : sectorsPerTrack[(track - 36)]
-        var newSector = (sector + 10) % maxSectors
+        var newSector = sector + 1
         var newTrack = track
 
-        if newSector <= sector {
+        if newSector >= maxSectors {
             newTrack += 1
-            if newTrack == 18 || newTrack == 53 { newTrack += 1 }  // Skip directory tracks
-            if newTrack > 70 {
-                return (71, 0)  // Disk full
-            }
             newSector = 0
+            if newTrack == 18 || newTrack == 53 { newTrack += 1 }  // Skip directory tracks
+        }
+
+        if newTrack > 70 {
+            return (71, 0)  // Disk full
         }
 
         return (newTrack, newSector)
