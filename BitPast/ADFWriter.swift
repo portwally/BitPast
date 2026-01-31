@@ -44,7 +44,9 @@ class ADFWriter {
         initializeBitmap(in: &diskData, rootBlock: rootBlock, totalSectors: totalSectors)
 
         // Write files
-        var nextBlock = rootBlock + 1  // Start after root block
+        // Start file blocks at block 2 (after bootblock at 0-1)
+        // Avoid root block area (880-881 for DD, 1760-1761 for HD)
+        var nextBlock = 2
         var hashTable = [Int](repeating: 0, count: 72)
 
         for fileUrl in files {
@@ -55,6 +57,11 @@ class ADFWriter {
 
             let fileName = cleanAmigaFileName(fileUrl.lastPathComponent)
             let hashIndex = amigaHash(fileName) % 72
+
+            // Skip root block and bitmap block area when finding header block
+            while nextBlock == rootBlock || nextBlock == rootBlock + 1 {
+                nextBlock = rootBlock + 2
+            }
 
             // Find free header block
             let headerBlock = nextBlock
@@ -82,6 +89,12 @@ class ADFWriter {
             var dataBlocks: [Int] = []
 
             while !remaining.isEmpty && nextBlock < totalSectors {
+                // Skip root block and bitmap block area
+                if nextBlock == rootBlock || nextBlock == rootBlock + 1 {
+                    nextBlock = rootBlock + 2
+                    continue
+                }
+
                 let chunk = remaining.prefix(dataBlockSize)
                 remaining = remaining.dropFirst(dataBlockSize)
 

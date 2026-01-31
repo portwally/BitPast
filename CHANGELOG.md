@@ -22,6 +22,10 @@ All notable changes to BitPast will be documented in this file.
   - Dynamic format and size options per system
   - System-specific volume name validation
   - Volume name character set enforcement per platform
+- **Disk Creation Progress Bar** - Visual progress indicator when creating disk images:
+  - Shows current file being converted and progress percentage
+  - Theme-aware styling (works with retro themes)
+  - Replaces the spinning beachball with informative feedback
 
 ### Changed
 - **ProDOS Button renamed to Create Disk** - Now supports all systems, not just Apple II/IIgs
@@ -37,6 +41,9 @@ All notable changes to BitPast will be documented in this file.
   - D64 can now fit ~16 files instead of 2-3
 - **Batch Conversion for Disk Images** - All selected images are now converted when creating a disk image (previously only converted one)
 - **Image Count Display** - CreateDiskSheet now shows correct number of selected images
+- **ADFWriter Multi-File Crash** - Fixed crash when exporting multiple images to Amiga ADF disk:
+  - File blocks now start at block 2 (after boot blocks) instead of overlapping root/bitmap area
+  - Proper skip logic for root block (880 DD / 1760 HD) and bitmap block allocation
 
 ### Technical
 - Added `DiskFormats.swift` with centralized disk system/format/size enumerations

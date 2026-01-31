@@ -113,6 +113,13 @@ class ConverterViewModel: ObservableObject {
     @Published var batchExportCurrent: Int = 0
     var lastClickedIndex: Int? = nil
 
+    // Disk creation progress state
+    @Published var isDiskCreating: Bool = false
+    @Published var diskCreationProgress: Double = 0
+    @Published var diskCreationTotal: Int = 0
+    @Published var diskCreationCurrent: Int = 0
+    @Published var diskCreationStatus: String = ""
+
     func toggleSelectAll() {
         if allImagesSelected {
             selectedImageIds.removeAll()
@@ -612,8 +619,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     // Clean volume name
                     var safeVolume = volumeName.uppercased().replacingOccurrences(of: "[^A-Z0-9]", with: "", options: .regularExpression)
@@ -648,7 +658,21 @@ class ConverterViewModel: ObservableObject {
                     var totalBytesUsed = 0
                     let availableBytes = size.totalBlocks * 512 - 8192 // Reserve space for volume directory
 
-                    for imageItem in imagesToConvert {
+                    // Initialize progress tracking
+                    await MainActor.run {
+                        self.diskCreationTotal = imagesToConvert.count
+                        self.diskCreationCurrent = 0
+                        self.diskCreationProgress = 0
+                    }
+
+                    for (imageIndex, imageItem) in imagesToConvert.enumerated() {
+                        // Update progress
+                        await MainActor.run {
+                            self.diskCreationCurrent = imageIndex + 1
+                            self.diskCreationProgress = Double(imageIndex) / Double(imagesToConvert.count)
+                            self.diskCreationStatus = "Converting \(imageItem.name)..."
+                        }
+
                         do {
                             // Convert the image
                             let result = try await self.currentMachine.convert(sourceImage: imageItem.image)
@@ -719,6 +743,12 @@ class ConverterViewModel: ObservableObject {
                         }
                     }
 
+                    // Final progress update
+                    await MainActor.run {
+                        self.diskCreationProgress = 1.0
+                        self.diskCreationStatus = "Complete!"
+                    }
+
                     print("Disk creation complete! Added \(fileIndex) file(s), \(totalBytesUsed) bytes used")
                 }
             }
@@ -741,19 +771,39 @@ class ConverterViewModel: ObservableObject {
         let imagesToConvert = getImagesToConvert()
         var allFiles: [(url: URL, name: String)] = []
 
-        for imageItem in imagesToConvert {
+        // Update progress state
+        await MainActor.run {
+            self.diskCreationTotal = imagesToConvert.count
+            self.diskCreationCurrent = 0
+            self.diskCreationProgress = 0
+        }
+
+        for (index, imageItem) in imagesToConvert.enumerated() {
+            // Update progress
+            await MainActor.run {
+                self.diskCreationCurrent = index + 1
+                self.diskCreationProgress = Double(index) / Double(imagesToConvert.count)
+                self.diskCreationStatus = "Converting \(imageItem.name)..."
+            }
+
             do {
                 let result = try await currentMachine.convert(sourceImage: imageItem.image)
                 // Get base name without extension from original image
                 let baseName = (imageItem.name as NSString).deletingPathExtension
-                for (index, assetUrl) in result.fileAssets.enumerated() {
+                for (assetIndex, assetUrl) in result.fileAssets.enumerated() {
                     // If multiple assets per image, append index
-                    let fileName = result.fileAssets.count > 1 ? "\(baseName)\(index)" : baseName
+                    let fileName = result.fileAssets.count > 1 ? "\(baseName)\(assetIndex)" : baseName
                     allFiles.append((url: assetUrl, name: fileName))
                 }
             } catch {
                 print("Error converting \(imageItem.name): \(error)")
             }
+        }
+
+        // Final progress update
+        await MainActor.run {
+            self.diskCreationProgress = 1.0
+            self.diskCreationStatus = "Writing disk image..."
         }
 
         return allFiles
@@ -830,8 +880,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     let allFiles = await self.batchConvertAndCollectFiles()
 
@@ -874,8 +927,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     let allFiles = await self.batchConvertAndCollectFiles()
 
@@ -918,8 +974,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     let allFiles = await self.batchConvertAndCollectFiles()
 
@@ -961,8 +1020,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     let allFiles = await self.batchConvertAndCollectFiles()
 
@@ -1004,8 +1066,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     let allFiles = await self.batchConvertAndCollectFiles()
 
@@ -1047,8 +1112,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     let allFiles = await self.batchConvertAndCollectFiles()
 
@@ -1090,8 +1158,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     let allFiles = await self.batchConvertAndCollectFiles()
 
@@ -1134,8 +1205,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     let allFiles = await self.batchConvertAndCollectFiles()
 
@@ -1178,8 +1252,11 @@ class ConverterViewModel: ObservableObject {
         panel.begin { response in
             if response == .OK, let targetUrl = panel.url {
                 Task {
-                    await MainActor.run { self.isConverting = true }
-                    defer { Task { await MainActor.run { self.isConverting = false } } }
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
 
                     let allFiles = await self.batchConvertAndCollectFiles()
 
