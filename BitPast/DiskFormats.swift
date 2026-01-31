@@ -344,11 +344,15 @@ struct DiskConfiguration {
     var size: DiskSize
     var volumeName: String
 
-    init(system: DiskSystem, format: DiskFormat? = nil, size: DiskSize? = nil, volumeName: String = "BITPAST") {
+    // Apple II bootable disk options
+    var bootable: Bool = false
+
+    init(system: DiskSystem, format: DiskFormat? = nil, size: DiskSize? = nil, volumeName: String = "BITPAST", bootable: Bool = false) {
         self.system = system
         self.format = format ?? system.defaultFormat
         self.size = size ?? system.defaultSize
         self.volumeName = system.sanitizeVolumeName(volumeName)
+        self.bootable = bootable
     }
 
     mutating func updateSystem(_ newSystem: DiskSystem) {
@@ -361,5 +365,15 @@ struct DiskConfiguration {
             size = system.defaultSize
         }
         volumeName = system.sanitizeVolumeName(volumeName)
+
+        // Reset bootable if not Apple II
+        if system != .appleII && system != .appleIIgs {
+            bootable = false
+        }
+    }
+
+    /// Whether this system supports bootable disks
+    var supportsBootable: Bool {
+        system == .appleII || system == .appleIIgs
     }
 }

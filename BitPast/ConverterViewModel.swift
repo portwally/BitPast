@@ -591,20 +591,22 @@ class ConverterViewModel: ObservableObject {
             }
         }
     func createProDOSDisk(size: DiskSize, format: DiskFormat, volumeName: String) {
-        guard let result = currentResult else { return }
+        // Get images to convert: selected ones, or all if none selected
+        let imagesToConvert: [InputImage]
+        if !selectedImageIds.isEmpty {
+            imagesToConvert = inputImages.filter { selectedImageIds.contains($0.id) }
+        } else {
+            imagesToConvert = inputImages
+        }
 
-        // Name for save panel
-        var outputBaseName = "retro_output"
-        var originalFileNameRaw = "IMAGE"
-
-        if let id = self.selectedImageId, let item = self.inputImages.first(where: {$0.id == id}) {
-            outputBaseName = item.name.replacingOccurrences(of: ".[^.]+$", with: "", options: .regularExpression)
-            originalFileNameRaw = item.name
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
         }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: format.rawValue) ?? .data]
-        panel.nameFieldStringValue = "\(outputBaseName).\(format.rawValue)"
+        panel.nameFieldStringValue = "IMAGES.\(format.rawValue)"
         panel.title = "Create ProDOS Disk Image"
 
         panel.begin { response in
@@ -613,11 +615,6 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
-                        await MainActor.run { self.errorMessage = "Error: No assets found to write to disk." }
-                        return
-                    }
-
                     // Clean volume name
                     var safeVolume = volumeName.uppercased().replacingOccurrences(of: "[^A-Z0-9]", with: "", options: .regularExpression)
                     if safeVolume.isEmpty { safeVolume = "BITPAST" }
@@ -625,6 +622,7 @@ class ConverterViewModel: ObservableObject {
                     safeVolume = String(safeVolume.prefix(15))
 
                     print("Creating ProDOS disk: \(targetUrl.lastPathComponent)")
+                    print("Converting \(imagesToConvert.count) image(s)...")
 
                     // Remove existing file if present
                     try? FileManager.default.removeItem(at: targetUrl)
@@ -645,59 +643,120 @@ class ConverterViewModel: ObservableObject {
                         return
                     }
 
-                    // Add files to disk
-                    for (index, assetUrl) in result.fileAssets.enumerated() {
-                        // Build target filename
-                        let rawName = originalFileNameRaw.uppercased()
-                        var finalBaseName = rawName.replacingOccurrences(of: ".[^.]+$", with: "", options: .regularExpression)
-                        finalBaseName = finalBaseName.replacingOccurrences(of: "[^A-Z0-9]", with: "", options: .regularExpression)
-                        if finalBaseName.isEmpty { finalBaseName = "IMG" }
-                        if let first = finalBaseName.first, !first.isLetter { finalBaseName = "F" + finalBaseName }
-                        if result.fileAssets.count > 1 && index > 0 { finalBaseName += "\(index)" }
-                        finalBaseName = String(finalBaseName.prefix(11))
+                    // Convert each image and add to disk
+                    var fileIndex = 0
+                    var totalBytesUsed = 0
+                    let availableBytes = size.totalBlocks * 512 - 8192 // Reserve space for volume directory
 
-                        // Determine file type and aux type based on extension
-                        let fileExt = assetUrl.pathExtension.uppercased()
-                        var fileType: UInt8 = 0x06  // BIN
-                        var auxType: UInt16 = 0x2000 // Default load address
-                        var proDOSExt = "BIN"
+                    for imageItem in imagesToConvert {
+                        do {
+                            // Convert the image
+                            let result = try await self.currentMachine.convert(sourceImage: imageItem.image)
 
-                        if fileExt == "SHR" || fileExt == "A2GS" || fileExt == "3200" {
-                            // Apple IIgs Super Hi-Res (PIC type $C1)
-                            fileType = 0xC1
-                            auxType = 0x0000
-                            proDOSExt = "PIC"
-                        } else if fileExt == "BIN" {
-                            fileType = 0x06
-                            auxType = 0x2000
-                            proDOSExt = "BIN"
-                        }
-
-                        let finalProDOSName = "\(finalBaseName).\(proDOSExt)"
-
-                        print("Adding file \(index+1): \(finalProDOSName) (type $\(String(format: "%02X", fileType)))")
-
-                        // Read file data
-                        guard let fileData = try? Data(contentsOf: assetUrl) else {
-                            print("Could not read file: \(assetUrl.path)")
-                            continue
-                        }
-
-                        // Add file using native ProDOSWriter
-                        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-                            ProDOSWriter.shared.addFile(diskImagePath: targetUrl, fileName: finalProDOSName, fileData: fileData, fileType: fileType, auxType: auxType) { success, message in
-                                if !success {
-                                    print("Failed to add file: \(message)")
+                            for assetUrl in result.fileAssets {
+                                // Build target filename from original image name
+                                let rawName = imageItem.name.uppercased()
+                                var finalBaseName = rawName.replacingOccurrences(of: ".[^.]+$", with: "", options: .regularExpression)
+                                finalBaseName = finalBaseName.replacingOccurrences(of: "[^A-Z0-9]", with: "", options: .regularExpression)
+                                if finalBaseName.isEmpty { finalBaseName = "IMG" }
+                                if let first = finalBaseName.first, !first.isLetter { finalBaseName = "F" + finalBaseName }
+                                // Add index for unique filenames
+                                if imagesToConvert.count > 1 || result.fileAssets.count > 1 {
+                                    finalBaseName = String(finalBaseName.prefix(8)) + "\(fileIndex)"
                                 }
-                                continuation.resume()
+                                finalBaseName = String(finalBaseName.prefix(11))
+
+                                // Determine file type and aux type based on extension
+                                let fileExt = assetUrl.pathExtension.uppercased()
+                                var fileType: UInt8 = 0x06  // BIN
+                                var auxType: UInt16 = 0x2000 // Default load address
+                                var proDOSExt = "BIN"
+
+                                if fileExt == "SHR" || fileExt == "A2GS" || fileExt == "3200" {
+                                    fileType = 0xC1
+                                    auxType = 0x0000
+                                    proDOSExt = "PIC"
+                                } else if fileExt == "BIN" {
+                                    fileType = 0x06
+                                    auxType = 0x2000
+                                    proDOSExt = "BIN"
+                                }
+
+                                let finalProDOSName = "\(finalBaseName).\(proDOSExt)"
+
+                                // Read file data
+                                guard let fileData = try? Data(contentsOf: assetUrl) else {
+                                    print("Could not read file: \(assetUrl.path)")
+                                    continue
+                                }
+
+                                // Check if file fits on disk
+                                totalBytesUsed += fileData.count
+                                if totalBytesUsed > availableBytes {
+                                    await MainActor.run {
+                                        self.errorMessage = "Disk full! Only \(fileIndex) file(s) added. Choose a larger disk size."
+                                    }
+                                    print("Disk full after \(fileIndex) files")
+                                    return
+                                }
+
+                                print("Adding file \(fileIndex+1): \(finalProDOSName) (type $\(String(format: "%02X", fileType)), \(fileData.count) bytes)")
+
+                                // Add file using native ProDOSWriter
+                                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                                    ProDOSWriter.shared.addFile(diskImagePath: targetUrl, fileName: finalProDOSName, fileData: fileData, fileType: fileType, auxType: auxType) { success, message in
+                                        if !success {
+                                            print("Failed to add file: \(message)")
+                                        }
+                                        continuation.resume()
+                                    }
+                                }
+
+                                fileIndex += 1
                             }
+                        } catch {
+                            print("Error converting \(imageItem.name): \(error)")
                         }
                     }
 
-                    print("Disk creation complete!")
+                    print("Disk creation complete! Added \(fileIndex) file(s), \(totalBytesUsed) bytes used")
                 }
             }
         }
+    }
+
+    // MARK: - Batch Conversion Helper
+
+    /// Returns images to convert: selected ones, or all if none selected
+    private func getImagesToConvert() -> [InputImage] {
+        if !selectedImageIds.isEmpty {
+            return inputImages.filter { selectedImageIds.contains($0.id) }
+        } else {
+            return inputImages
+        }
+    }
+
+    /// Batch convert images and return file URLs with their original image names
+    private func batchConvertAndCollectFiles() async -> [(url: URL, name: String)] {
+        let imagesToConvert = getImagesToConvert()
+        var allFiles: [(url: URL, name: String)] = []
+
+        for imageItem in imagesToConvert {
+            do {
+                let result = try await currentMachine.convert(sourceImage: imageItem.image)
+                // Get base name without extension from original image
+                let baseName = (imageItem.name as NSString).deletingPathExtension
+                for (index, assetUrl) in result.fileAssets.enumerated() {
+                    // If multiple assets per image, append index
+                    let fileName = result.fileAssets.count > 1 ? "\(baseName)\(index)" : baseName
+                    allFiles.append((url: assetUrl, name: fileName))
+                }
+            } catch {
+                print("Error converting \(imageItem.name): \(error)")
+            }
+        }
+
+        return allFiles
     }
 
     // MARK: - Universal Disk Image Creation
@@ -757,11 +816,15 @@ class ConverterViewModel: ObservableObject {
     // MARK: - Commodore Disk (D64/D71/D81)
 
     private func createCBMDisk(configuration: DiskConfiguration) {
-        guard let result = currentResult else { return }
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: configuration.format.fileExtension) ?? .data]
-        panel.nameFieldStringValue = "\(getBaseName()).\(configuration.format.fileExtension)"
+        panel.nameFieldStringValue = "IMAGES.\(configuration.format.fileExtension)"
         panel.title = "Create Commodore Disk Image"
 
         panel.begin { response in
@@ -770,18 +833,20 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
                         await MainActor.run { self.errorMessage = "No assets to write to disk." }
                         return
                     }
 
-                    // Create D64/D71/D81 disk image
-                    let success = D64Writer.shared.createDiskImage(
+                    // Create D64/D71/D81 disk image with proper filenames
+                    let success = D64Writer.shared.createDiskImageWithNames(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         format: configuration.format,
                         size: configuration.size,
-                        files: result.fileAssets
+                        files: allFiles
                     )
 
                     if !success {
@@ -795,11 +860,15 @@ class ConverterViewModel: ObservableObject {
     // MARK: - Amiga Disk (ADF)
 
     private func createAmigaDisk(configuration: DiskConfiguration) {
-        guard let result = currentResult else { return }
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "adf") ?? .data]
-        panel.nameFieldStringValue = "\(getBaseName()).adf"
+        panel.nameFieldStringValue = "IMAGES.adf"
         panel.title = "Create Amiga Disk Image"
 
         panel.begin { response in
@@ -808,16 +877,20 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
                         await MainActor.run { self.errorMessage = "No assets to write to disk." }
                         return
                     }
 
+                    // Extract URLs from named files tuple
+                    let fileUrls = allFiles.map { $0.url }
                     let success = ADFWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: result.fileAssets
+                        files: fileUrls
                     )
 
                     if !success {
@@ -831,11 +904,15 @@ class ConverterViewModel: ObservableObject {
     // MARK: - Atari 800 Disk (ATR)
 
     private func createAtariDisk(configuration: DiskConfiguration) {
-        guard let result = currentResult else { return }
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "atr") ?? .data]
-        panel.nameFieldStringValue = "\(getBaseName()).atr"
+        panel.nameFieldStringValue = "IMAGES.atr"
         panel.title = "Create Atari 800 Disk Image"
 
         panel.begin { response in
@@ -844,16 +921,19 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
                         await MainActor.run { self.errorMessage = "No assets to write to disk." }
                         return
                     }
 
+                    let fileUrls = allFiles.map { $0.url }
                     let success = ATRWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: result.fileAssets
+                        files: fileUrls
                     )
 
                     if !success {
@@ -867,11 +947,15 @@ class ConverterViewModel: ObservableObject {
     // MARK: - Atari ST Disk (ST)
 
     private func createAtariSTDisk(configuration: DiskConfiguration) {
-        guard let result = currentResult else { return }
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "st") ?? .data]
-        panel.nameFieldStringValue = "\(getBaseName()).st"
+        panel.nameFieldStringValue = "IMAGES.st"
         panel.title = "Create Atari ST Disk Image"
 
         panel.begin { response in
@@ -880,16 +964,19 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
                         await MainActor.run { self.errorMessage = "No assets to write to disk." }
                         return
                     }
 
+                    let fileUrls = allFiles.map { $0.url }
                     let success = STWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: result.fileAssets
+                        files: fileUrls
                     )
 
                     if !success {
@@ -903,11 +990,15 @@ class ConverterViewModel: ObservableObject {
     // MARK: - MSX Disk (DSK)
 
     private func createMSXDisk(configuration: DiskConfiguration) {
-        guard let result = currentResult else { return }
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "dsk") ?? .data]
-        panel.nameFieldStringValue = "\(getBaseName()).dsk"
+        panel.nameFieldStringValue = "IMAGES.dsk"
         panel.title = "Create MSX Disk Image"
 
         panel.begin { response in
@@ -916,16 +1007,19 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
                         await MainActor.run { self.errorMessage = "No assets to write to disk." }
                         return
                     }
 
+                    let fileUrls = allFiles.map { $0.url }
                     let success = MSXDiskWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: result.fileAssets
+                        files: fileUrls
                     )
 
                     if !success {
@@ -939,11 +1033,15 @@ class ConverterViewModel: ObservableObject {
     // MARK: - Amstrad CPC Disk (DSK)
 
     private func createCPCDisk(configuration: DiskConfiguration) {
-        guard let result = currentResult else { return }
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "dsk") ?? .data]
-        panel.nameFieldStringValue = "\(getBaseName()).dsk"
+        panel.nameFieldStringValue = "IMAGES.dsk"
         panel.title = "Create Amstrad CPC Disk Image"
 
         panel.begin { response in
@@ -952,16 +1050,19 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
                         await MainActor.run { self.errorMessage = "No assets to write to disk." }
                         return
                     }
 
+                    let fileUrls = allFiles.map { $0.url }
                     let success = CPCDiskWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: result.fileAssets
+                        files: fileUrls
                     )
 
                     if !success {
@@ -975,11 +1076,15 @@ class ConverterViewModel: ObservableObject {
     // MARK: - ZX Spectrum Disk (TRD/DSK)
 
     private func createSpectrumDisk(configuration: DiskConfiguration) {
-        guard let result = currentResult else { return }
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: configuration.format.fileExtension) ?? .data]
-        panel.nameFieldStringValue = "\(getBaseName()).\(configuration.format.fileExtension)"
+        panel.nameFieldStringValue = "IMAGES.\(configuration.format.fileExtension)"
         panel.title = "Create ZX Spectrum Disk Image"
 
         panel.begin { response in
@@ -988,17 +1093,20 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
                         await MainActor.run { self.errorMessage = "No assets to write to disk." }
                         return
                     }
 
+                    let fileUrls = allFiles.map { $0.url }
                     let success = TRDWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         format: configuration.format,
                         size: configuration.size,
-                        files: result.fileAssets
+                        files: fileUrls
                     )
 
                     if !success {
@@ -1012,11 +1120,15 @@ class ConverterViewModel: ObservableObject {
     // MARK: - BBC Micro Disk (SSD/DSD)
 
     private func createBBCDisk(configuration: DiskConfiguration) {
-        guard let result = currentResult else { return }
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: configuration.format.fileExtension) ?? .data]
-        panel.nameFieldStringValue = "\(getBaseName()).\(configuration.format.fileExtension)"
+        panel.nameFieldStringValue = "IMAGES.\(configuration.format.fileExtension)"
         panel.title = "Create BBC Micro Disk Image"
 
         panel.begin { response in
@@ -1025,17 +1137,20 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
                         await MainActor.run { self.errorMessage = "No assets to write to disk." }
                         return
                     }
 
+                    let fileUrls = allFiles.map { $0.url }
                     let success = BBCDiskWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         format: configuration.format,
                         size: configuration.size,
-                        files: result.fileAssets
+                        files: fileUrls
                     )
 
                     if !success {
@@ -1049,11 +1164,15 @@ class ConverterViewModel: ObservableObject {
     // MARK: - PC Disk (IMG)
 
     private func createPCDisk(configuration: DiskConfiguration) {
-        guard let result = currentResult else { return }
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
 
         let panel = NSSavePanel()
         panel.allowedContentTypes = [UTType(filenameExtension: "img") ?? .data]
-        panel.nameFieldStringValue = "\(getBaseName()).img"
+        panel.nameFieldStringValue = "IMAGES.img"
         panel.title = "Create PC Disk Image"
 
         panel.begin { response in
@@ -1062,16 +1181,19 @@ class ConverterViewModel: ObservableObject {
                     await MainActor.run { self.isConverting = true }
                     defer { Task { await MainActor.run { self.isConverting = false } } }
 
-                    if result.fileAssets.isEmpty {
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
                         await MainActor.run { self.errorMessage = "No assets to write to disk." }
                         return
                     }
 
+                    let fileUrls = allFiles.map { $0.url }
                     let success = IMGWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: result.fileAssets
+                        files: fileUrls
                     )
 
                     if !success {

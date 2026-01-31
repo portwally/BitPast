@@ -51,7 +51,7 @@ struct CreateDiskSheet: View {
             // Buttons
             buttonSection
         }
-        .frame(width: 900, height: 450)
+        .frame(width: 900, height: 520)
         .background(Color(NSColor.windowBackgroundColor))
         .onChange(of: selectedSystemIndex) { _, newValue in
             updateForSystem(DiskSystem(rawValue: newValue) ?? .appleII)
@@ -182,12 +182,21 @@ struct CreateDiskSheet: View {
                 Spacer()
             }
 
-            // Info about current files
-            if let fileAssets = viewModel.currentResult?.fileAssets, !fileAssets.isEmpty {
+            // Info about selected images
+            if !viewModel.selectedImageIds.isEmpty {
                 HStack {
                     Image(systemName: "doc.fill")
                         .foregroundColor(.secondary)
-                    Text("\(fileAssets.count) file(s) will be added to the disk")
+                    Text("\(viewModel.selectedImageIds.count) image(s) will be converted and added to the disk")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 8)
+            } else if !viewModel.inputImages.isEmpty {
+                HStack {
+                    Image(systemName: "doc.fill")
+                        .foregroundColor(.secondary)
+                    Text("\(viewModel.inputImages.count) image(s) will be converted and added to the disk")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }

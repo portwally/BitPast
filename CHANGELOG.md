@@ -2,7 +2,7 @@
 
 All notable changes to BitPast will be documented in this file.
 
-## [4.0] - 2026-01-30
+## [4.0] - 2026-01-31
 
 ### Added
 - **Universal Create Disk Feature** - Create disk images for ALL supported retro systems:
@@ -25,6 +25,14 @@ All notable changes to BitPast will be documented in this file.
 
 ### Changed
 - **ProDOS Button renamed to Create Disk** - Now supports all systems, not just Apple II/IIgs
+
+### Fixed
+- **D64/D71/D81 PETSCII Encoding** - Fixed filename and disk name display in Commodore disk images:
+  - Now uses correct unshifted PETSCII range ($41-$5A) that displays properly on C64
+  - Fixed BAM format with proper $A0 shifted space padding bytes
+  - Filenames and block counts now display correctly in VICE and VirtualC64
+- **Batch Conversion for Disk Images** - All selected images are now converted when creating a disk image (previously only converted one)
+- **Image Count Display** - CreateDiskSheet now shows correct number of selected images
 
 ### Technical
 - Added `DiskFormats.swift` with centralized disk system/format/size enumerations

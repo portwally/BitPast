@@ -646,4 +646,219 @@ class ProDOSWriter {
             bytes[bitmapOffset + byteIndex] &= ~(1 << bitPosition)
         }
     }
+
+    // MARK: - Bootable Disk Creation
+
+    /// Creates a bootable ProDOS disk by copying the template and updating the volume name
+    /// - Parameters:
+    ///   - path: Destination path for the new disk image
+    ///   - templatePath: Path to the ProDOS template disk (should contain PRODOS, BASIC.SYSTEM)
+    ///   - volumeName: Volume name for the new disk
+    ///   - completion: Callback with success/failure
+    func createBootableDiskImage(at path: URL,
+                                  templatePath: URL,
+                                  volumeName: String,
+                                  completion: @escaping (Bool, String) -> Void) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let sanitizedVolume = self.sanitizeProDOSFilename(volumeName)
+
+                print("Creating bootable ProDOS disk image:")
+                print("   Path: \(path.path)")
+                print("   Template: \(templatePath.path)")
+                print("   Volume: \(sanitizedVolume)")
+
+                // Check if template file exists
+                let fileManager = FileManager.default
+                let templateExists = fileManager.fileExists(atPath: templatePath.path)
+                print("   Template exists: \(templateExists)")
+
+                if templateExists {
+                    let attrs = try? fileManager.attributesOfItem(atPath: templatePath.path)
+                    print("   Template size: \(attrs?[.size] ?? "unknown")")
+                    print("   Template readable: \(fileManager.isReadableFile(atPath: templatePath.path))")
+                }
+
+                // Try using Data first for better error reporting
+                let templateData: Data
+                do {
+                    templateData = try Data(contentsOf: templatePath)
+                    print("   Template read successfully: \(templateData.count) bytes")
+                } catch {
+                    print("   Error reading template: \(error)")
+                    DispatchQueue.main.async {
+                        completion(false, "Could not read ProDOS template disk: \(error.localizedDescription)")
+                    }
+                    return
+                }
+
+                // Convert to NSMutableData for editing
+                let diskData = NSMutableData(data: templateData)
+
+                // Update volume name in the volume directory header (block 2, offset 4)
+                let volumeDirOffset = self.VOLUME_DIR_BLOCK * self.BLOCK_SIZE
+                let bytes = diskData.mutableBytes.assumingMemoryBound(to: UInt8.self)
+
+                // Entry starts at offset 4 in the block
+                let entryOffset = volumeDirOffset + 4
+
+                // Byte 0 of entry: storage type (high nibble) | name length (low nibble)
+                // Storage type 0xF = volume directory header
+                let nameLen = min(sanitizedVolume.count, 15)
+                bytes[entryOffset] = UInt8((0xF << 4) | nameLen)
+
+                // Clear existing name and write new one
+                for i in 0..<15 {
+                    bytes[entryOffset + 1 + i] = 0x00
+                }
+                for (i, char) in sanitizedVolume.uppercased().utf8.enumerated() where i < 15 {
+                    bytes[entryOffset + 1 + i] = char
+                }
+
+                // Write modified disk to destination (NSSavePanel grants access)
+                try diskData.write(to: path, options: .atomic)
+
+                print("   Bootable disk created and volume renamed successfully!")
+
+                DispatchQueue.main.async {
+                    completion(true, "Bootable disk image created successfully")
+                }
+
+            } catch {
+                print("   Error: \(error)")
+                DispatchQueue.main.async {
+                    completion(false, "Error creating bootable disk: \(error.localizedDescription)")
+                }
+            }
+        }
+    }
+
+    /// Extract a file from a ProDOS disk image
+    /// - Parameters:
+    ///   - diskData: The ProDOS disk image data
+    ///   - fileName: Name of the file to extract
+    /// - Returns: File info including data, type, and auxtype
+    private func extractFileFromProDOS(_ diskData: Data, fileName: String) -> (data: Data, fileType: UInt8, auxType: UInt16)? {
+        guard let (blockNum, entryOffset) = findFileEntry(diskData, fileName: fileName) else {
+            return nil
+        }
+
+        guard let blockData = readBlock(diskData, blockIndex: blockNum) else {
+            return nil
+        }
+
+        let storageType = blockData[entryOffset] >> 4
+        let fileType = blockData[entryOffset + 0x10]
+        let keyBlockLo = Int(blockData[entryOffset + 0x11])
+        let keyBlockHi = Int(blockData[entryOffset + 0x12])
+        let keyBlock = keyBlockLo | (keyBlockHi << 8)
+
+        let auxTypeLo = UInt16(blockData[entryOffset + 0x1F])
+        let auxTypeHi = UInt16(blockData[entryOffset + 0x20])
+        let auxType = auxTypeLo | (auxTypeHi << 8)
+
+        let fileSizeLo = Int(blockData[entryOffset + 0x15])
+        let fileSizeMid = Int(blockData[entryOffset + 0x16])
+        let fileSizeHi = Int(blockData[entryOffset + 0x17])
+        let fileSize = fileSizeLo | (fileSizeMid << 8) | (fileSizeHi << 16)
+
+        var fileData = Data()
+
+        switch storageType {
+        case 1:
+            // Seedling - single data block
+            if let dataBlock = readBlock(diskData, blockIndex: keyBlock) {
+                fileData = dataBlock.prefix(fileSize)
+            }
+
+        case 2:
+            // Sapling - index block points to data blocks
+            if let indexBlock = readBlock(diskData, blockIndex: keyBlock) {
+                var bytesRead = 0
+                var blockIndex = 0
+                while bytesRead < fileSize && blockIndex < 256 {
+                    let dataBlockLo = Int(indexBlock[blockIndex])
+                    let dataBlockHi = Int(indexBlock[256 + blockIndex])
+                    let dataBlockNum = dataBlockLo | (dataBlockHi << 8)
+
+                    if dataBlockNum != 0, let dataBlock = readBlock(diskData, blockIndex: dataBlockNum) {
+                        let bytesToRead = min(BLOCK_SIZE, fileSize - bytesRead)
+                        fileData.append(dataBlock.prefix(bytesToRead))
+                        bytesRead += bytesToRead
+                    }
+                    blockIndex += 1
+                }
+            }
+
+        case 3:
+            // Tree - master index block points to index blocks
+            if let masterIndex = readBlock(diskData, blockIndex: keyBlock) {
+                var bytesRead = 0
+                var masterIdx = 0
+                while bytesRead < fileSize && masterIdx < 128 {
+                    let indexBlockLo = Int(masterIndex[masterIdx])
+                    let indexBlockHi = Int(masterIndex[256 + masterIdx])
+                    let indexBlockNum = indexBlockLo | (indexBlockHi << 8)
+
+                    if indexBlockNum != 0, let indexBlock = readBlock(diskData, blockIndex: indexBlockNum) {
+                        var blockIndex = 0
+                        while bytesRead < fileSize && blockIndex < 256 {
+                            let dataBlockLo = Int(indexBlock[blockIndex])
+                            let dataBlockHi = Int(indexBlock[256 + blockIndex])
+                            let dataBlockNum = dataBlockLo | (dataBlockHi << 8)
+
+                            if dataBlockNum != 0, let dataBlock = readBlock(diskData, blockIndex: dataBlockNum) {
+                                let bytesToRead = min(BLOCK_SIZE, fileSize - bytesRead)
+                                fileData.append(dataBlock.prefix(bytesToRead))
+                                bytesRead += bytesToRead
+                            }
+                            blockIndex += 1
+                        }
+                    }
+                    masterIdx += 1
+                }
+            }
+
+        default:
+            return nil
+        }
+
+        return (fileData, fileType, auxType)
+    }
+
+    /// Add a SLIDESHOW program to a disk
+    /// - Parameters:
+    ///   - diskImagePath: Path to the disk image
+    ///   - imageFileNames: List of image filenames on the disk
+    ///   - completion: Callback with success/failure
+    func addSlideshowProgram(diskImagePath: URL,
+                             imageFileNames: [String],
+                             completion: @escaping (Bool, String) -> Void) {
+        let slideshowData = ApplesoftTokenizer.generateSlideshow(fileNames: imageFileNames)
+
+        // Applesoft BASIC file type is $FC, auxtype is $0801 (start address)
+        addFile(diskImagePath: diskImagePath,
+                fileName: "SLIDESHOW",
+                fileData: slideshowData,
+                fileType: 0xFC,  // BAS
+                auxType: 0x0801, // Standard BASIC start address
+                completion: completion)
+    }
+
+    /// Add a STARTUP program that auto-runs SLIDESHOW
+    func addStartupProgram(diskImagePath: URL,
+                           completion: @escaping (Bool, String) -> Void) {
+        // Create a simple STARTUP program that runs SLIDESHOW
+        let startupSource = """
+        10 PRINT CHR$(4);"RUN SLIDESHOW"
+        """
+        let startupData = ApplesoftTokenizer.tokenize(startupSource)
+
+        addFile(diskImagePath: diskImagePath,
+                fileName: "STARTUP",
+                fileData: startupData,
+                fileType: 0xFC,  // BAS
+                auxType: 0x0801,
+                completion: completion)
+    }
 }

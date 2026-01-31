@@ -37,6 +37,12 @@ class D64Writer {
     // MARK: - Public Interface
 
     func createDiskImage(at url: URL, volumeName: String, format: DiskFormat, size: DiskSize, files: [URL]) -> Bool {
+        // Convert to named files using URL's lastPathComponent
+        let namedFiles = files.map { (url: $0, name: $0.deletingPathExtension().lastPathComponent) }
+        return createDiskImageWithNames(at: url, volumeName: volumeName, format: format, size: size, files: namedFiles)
+    }
+
+    func createDiskImageWithNames(at url: URL, volumeName: String, format: DiskFormat, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
         switch format {
         case .d64:
             return createD64(at: url, volumeName: volumeName, files: files)
@@ -52,7 +58,7 @@ class D64Writer {
 
     // MARK: - D64 Creation (35 tracks, 170KB)
 
-    private func createD64(at url: URL, volumeName: String, files: [URL]) -> Bool {
+    private func createD64(at url: URL, volumeName: String, files: [(url: URL, name: String)]) -> Bool {
         // Create blank disk image
         var diskData = Data(count: d64TotalSectors * sectorSize)
 
@@ -70,7 +76,7 @@ class D64Writer {
         var nextSector = 0
         var dirEntryIndex = 0
 
-        for fileUrl in files {
+        for (fileUrl, originalName) in files {
             guard let fileData = try? Data(contentsOf: fileUrl) else {
                 print("D64Writer: Could not read file \(fileUrl.lastPathComponent)")
                 continue
@@ -80,8 +86,8 @@ class D64Writer {
             let ext = fileUrl.pathExtension.lowercased()
             let fileType: UInt8 = (ext == "prg" || ext == "kla" || ext == "art") ? 0x82 : 0x82  // PRG closed
 
-            // Clean filename for CBM DOS (max 16 chars)
-            let fileName = cleanCBMFileName(fileUrl.lastPathComponent)
+            // Clean filename for CBM DOS (max 16 chars) - use original name
+            let fileName = cleanCBMFileName(originalName)
 
             // Find starting track/sector (skip track 18 which is directory)
             if nextTrack == 18 {
@@ -172,7 +178,7 @@ class D64Writer {
 
     // MARK: - D71 Creation (70 tracks, 340KB)
 
-    private func createD71(at url: URL, volumeName: String, files: [URL]) -> Bool {
+    private func createD71(at url: URL, volumeName: String, files: [(url: URL, name: String)]) -> Bool {
         // D71 is essentially two D64 sides
         var diskData = Data(count: d71TotalSectors * sectorSize)
 
@@ -190,11 +196,11 @@ class D64Writer {
         var nextSector = 0
         var dirEntryIndex = 0
 
-        for fileUrl in files {
+        for (fileUrl, originalName) in files {
             guard let fileData = try? Data(contentsOf: fileUrl) else { continue }
 
             let fileType: UInt8 = 0x82
-            let fileName = cleanCBMFileName(fileUrl.lastPathComponent)
+            let fileName = cleanCBMFileName(originalName)
 
             if nextTrack == 18 { nextTrack = 19; nextSector = 0 }
 
@@ -253,7 +259,7 @@ class D64Writer {
 
     // MARK: - D81 Creation (80 tracks, 800KB)
 
-    private func createD81(at url: URL, volumeName: String, files: [URL]) -> Bool {
+    private func createD81(at url: URL, volumeName: String, files: [(url: URL, name: String)]) -> Bool {
         // D81: 80 tracks, 40 sectors per track, 256 bytes per sector
         var diskData = Data(count: d81TotalSectors * sectorSize)
 
@@ -276,11 +282,11 @@ class D64Writer {
         var nextSector = 0
         var dirEntryIndex = 0
 
-        for fileUrl in files {
+        for (fileUrl, originalName) in files {
             guard let fileData = try? Data(contentsOf: fileUrl) else { continue }
 
             let fileType: UInt8 = 0x82
-            let fileName = cleanCBMFileName(fileUrl.lastPathComponent)
+            let fileName = cleanCBMFileName(originalName)
 
             // Skip directory track (40)
             if nextTrack == 40 { nextTrack = 41; nextSector = 0 }
@@ -373,20 +379,33 @@ class D64Writer {
         data[track18Offset] = UInt8(sectorsPerTrack[17] - 2)
         data[track18Offset + 1] &= ~0x03  // Clear bits 0-1
 
-        // Disk name (16 bytes at offset 144)
-        let nameOffset = offset + 144
+        // Disk name (16 bytes at offset $90 = 144)
+        let nameOffset = offset + 0x90
         let paddedName = volumeName.padding(toLength: 16, withPad: "\u{A0}", startingAt: 0)
         for (i, char) in paddedName.prefix(16).enumerated() {
             data[nameOffset + i] = petsciiChar(char)
         }
 
-        // Disk ID (2 bytes at offset 162)
-        data[offset + 162] = 0x30  // '0'
-        data[offset + 163] = 0x30  // '0'
+        // $A0-$A1 (160-161): Shifted spaces after disk name
+        data[offset + 0xA0] = 0xA0
+        data[offset + 0xA1] = 0xA0
 
-        // DOS type (offset 165)
-        data[offset + 165] = 0x32  // '2'
-        data[offset + 166] = 0x41  // 'A'
+        // $A2-$A3 (162-163): Disk ID
+        data[offset + 0xA2] = 0x30  // '0'
+        data[offset + 0xA3] = 0x30  // '0'
+
+        // $A4 (164): Shifted space
+        data[offset + 0xA4] = 0xA0
+
+        // $A5-$A6 (165-166): DOS type "2A"
+        data[offset + 0xA5] = 0x32  // '2'
+        data[offset + 0xA6] = 0x41  // 'A'
+
+        // $A7-$AA (167-170): Shifted spaces
+        data[offset + 0xA7] = 0xA0
+        data[offset + 0xA8] = 0xA0
+        data[offset + 0xA9] = 0xA0
+        data[offset + 0xAA] = 0xA0
     }
 
     private func initializeD71BAM(in data: inout Data, at offset: Int, volumeName: String) {
@@ -453,25 +472,26 @@ class D64Writer {
     private func addDirectoryEntry(in data: inout Data, dirOffset: Int, entryIndex: Int,
                                    fileName: String, fileType: UInt8,
                                    startTrack: Int, startSector: Int, sectorCount: Int) {
-        // Each directory entry is 32 bytes, 8 entries per sector
+        // Each directory entry is 32 bytes. Entry 0 at offset 0, entry 1 at offset 32, etc.
+        // Bytes 0-1 of entry 0 overlap with sector chain link (set elsewhere)
         let entryOffset = dirOffset + (entryIndex % 8) * 32
 
-        // File type (PRG = $82)
+        // $02: File type (PRG = $82)
         data[entryOffset + 2] = fileType
 
-        // First track/sector of file
+        // $03-$04: First track/sector of file
         data[entryOffset + 3] = UInt8(startTrack)
         data[entryOffset + 4] = UInt8(startSector)
 
-        // Filename (16 bytes, PETSCII, padded with $A0)
+        // $05-$14: Filename (16 bytes, PETSCII, padded with $A0)
         let paddedName = fileName.padding(toLength: 16, withPad: "\u{A0}", startingAt: 0)
         for (i, char) in paddedName.prefix(16).enumerated() {
             data[entryOffset + 5 + i] = petsciiChar(char)
         }
 
-        // File size in sectors (16-bit little-endian)
-        data[entryOffset + 30] = UInt8(sectorCount & 0xFF)
-        data[entryOffset + 31] = UInt8((sectorCount >> 8) & 0xFF)
+        // $1E-$1F: File size in sectors (16-bit little-endian)
+        data[entryOffset + 0x1E] = UInt8(sectorCount & 0xFF)
+        data[entryOffset + 0x1F] = UInt8((sectorCount >> 8) & 0xFF)
     }
 
     private func addD81DirectoryEntry(in data: inout Data, dirOffset: Int, entryIndex: Int,
@@ -602,12 +622,13 @@ class D64Writer {
             return 0xA0
         }
 
-        // Convert ASCII to PETSCII
+        // Convert ASCII to PETSCII for CBM DOS
+        // Use UNSHIFTED range $41-$5A for uppercase (displays as letters in default C64 mode)
         if ascii >= 0x41 && ascii <= 0x5A {
-            // Uppercase letters stay the same in PETSCII
+            // Uppercase letters: keep as $41-$5A
             return ascii
         } else if ascii >= 0x61 && ascii <= 0x7A {
-            // Lowercase to uppercase
+            // Lowercase to uppercase: convert to $41-$5A range
             return ascii - 0x20
         }
 
