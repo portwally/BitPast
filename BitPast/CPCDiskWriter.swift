@@ -78,8 +78,8 @@ class CPCDiskWriter {
                 currentBlock += 1
             }
 
-            // Add directory entry (AMSDOS format)
-            addDirectoryEntry(
+            // Add directory entry (AMSDOS format) - may use multiple extents for large files
+            let entriesUsed = addDirectoryEntry(
                 in: &diskData,
                 entryIndex: dirEntryIndex,
                 fileName: fileName,
@@ -90,7 +90,7 @@ class CPCDiskWriter {
                 numSides: numSides
             )
 
-            dirEntryIndex += 1
+            dirEntryIndex += entriesUsed
             nextBlock = currentBlock
         }
 
@@ -205,63 +205,103 @@ class CPCDiskWriter {
 
     // MARK: - Directory Entry
 
+    /// Adds directory entries for a file, creating multiple extents if needed for files > 16KB
+    /// Returns the number of directory entries used
     private func addDirectoryEntry(in data: inout Data, entryIndex: Int, fileName: String,
                                    fileExt: String, blocks: [Int], fileSize: Int,
-                                   numTracks: Int, numSides: Int) {
+                                   numTracks: Int, numSides: Int) -> Int {
         let dirOffset = sectorOffset(track: 0, sector: 0, numSides: numSides)
-        let entryOffset = dirOffset + entryIndex * 32
+        let blocksPerExtent = 16
+        let bytesPerExtent = blocksPerExtent * 1024  // 16KB per extent
 
-        // User number (0)
-        data[entryOffset] = 0
+        var extentNumber = 0
+        var remainingSize = fileSize
+        var blockIndex = 0
+        var entriesUsed = 0
 
-        // Filename (8 bytes)
-        let paddedName = fileName.uppercased().padding(toLength: 8, withPad: " ", startingAt: 0)
-        for (i, char) in paddedName.prefix(8).enumerated() {
-            data[entryOffset + 1 + i] = char.asciiValue ?? 0x20
+        while blockIndex < blocks.count {
+            let entryOffset = dirOffset + (entryIndex + entriesUsed) * 32
+
+            // User number (0)
+            data[entryOffset] = 0
+
+            // Filename (8 bytes)
+            let paddedName = fileName.uppercased().padding(toLength: 8, withPad: " ", startingAt: 0)
+            for (i, char) in paddedName.prefix(8).enumerated() {
+                data[entryOffset + 1 + i] = char.asciiValue ?? 0x20
+            }
+
+            // Extension (3 bytes)
+            let paddedExt = fileExt.uppercased().padding(toLength: 3, withPad: " ", startingAt: 0)
+            for (i, char) in paddedExt.prefix(3).enumerated() {
+                data[entryOffset + 9 + i] = char.asciiValue ?? 0x20
+            }
+
+            // Extent number (low byte)
+            data[entryOffset + 12] = UInt8(extentNumber & 0x1F)
+
+            // Reserved
+            data[entryOffset + 13] = 0
+
+            // Extent number high byte (for very large files)
+            data[entryOffset + 14] = UInt8((extentNumber >> 5) & 0x3F)
+
+            // Calculate blocks for this extent
+            let blocksInExtent = min(blocksPerExtent, blocks.count - blockIndex)
+            let bytesInExtent = min(remainingSize, bytesPerExtent)
+
+            // Record count (number of 128-byte records in this extent, max 128)
+            let records = min((bytesInExtent + 127) / 128, 128)
+            data[entryOffset + 15] = UInt8(records)
+
+            // Block allocation (16 bytes for block numbers)
+            for i in 0..<16 {
+                if i < blocksInExtent {
+                    data[entryOffset + 16 + i] = UInt8(blocks[blockIndex + i])
+                } else {
+                    data[entryOffset + 16 + i] = 0
+                }
+            }
+
+            blockIndex += blocksInExtent
+            remainingSize -= bytesInExtent
+            extentNumber += 1
+            entriesUsed += 1
         }
 
-        // Extension (3 bytes)
-        let paddedExt = fileExt.uppercased().padding(toLength: 3, withPad: " ", startingAt: 0)
-        for (i, char) in paddedExt.prefix(3).enumerated() {
-            data[entryOffset + 9 + i] = char.asciiValue ?? 0x20
-        }
-
-        // Extent number
-        data[entryOffset + 12] = 0
-
-        // Reserved
-        data[entryOffset + 13] = 0
-        data[entryOffset + 14] = 0
-
-        // Record count (number of 128-byte records in last extent)
-        let records = min((fileSize + 127) / 128, 128)
-        data[entryOffset + 15] = UInt8(records)
-
-        // Block allocation (16 bytes for block numbers)
-        for (i, block) in blocks.prefix(16).enumerated() {
-            data[entryOffset + 16 + i] = UInt8(block)
-        }
+        return entriesUsed
     }
 
     // MARK: - Block Writing
 
     private func writeBlock(in data: inout Data, block: Int, data chunk: Data.SubSequence,
                             numTracks: Int, numSides: Int) {
-        // CPC uses 1KB blocks (2 sectors)
+        // CPC uses 1KB blocks (2 sectors of 512 bytes each)
         let sectorsPerBlock = 2
         let startSector = block * sectorsPerBlock
 
-        // Calculate track and sector
-        let totalSectors = sectorsPerTrack * numSides
-        let track = startSector / totalSectors
-        let sectorInTrack = startSector % totalSectors
+        // Write each sector separately to handle track boundaries correctly
+        var chunkOffset = 0
+        for sectorNum in 0..<sectorsPerBlock {
+            // Check if there's any data left to write
+            guard chunkOffset < chunk.count else { break }
 
-        let offset = sectorOffset(track: track, sector: sectorInTrack, numSides: numSides)
+            let absoluteSector = startSector + sectorNum
+            let track = absoluteSector / sectorsPerTrack
+            let sectorInTrack = absoluteSector % sectorsPerTrack
 
-        for (i, byte) in chunk.enumerated() {
-            if offset + i < data.count {
-                data[offset + i] = byte
+            let offset = sectorOffset(track: track, sector: sectorInTrack, numSides: numSides)
+
+            // Write up to 512 bytes for this sector
+            let remainingBytes = chunk.count - chunkOffset
+            let bytesToWrite = min(sectorSize, remainingBytes)
+            for i in 0..<bytesToWrite {
+                let sourceIndex = chunk.startIndex.advanced(by: chunkOffset + i)
+                if offset + i < data.count {
+                    data[offset + i] = chunk[sourceIndex]
+                }
             }
+            chunkOffset += sectorSize
         }
     }
 

@@ -330,12 +330,13 @@ class AmstradCPCConverter: RetroMachine {
             }
         }
 
-        // Create native file with AMSDOS header
+        // Create native file with AMSDOS header (including palette for decoder compatibility)
         var nativeData = Data()
 
-        // AMSDOS header (128 bytes)
+        // AMSDOS header (128 bytes) with embedded palette in bytes 69-84
         nativeData.append(contentsOf: createAMSDOSHeader(fileName: "PICTURE", ext: "SCR",
-                                                          loadAddress: 0xC000, length: 16384))
+                                                          loadAddress: 0xC000, length: 16384,
+                                                          palette: palette))
 
         // Bitmap data
         nativeData.append(contentsOf: bitmap)
@@ -445,10 +446,11 @@ class AmstradCPCConverter: RetroMachine {
             }
         }
 
-        // Create native file
+        // Create native file with AMSDOS header (including palette for decoder compatibility)
         var nativeData = Data()
         nativeData.append(contentsOf: createAMSDOSHeader(fileName: "PICTURE", ext: "SCR",
-                                                          loadAddress: 0xC000, length: 16384))
+                                                          loadAddress: 0xC000, length: 16384,
+                                                          palette: palette))
         nativeData.append(contentsOf: bitmap)
 
         return (resultPixels, nativeData)
@@ -456,7 +458,7 @@ class AmstradCPCConverter: RetroMachine {
 
     // MARK: - AMSDOS Header
 
-    private func createAMSDOSHeader(fileName: String, ext: String, loadAddress: Int, length: Int) -> [UInt8] {
+    private func createAMSDOSHeader(fileName: String, ext: String, loadAddress: Int, length: Int, palette: [(index: Int, color: [UInt8])]? = nil) -> [UInt8] {
         var header = [UInt8](repeating: 0, count: 128)
 
         // User number
@@ -503,6 +505,14 @@ class AmstradCPCConverter: RetroMachine {
         }
         header[67] = UInt8(checksum & 0xFF)
         header[68] = UInt8((checksum >> 8) & 0xFF)
+
+        // Store palette in bytes 69-84 (up to 16 hardware color indices)
+        // This allows the decoder to correctly reconstruct the image colors
+        if let palette = palette {
+            for i in 0..<min(16, palette.count) {
+                header[69 + i] = UInt8(palette[i].index)
+            }
+        }
 
         return header
     }

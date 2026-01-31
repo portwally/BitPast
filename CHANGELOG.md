@@ -44,6 +44,9 @@ All notable changes to BitPast will be documented in this file.
 - **ADFWriter Multi-File Crash** - Fixed crash when exporting multiple images to Amiga ADF disk:
   - File blocks now start at block 2 (after boot blocks) instead of overlapping root/bitmap area
   - Proper skip logic for root block (880 DD / 1760 HD) and bitmap block allocation
+- **CPC Disk File Truncation** - Fixed Amstrad CPC DSK files being truncated:
+  - Files > 16KB now correctly use multiple directory extents (CP/M format requirement)
+  - 16512-byte screen files (16384 + 128 AMSDOS header) now fully stored
 
 ### Technical
 - Added `DiskFormats.swift` with centralized disk system/format/size enumerations
