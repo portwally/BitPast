@@ -634,16 +634,42 @@ struct Plus4HelpContent: View {
 struct AtariSTHelpContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HelpHeader(title: "Atari ST", subtitle: "16 colors from 512-color palette")
+            HelpHeader(title: "Atari ST", subtitle: "All three hardware graphics modes")
 
             ModeHelpSection(
-                title: "Low-Res Mode (320×200)",
+                title: "Low Res (320×200, 16 colors)",
                 fileFormat: ".pi1 (32,034 bytes)",
-                description: "Atari ST low-resolution mode with 320×200 pixels and 16 colors selected from the 512-color hardware palette. Uses DEGAS Elite format.",
+                description: "Atari ST low-resolution mode with 320×200 pixels and 16 colors selected from the 512-color hardware palette. Uses 4 bitplanes. Standard mode for colorful graphics.",
                 bestFor: "General graphics, photos, colorful images",
                 options: [
                     OptionHelp(name: "Dithering", description: "Bayer 4×4 is default. Error diffusion (Floyd-Steinberg, Atkinson) also works well."),
                     OptionHelp(name: "Color Matching", description: "Perceptive recommended. The converter automatically selects optimal 16 colors from 512.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "Medium Res (640×200, 4 colors)",
+                fileFormat: ".pi2 (32,034 bytes)",
+                description: "Atari ST medium-resolution mode with 640×200 pixels and 4 colors selected from the 512-color hardware palette. Uses 2 bitplanes. Good balance of resolution and color.",
+                bestFor: "Text, line art, graphics needing higher horizontal resolution",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Ordered dithering (Bayer) often works well with limited 4-color palette."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive recommended. Optimal 4 colors are automatically selected.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "High Res (640×400, Monochrome)",
+                fileFormat: ".pi3 (32,034 bytes)",
+                description: "Atari ST high-resolution mode with 640×400 pixels in monochrome (2 colors: black and white). Uses 1 bitplane. Requires a dedicated high-res monitor on original hardware.",
+                bestFor: "Text, CAD, desktop publishing, high-detail line art",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Bayer dithering creates good halftone patterns. Floyd-Steinberg for photographs."),
+                    OptionHelp(name: "Contrast", description: "CLAHE or HE can help improve detail in photos before conversion.")
                 ]
             )
 
@@ -658,7 +684,11 @@ struct AtariSTHelpContent: View {
                     .foregroundColor(.secondary)
                 Text("• 8 × 8 × 8 = 512 total colors")
                     .foregroundColor(.secondary)
-                Text("• 16 colors can be displayed simultaneously")
+                Text("• Low Res: 16 colors simultaneously (4 bitplanes)")
+                    .foregroundColor(.secondary)
+                Text("• Medium Res: 4 colors simultaneously (2 bitplanes)")
+                    .foregroundColor(.secondary)
+                Text("• High Res: 2 colors (monochrome, 1 bitplane)")
                     .foregroundColor(.secondary)
             }
             .padding()
@@ -670,23 +700,26 @@ struct AtariSTHelpContent: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("DEGAS Format")
                     .font(.headline)
-                Text("The PI1 file format (DEGAS Elite):")
+                Text("All modes use the DEGAS Elite file format:")
                     .foregroundColor(.secondary)
                 HStack(alignment: .top, spacing: 8) {
                     Text("•")
-                    Text("2 bytes: Resolution (0x0000 = low-res)")
+                    Text("2 bytes: Resolution (0=low, 1=medium, 2=high)")
                         .foregroundColor(.secondary)
                 }
                 HStack(alignment: .top, spacing: 8) {
                     Text("•")
-                    Text("32 bytes: Palette (16 colors × 2 bytes)")
+                    Text("32 bytes: Palette (16 colors × 2 bytes, always 16 entries)")
                         .foregroundColor(.secondary)
                 }
                 HStack(alignment: .top, spacing: 8) {
                     Text("•")
-                    Text("32,000 bytes: Bitplane data (4 interleaved planes)")
+                    Text("32,000 bytes: Bitplane data (interleaved)")
                         .foregroundColor(.secondary)
                 }
+                Text("File extensions: .PI1 (low), .PI2 (medium), .PI3 (high)")
+                    .foregroundColor(.secondary)
+                    .padding(.top, 4)
             }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
@@ -694,12 +727,26 @@ struct AtariSTHelpContent: View {
 
             Divider()
 
-            FileFormatHelp(
-                extension_: ".pi1",
-                name: "DEGAS Elite",
-                size: "32,034 bytes",
-                description: "Standard Atari ST low-res image format. Compatible with DEGAS, NEOchrome, and ST emulators."
-            )
+            HStack(spacing: 20) {
+                FileFormatHelp(
+                    extension_: ".pi1",
+                    name: "DEGAS Low Res",
+                    size: "32,034 bytes",
+                    description: "320×200, 16 colors, 4 bitplanes."
+                )
+                FileFormatHelp(
+                    extension_: ".pi2",
+                    name: "DEGAS Medium Res",
+                    size: "32,034 bytes",
+                    description: "640×200, 4 colors, 2 bitplanes."
+                )
+                FileFormatHelp(
+                    extension_: ".pi3",
+                    name: "DEGAS High Res",
+                    size: "32,034 bytes",
+                    description: "640×400, monochrome, 1 bitplane."
+                )
+            }
         }
     }
 }

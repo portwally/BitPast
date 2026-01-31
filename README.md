@@ -100,9 +100,11 @@ ANTIC/GTIA graphics with 128-color palette:
 
 #### 🖱️ Atari ST
 16-bit graphics with 512-color palette:
-- **320×200 resolution** with 16 colors from 512-color palette.
+- **Low Res (320×200):** 16 colors from 512-color palette → .PI1
+- **Medium Res (640×200):** 4 colors from 512-color palette → .PI2
+- **High Res (640×400):** Monochrome (2 colors) → .PI3
 - **512-color hardware palette** (8 levels R × 8 levels G × 8 levels B).
-- **Output:** `.pi1` (DEGAS Elite format).
+- **Output:** `.pi1`, `.pi2`, `.pi3` (DEGAS Elite format).
 
 #### 🐚 Amiga 500 (OCS/ECS)
 Original Chip Set graphics:

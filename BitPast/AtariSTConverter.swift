@@ -5,9 +5,14 @@ class AtariSTConverter: RetroMachine {
     var name: String = "Atari ST"
 
     // Atari ST has 512 colors (8 levels each for R, G, B)
-    // 320×200 resolution with 16 colors from the 512-color palette
+    // Low Res: 320×200, 16 colors
+    // Medium Res: 640×200, 4 colors
+    // High Res: 640×400, 2 colors (monochrome)
 
     var options: [ConversionOption] = [
+        ConversionOption(label: "Mode", key: "mode",
+                        values: ["Low Res (320×200)", "Medium Res (640×200)", "High Res (640×400)"],
+                        selectedValue: "Low Res (320×200)"),
         ConversionOption(label: "Dither", key: "dither",
                         values: ["None", "Floyd-Steinberg", "Atkinson", "Noise", "Bayer 2x2", "Bayer 4x4", "Bayer 8x8", "Bayer 16x16", "Blue Noise 8x8", "Blue Noise 16x16"],
                         selectedValue: "Bayer 4x4"),
@@ -46,8 +51,39 @@ class AtariSTConverter: RetroMachine {
     }()
 
     func convert(sourceImage: NSImage) async throws -> ConversionResult {
-        let width = 320
-        let height = 200
+        let mode = options.first(where: { $0.key == "mode" })?.selectedValue ?? "Low Res (320×200)"
+
+        // Determine resolution and colors based on mode
+        let width: Int
+        let height: Int
+        let numColors: Int
+        let numBitplanes: Int
+        let fileExtension: String
+        let resolutionWord: UInt16
+
+        switch mode {
+        case "Medium Res (640×200)":
+            width = 640
+            height = 200
+            numColors = 4
+            numBitplanes = 2
+            fileExtension = "pi2"
+            resolutionWord = 0x0001
+        case "High Res (640×400)":
+            width = 640
+            height = 400
+            numColors = 2
+            numBitplanes = 1
+            fileExtension = "pi3"
+            resolutionWord = 0x0002
+        default: // Low Res
+            width = 320
+            height = 200
+            numColors = 16
+            numBitplanes = 4
+            fileExtension = "pi1"
+            resolutionWord = 0x0000
+        }
 
         guard let cgImage = sourceImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw NSError(domain: "AtariSTConverter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get CGImage"])
@@ -84,18 +120,23 @@ class AtariSTConverter: RetroMachine {
             applyOrderedDither(&pixels, width: width, height: height, ditherType: ditherAlg, amount: ditherAmount)
         }
 
-        // Quantize to 16 colors from the 512-color palette
-        let selectedPalette = selectOptimalPalette(pixels: pixels, width: width, height: height)
+        // Quantize to optimal colors from the 512-color palette
+        let selectedPalette = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: numColors)
 
         // Convert with error diffusion if selected
         let (resultPixels, nativeData) = convertToST(pixels: pixels, width: width, height: height,
                                                       palette: selectedPalette,
                                                       ditherAlg: ditherAlg, ditherAmount: ditherAmount,
-                                                      colorMatch: colorMatch)
+                                                      colorMatch: colorMatch,
+                                                      numBitplanes: numBitplanes,
+                                                      resolutionWord: resolutionWord)
 
-        // Create preview image (doubled for better visibility)
-        let previewWidth = width * 2
-        let previewHeight = height * 2
+        // Create preview image
+        // For low/medium res, double vertically; for high res, use 1:1
+        let scaleX = width == 320 ? 2 : 1
+        let scaleY = height == 200 ? 2 : 1
+        let previewWidth = width * scaleX
+        let previewHeight = height * scaleY
         var previewPixels = [UInt8](repeating: 0, count: previewWidth * previewHeight * 4)
 
         for y in 0..<height {
@@ -105,9 +146,9 @@ class AtariSTConverter: RetroMachine {
                 let g = resultPixels[srcIdx + 1]
                 let b = resultPixels[srcIdx + 2]
 
-                for dy in 0..<2 {
-                    for dx in 0..<2 {
-                        let dstIdx = ((y * 2 + dy) * previewWidth + (x * 2 + dx)) * 4
+                for dy in 0..<scaleY {
+                    for dx in 0..<scaleX {
+                        let dstIdx = ((y * scaleY + dy) * previewWidth + (x * scaleX + dx)) * 4
                         previewPixels[dstIdx] = r
                         previewPixels[dstIdx + 1] = g
                         previewPixels[dstIdx + 2] = b
@@ -130,10 +171,10 @@ class AtariSTConverter: RetroMachine {
 
         let previewImage = NSImage(cgImage: previewCGImage, size: NSSize(width: previewWidth, height: previewHeight))
 
-        // Save native file (DEGAS PI1 format)
+        // Save native file (DEGAS format: PI1/PI2/PI3)
         let tempDir = FileManager.default.temporaryDirectory
         let uuid = UUID().uuidString.prefix(8)
-        let nativeUrl = tempDir.appendingPathComponent("atari_\(uuid).pi1")
+        let nativeUrl = tempDir.appendingPathComponent("atari_\(uuid).\(fileExtension)")
         try nativeData.write(to: nativeUrl)
 
         return ConversionResult(
@@ -171,8 +212,18 @@ class AtariSTConverter: RetroMachine {
         return pixels
     }
 
-    private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int) -> [[UInt8]] {
-        // Use median cut to select 16 optimal colors from 512-color palette
+    private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int, numColors: Int = 16) -> [[UInt8]] {
+        // For monochrome (high res), just use black and white
+        if numColors == 2 {
+            // Pad to 16 entries (DEGAS format requirement)
+            var palette: [[UInt8]] = [[255, 255, 255], [0, 0, 0]]  // White background, black foreground
+            while palette.count < 16 {
+                palette.append([0, 0, 0])
+            }
+            return palette
+        }
+
+        // Use median cut to select optimal colors from 512-color palette
         var colorCounts: [Int: Int] = [:]
 
         // Count colors mapped to ST palette
@@ -190,15 +241,15 @@ class AtariSTConverter: RetroMachine {
             colorCounts[colorIdx, default: 0] += 1
         }
 
-        // Sort by frequency and take top 16
+        // Sort by frequency and take top N colors
         let sorted = colorCounts.sorted { $0.value > $1.value }
         var palette: [[UInt8]] = []
 
-        for (idx, _) in sorted.prefix(16) {
+        for (idx, _) in sorted.prefix(numColors) {
             palette.append(Self.stPalette[idx])
         }
 
-        // Pad to 16 if needed
+        // Pad to 16 (DEGAS format always stores 16 palette entries)
         while palette.count < 16 {
             palette.append([0, 0, 0])
         }
@@ -209,13 +260,18 @@ class AtariSTConverter: RetroMachine {
     private func convertToST(pixels: [[Float]], width: Int, height: Int,
                              palette: [[UInt8]],
                              ditherAlg: String, ditherAmount: Double,
-                             colorMatch: String) -> ([UInt8], Data) {
+                             colorMatch: String,
+                             numBitplanes: Int = 4,
+                             resolutionWord: UInt16 = 0x0000) -> ([UInt8], Data) {
 
         var work = pixels
         var resultPixels = [UInt8](repeating: 0, count: width * height * 3)
 
-        // Bitplanes: 4 bitplanes × 20 words per line × 200 lines
-        var bitplanes = [UInt16](repeating: 0, count: 4 * 20 * 200)
+        // Calculate bitplane array size
+        // Words per line: width / 16
+        // Total: numBitplanes × (width / 16) × height
+        let wordsPerLine = width / 16
+        var bitplanes = [UInt16](repeating: 0, count: numBitplanes * wordsPerLine * height)
 
         let useErrorDiffusion = ditherAlg == "Floyd-Steinberg" || ditherAlg == "Atkinson"
 
@@ -242,17 +298,19 @@ class AtariSTConverter: RetroMachine {
                 resultPixels[resultIdx + 1] = finalG
                 resultPixels[resultIdx + 2] = finalB
 
-                // Encode to bitplanes (4 bitplanes interleaved)
-                let value = colorIndex & 0xF
+                // Encode to bitplanes (interleaved format)
+                let maxColors = 1 << numBitplanes
+                let value = colorIndex & (maxColors - 1)
 
-                bitplanes[index + 3] |= UInt16(((value & 8) >> 3)) << shift
-                bitplanes[index + 2] |= UInt16(((value & 4) >> 2)) << shift
-                bitplanes[index + 1] |= UInt16(((value & 2) >> 1)) << shift
-                bitplanes[index] |= UInt16((value & 1)) << shift
+                // Write bits to each bitplane
+                for bp in 0..<numBitplanes {
+                    let bit = (value >> bp) & 1
+                    bitplanes[index + bp] |= UInt16(bit) << shift
+                }
 
                 if shift == 0 {
                     shift = 15
-                    index += 4
+                    index += numBitplanes
                 } else {
                     shift -= 1
                 }
@@ -324,12 +382,12 @@ class AtariSTConverter: RetroMachine {
             }
         }
 
-        // Create DEGAS PI1 file
+        // Create DEGAS file (PI1/PI2/PI3)
         var fileData = Data()
 
-        // Resolution word (0x0000 = low-res 320×200×16)
-        fileData.append(0x00)
-        fileData.append(0x00)
+        // Resolution word (0x0000 = low-res, 0x0001 = med-res, 0x0002 = high-res)
+        fileData.append(UInt8((resolutionWord >> 8) & 0xFF))
+        fileData.append(UInt8(resolutionWord & 0xFF))
 
         // Palette (16 colors × 2 bytes, big-endian)
         // Atari ST palette format: 0x0RGB (3 bits each)

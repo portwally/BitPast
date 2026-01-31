@@ -26,6 +26,10 @@ All notable changes to BitPast will be documented in this file.
   - Shows current file being converted and progress percentage
   - Theme-aware styling (works with retro themes)
   - Replaces the spinning beachball with informative feedback
+- **Atari ST Medium and High Res Modes** - Additional graphics modes for Atari ST:
+  - **Low Res** (320×200) - 16 colors from 512-color palette → .PI1
+  - **Medium Res** (640×200) - 4 colors from 512-color palette → .PI2
+  - **High Res** (640×400) - Monochrome (2 colors) → .PI3
 
 ### Changed
 - **ProDOS Button renamed to Create Disk** - Now supports all systems, not just Apple II/IIgs
@@ -47,6 +51,9 @@ All notable changes to BitPast will be documented in this file.
 - **CPC Disk File Truncation** - Fixed Amstrad CPC DSK files being truncated:
   - Files > 16KB now correctly use multiple directory extents (CP/M format requirement)
   - 16512-byte screen files (16384 + 128 AMSDOS header) now fully stored
+- **Atari ST High Res Crash** - Fixed crash when using High Res (640×400) monochrome mode:
+  - DEGAS format requires 16 palette entries even for monochrome mode
+  - Monochrome palette now padded to 16 entries (white, black + 14 black)
 
 ### Technical
 - Added `DiskFormats.swift` with centralized disk system/format/size enumerations
