@@ -17,7 +17,7 @@ class STWriter {
 
     // MARK: - Public Interface
 
-    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [URL]) -> Bool {
+    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
         let (totalSectors, sectorsPerTrack, heads, rootEntries) = diskGeometry(for: size)
         let bytesPerCluster = sectorSize * sectorsPerCluster
 
@@ -54,13 +54,15 @@ class STWriter {
         var nextCluster = 2  // First data cluster
         var dirEntryIndex = 0
 
-        for fileUrl in files {
-            guard let fileData = try? Data(contentsOf: fileUrl) else {
-                print("STWriter: Could not read file \(fileUrl.lastPathComponent)")
+        for file in files {
+            guard let fileData = try? Data(contentsOf: file.url) else {
+                print("STWriter: Could not read file \(file.name)")
                 continue
             }
 
-            let (fileName, fileExt) = splitFileName(fileUrl.lastPathComponent)
+            // Use provided name with extension from URL
+            let ext = file.url.pathExtension
+            let (fileName, fileExt) = splitFileName("\(file.name).\(ext)")
             let startCluster = nextCluster
 
             // Write file data

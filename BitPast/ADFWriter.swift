@@ -30,7 +30,7 @@ class ADFWriter {
 
     // MARK: - Public Interface
 
-    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [URL]) -> Bool {
+    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
         let isHD = (size == .mb1_76)
         let totalSectors = isHD ? sectorsHD : sectorsDD
         let rootBlock = isHD ? 1760 : 880
@@ -49,13 +49,15 @@ class ADFWriter {
         var nextBlock = 2
         var hashTable = [Int](repeating: 0, count: 72)
 
-        for fileUrl in files {
-            guard let fileData = try? Data(contentsOf: fileUrl) else {
-                print("ADFWriter: Could not read file \(fileUrl.lastPathComponent)")
+        for file in files {
+            guard let fileData = try? Data(contentsOf: file.url) else {
+                print("ADFWriter: Could not read file \(file.name)")
                 continue
             }
 
-            let fileName = cleanAmigaFileName(fileUrl.lastPathComponent)
+            // Use provided name with extension from URL
+            let ext = file.url.pathExtension
+            let fileName = cleanAmigaFileName("\(file.name).\(ext)")
             let hashIndex = amigaHash(fileName) % 72
 
             // Skip root block and bitmap block area when finding header block

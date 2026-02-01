@@ -20,7 +20,7 @@ class ATRWriter {
 
     // MARK: - Public Interface
 
-    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [URL]) -> Bool {
+    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
         let (sectorCount, bytesPerSector) = sectorConfig(for: size)
         let diskBytes = sectorCount * bytesPerSector
 
@@ -51,14 +51,15 @@ class ATRWriter {
         var nextSector = 4  // First user data sector (1-3 are boot + VTOC)
         var dirEntryIndex = 0
 
-        for fileUrl in files {
-            guard let fileData = try? Data(contentsOf: fileUrl) else {
-                print("ATRWriter: Could not read file \(fileUrl.lastPathComponent)")
+        for file in files {
+            guard let fileData = try? Data(contentsOf: file.url) else {
+                print("ATRWriter: Could not read file \(file.name)")
                 continue
             }
 
-            let fileName = cleanAtariFileName(fileUrl.lastPathComponent)
-            let fileExt = fileUrl.pathExtension.uppercased().prefix(3)
+            // Use provided name with extension from URL
+            let fileName = cleanAtariFileName(file.name)
+            let fileExt = file.url.pathExtension.uppercased().prefix(3)
             let startSector = nextSector
 
             // Write file data

@@ -940,13 +940,11 @@ class ConverterViewModel: ObservableObject {
                         return
                     }
 
-                    // Extract URLs from named files tuple
-                    let fileUrls = allFiles.map { $0.url }
                     let success = ADFWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: fileUrls
+                        files: allFiles
                     )
 
                     if !success {
@@ -987,12 +985,11 @@ class ConverterViewModel: ObservableObject {
                         return
                     }
 
-                    let fileUrls = allFiles.map { $0.url }
                     let success = ATRWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: fileUrls
+                        files: allFiles
                     )
 
                     if !success {
@@ -1033,12 +1030,11 @@ class ConverterViewModel: ObservableObject {
                         return
                     }
 
-                    let fileUrls = allFiles.map { $0.url }
                     let success = STWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: fileUrls
+                        files: allFiles
                     )
 
                     if !success {
@@ -1079,12 +1075,11 @@ class ConverterViewModel: ObservableObject {
                         return
                     }
 
-                    let fileUrls = allFiles.map { $0.url }
                     let success = MSXDiskWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: fileUrls
+                        files: allFiles
                     )
 
                     if !success {
@@ -1125,12 +1120,11 @@ class ConverterViewModel: ObservableObject {
                         return
                     }
 
-                    let fileUrls = allFiles.map { $0.url }
                     let success = CPCDiskWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: fileUrls
+                        files: allFiles
                     )
 
                     if !success {
@@ -1171,13 +1165,12 @@ class ConverterViewModel: ObservableObject {
                         return
                     }
 
-                    let fileUrls = allFiles.map { $0.url }
                     let success = TRDWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         format: configuration.format,
                         size: configuration.size,
-                        files: fileUrls
+                        files: allFiles
                     )
 
                     if !success {
@@ -1218,13 +1211,12 @@ class ConverterViewModel: ObservableObject {
                         return
                     }
 
-                    let fileUrls = allFiles.map { $0.url }
                     let success = BBCDiskWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         format: configuration.format,
                         size: configuration.size,
-                        files: fileUrls
+                        files: allFiles
                     )
 
                     if !success {
@@ -1265,12 +1257,11 @@ class ConverterViewModel: ObservableObject {
                         return
                     }
 
-                    let fileUrls = allFiles.map { $0.url }
                     let success = IMGWriter.shared.createDiskImage(
                         at: targetUrl,
                         volumeName: configuration.volumeName,
                         size: configuration.size,
-                        files: fileUrls
+                        files: allFiles
                     )
 
                     if !success {

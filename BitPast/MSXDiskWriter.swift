@@ -17,7 +17,7 @@ class MSXDiskWriter {
 
     // MARK: - Public Interface
 
-    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [URL]) -> Bool {
+    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
         let geometry = diskGeometry(for: size)
         let totalSectors = geometry.totalSectors
         let bytesPerCluster = sectorSize * sectorsPerCluster
@@ -58,13 +58,15 @@ class MSXDiskWriter {
         var nextCluster = 2
         var dirEntryIndex = 0
 
-        for fileUrl in files {
-            guard let fileData = try? Data(contentsOf: fileUrl) else {
-                print("MSXDiskWriter: Could not read file \(fileUrl.lastPathComponent)")
+        for file in files {
+            guard let fileData = try? Data(contentsOf: file.url) else {
+                print("MSXDiskWriter: Could not read file \(file.name)")
                 continue
             }
 
-            let (fileName, fileExt) = splitFileName(fileUrl.lastPathComponent)
+            // Use the provided name, get extension from URL
+            let ext = file.url.pathExtension
+            let (fileName, fileExt) = splitFileName("\(file.name).\(ext)")
             let startCluster = nextCluster
 
             // Write file data

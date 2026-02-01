@@ -17,7 +17,7 @@ class BBCDiskWriter {
 
     // MARK: - Public Interface
 
-    func createDiskImage(at url: URL, volumeName: String, format: DiskFormat, size: DiskSize, files: [URL]) -> Bool {
+    func createDiskImage(at url: URL, volumeName: String, format: DiskFormat, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
         let (tracks, sides) = diskGeometry(for: size, format: format)
         let totalSectors = tracks * sectorsPerTrack * sides
         let totalBytes = totalSectors * sectorSize
@@ -37,9 +37,9 @@ class BBCDiskWriter {
         var nextSector = 2  // First data sector (sectors 0-1 are catalog)
         var fileIndex = 0
 
-        for fileUrl in files {
-            guard let fileData = try? Data(contentsOf: fileUrl) else {
-                print("BBCDiskWriter: Could not read file \(fileUrl.lastPathComponent)")
+        for file in files {
+            guard let fileData = try? Data(contentsOf: file.url) else {
+                print("BBCDiskWriter: Could not read file \(file.name)")
                 continue
             }
 
@@ -48,7 +48,8 @@ class BBCDiskWriter {
                 break
             }
 
-            let (directory, fileName) = splitBBCFileName(fileUrl.lastPathComponent)
+            // Use provided name
+            let (directory, fileName) = splitBBCFileName(file.name)
             let startSector = nextSector
             let sectorCount = (fileData.count + sectorSize - 1) / sectorSize
 

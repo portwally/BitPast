@@ -23,7 +23,7 @@ class TRDWriter {
 
     // MARK: - Public Interface
 
-    func createDiskImage(at url: URL, volumeName: String, format: DiskFormat, size: DiskSize, files: [URL]) -> Bool {
+    func createDiskImage(at url: URL, volumeName: String, format: DiskFormat, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
         // TR-DOS uses 640KB (2560 sectors * 256 bytes)
         var diskData = Data(count: totalSectors * sectorSize)
 
@@ -34,9 +34,9 @@ class TRDWriter {
         var nextSector = 16  // First user data sector (after directory)
         var fileIndex = 0
 
-        for fileUrl in files {
-            guard let fileData = try? Data(contentsOf: fileUrl) else {
-                print("TRDWriter: Could not read file \(fileUrl.lastPathComponent)")
+        for file in files {
+            guard let fileData = try? Data(contentsOf: file.url) else {
+                print("TRDWriter: Could not read file \(file.name)")
                 continue
             }
 
@@ -45,7 +45,9 @@ class TRDWriter {
                 break
             }
 
-            let (fileName, fileExt) = splitTRDFileName(fileUrl.lastPathComponent)
+            // Use provided name with extension from URL
+            let ext = file.url.pathExtension
+            let (fileName, fileExt) = splitTRDFileName("\(file.name).\(ext)")
             let startSector = nextSector
             let sectorCount = (fileData.count + sectorSize - 1) / sectorSize
 

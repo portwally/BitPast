@@ -21,7 +21,7 @@ class CPCDiskWriter {
 
     // MARK: - Public Interface
 
-    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [URL]) -> Bool {
+    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
         let geometry = diskGeometry(for: size)
         let numTracks = geometry.tracks
         let numSides = geometry.sides
@@ -51,13 +51,15 @@ class CPCDiskWriter {
         var nextBlock = 2  // First two blocks are directory
         var dirEntryIndex = 0
 
-        for fileUrl in files {
-            guard let fileData = try? Data(contentsOf: fileUrl) else {
-                print("CPCDiskWriter: Could not read file \(fileUrl.lastPathComponent)")
+        for file in files {
+            guard let fileData = try? Data(contentsOf: file.url) else {
+                print("CPCDiskWriter: Could not read file \(file.name)")
                 continue
             }
 
-            let (fileName, fileExt) = splitCPCFileName(fileUrl.lastPathComponent)
+            // Use provided name with extension from URL
+            let ext = file.url.pathExtension
+            let (fileName, fileExt) = splitCPCFileName("\(file.name).\(ext)")
 
             // 1KB blocks in AMSDOS
             let blockSize = 1024
