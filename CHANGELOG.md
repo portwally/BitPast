@@ -58,6 +58,10 @@ All notable changes to BitPast will be documented in this file.
 - **Atari ST High Res Crash** - Fixed crash when using High Res (640×400) monochrome mode:
   - DEGAS format requires 16 palette entries even for monochrome mode
   - Monochrome palette now padded to 16 entries (white, black + 14 black)
+- **Apple IIgs 3200-Color Brooks Format** - Fixed ProDOS disk export using wrong aux type:
+  - 3200-color Brooks format files now use correct aux type $0002
+  - Other retro graphics converters can now properly identify Brooks format images
+  - Standard SHR files continue to use aux type $0000
 
 ### Technical
 - Added `DiskFormats.swift` with centralized disk system/format/size enumerations

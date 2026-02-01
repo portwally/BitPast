@@ -696,9 +696,13 @@ class ConverterViewModel: ObservableObject {
                                 var auxType: UInt16 = 0x2000 // Default load address
                                 var proDOSExt = "BIN"
 
-                                if fileExt == "SHR" || fileExt == "A2GS" || fileExt == "3200" {
+                                if fileExt == "SHR" || fileExt == "A2GS" {
                                     fileType = 0xC1
-                                    auxType = 0x0000
+                                    auxType = 0x0000  // Standard SHR 320 mode
+                                    proDOSExt = "PIC"
+                                } else if fileExt == "3200" {
+                                    fileType = 0xC1
+                                    auxType = 0x0002  // Brooks 3200-color format
                                     proDOSExt = "PIC"
                                 } else if fileExt == "BIN" {
                                     fileType = 0x06

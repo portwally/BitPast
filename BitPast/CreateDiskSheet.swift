@@ -218,11 +218,13 @@ struct CreateDiskSheet: View {
             .keyboardShortcut(.cancelAction)
 
             Button("Create Disk Image") {
+                // Use default if volume name is empty
+                let finalVolumeName = volumeName.isEmpty ? "DISK" : volumeName
                 let config = DiskConfiguration(
                     system: selectedSystem,
                     format: selectedFormat,
                     size: selectedSize,
-                    volumeName: volumeName
+                    volumeName: finalVolumeName
                 )
                 onExport(config)
                 isPresented = false

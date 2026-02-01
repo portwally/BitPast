@@ -185,11 +185,7 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
             }
         }
 
-        // Default if empty
-        if sanitized.isEmpty {
-            sanitized = "DISK"
-        }
-
+        // Allow empty during editing - default applied at creation time
         return sanitized
     }
 }
