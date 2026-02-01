@@ -135,18 +135,27 @@ class Atari800Converter: RetroMachine {
 
         // Select palette based on mode
         let selectedPalette: [[UInt8]]
+        var atariRegisters: [UInt8] = []
         if mode.contains("Graphics 9") {
             // Graphics 9: 16 shades of one hue - find dominant hue
             selectedPalette = selectGrayscalePalette()
+            // Generate grayscale register values (hue 0, luminances 0-15)
+            for lum in 0..<16 {
+                atariRegisters.append(UInt8((lum / 2) << 1))  // Even luminance values
+            }
         } else if mode.contains("Graphics 10") {
             // Graphics 10: 9 colors - use optimal palette selection
-            selectedPalette = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: 9)
+            (selectedPalette, atariRegisters) = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: 9)
         } else if mode.contains("Graphics 11") {
             // Graphics 11: 16 different hues at one luminance
             selectedPalette = select16HuePalette()
+            // Generate 16 hue register values at fixed luminance (level 4)
+            for hue in 0..<16 {
+                atariRegisters.append(UInt8((hue << 4) | 8))  // Lum 4 = 8 in register
+            }
         } else {
             // Graphics 8/15: Select optimal colors from 128-color palette
-            selectedPalette = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: numColors)
+            (selectedPalette, atariRegisters) = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: numColors)
         }
 
         // Convert with error diffusion if selected
@@ -194,6 +203,11 @@ class Atari800Converter: RetroMachine {
 
         let previewImage = NSImage(cgImage: previewCGImage, size: NSSize(width: previewWidth, height: previewHeight))
 
+        // Append palette data to native file
+        // Format: bitmap data (7680 bytes) + Atari color registers (numColors bytes)
+        var fullData = nativeData
+        fullData.append(contentsOf: atariRegisters)
+
         // Save native file
         let tempDir = FileManager.default.temporaryDirectory
         let uuid = UUID().uuidString.prefix(8)
@@ -204,7 +218,7 @@ class Atari800Converter: RetroMachine {
         else if mode.contains("Graphics 11") { ext = "gr11" }
         else { ext = "gr15" }
         let nativeUrl = tempDir.appendingPathComponent("atari800_\(uuid).\(ext)")
-        try nativeData.write(to: nativeUrl)
+        try fullData.write(to: nativeUrl)
 
         return ConversionResult(
             previewImage: previewImage,
@@ -286,8 +300,9 @@ class Atari800Converter: RetroMachine {
         return palette
     }
 
-    private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int, numColors: Int) -> [[UInt8]] {
+    private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int, numColors: Int) -> ([[UInt8]], [UInt8]) {
         // Use median cut to select optimal colors from 128-color palette
+        // Returns (RGB palette, Atari color register values)
         var colorCounts: [Int: Int] = [:]
 
         // Count colors mapped to Atari palette
@@ -315,17 +330,26 @@ class Atari800Converter: RetroMachine {
         // Sort by frequency and take top colors
         let sorted = colorCounts.sorted { $0.value > $1.value }
         var palette: [[UInt8]] = []
+        var atariRegisters: [UInt8] = []
 
         for (idx, _) in sorted.prefix(numColors) {
             palette.append(Self.atari800Palette[idx])
+            // Convert palette index to Atari color register value
+            // Index format: hue * 8 + luminance (0-127)
+            // Register format: HHHHLLLL where H=hue(4 bits), L=luminance*2(4 bits)
+            let hue = idx / 8
+            let lum = idx % 8
+            let register = UInt8((hue << 4) | (lum << 1))
+            atariRegisters.append(register)
         }
 
         // Pad to required colors if needed
         while palette.count < numColors {
             palette.append([0, 0, 0])
+            atariRegisters.append(0)
         }
 
-        return palette
+        return (palette, atariRegisters)
     }
 
     private func convertToAtari800(pixels: [[Float]], width: Int, height: Int,
