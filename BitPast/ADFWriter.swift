@@ -65,6 +65,12 @@ class ADFWriter {
                 nextBlock = rootBlock + 2
             }
 
+            // Check if disk is full
+            if nextBlock >= totalSectors {
+                print("ADFWriter: Disk full, cannot add file \(fileName)")
+                break
+            }
+
             // Find free header block
             let headerBlock = nextBlock
             nextBlock += 1
@@ -241,6 +247,12 @@ class ADFWriter {
         let bitIndex = block % 32
         let wordOffset = bitmapOffset + wordIndex * 4
 
+        // Bounds check: bitmap is 512 bytes, so max wordOffset is bitmapOffset + 508
+        guard wordOffset >= 0 && wordOffset + 4 <= data.count && wordIndex < 128 else {
+            print("ADFWriter: Block \(block) out of bitmap range")
+            return
+        }
+
         var word = readInt32(from: data, at: wordOffset)
         word &= ~(1 << bitIndex)
         writeInt32(in: &data, at: wordOffset, value: word)
@@ -346,6 +358,11 @@ class ADFWriter {
     // MARK: - Helpers
 
     private func writeInt32(in data: inout Data, at offset: Int, value: Int32) {
+        // Bounds check
+        guard offset >= 0 && offset + 4 <= data.count else {
+            print("ADFWriter: writeInt32 out of bounds at offset \(offset), data size \(data.count)")
+            return
+        }
         // Big-endian
         data[offset] = UInt8((value >> 24) & 0xFF)
         data[offset + 1] = UInt8((value >> 16) & 0xFF)
@@ -354,6 +371,11 @@ class ADFWriter {
     }
 
     private func readInt32(from data: Data, at offset: Int) -> Int32 {
+        // Bounds check
+        guard offset >= 0 && offset + 4 <= data.count else {
+            print("ADFWriter: readInt32 out of bounds at offset \(offset), data size \(data.count)")
+            return 0
+        }
         let b0 = Int32(data[offset]) << 24
         let b1 = Int32(data[offset + 1]) << 16
         let b2 = Int32(data[offset + 2]) << 8

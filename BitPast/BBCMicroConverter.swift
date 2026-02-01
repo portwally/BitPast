@@ -124,9 +124,20 @@ class BBCMicroConverter: RetroMachine {
             selectedPalette = Self.bbcPalette
         }
 
+        // Determine mode number for embedding
+        let embeddedMode: UInt8
+        switch mode {
+        case "Mode 0 (640×256, 2 colors)": embeddedMode = 0
+        case "Mode 1 (320×256, 4 colors)": embeddedMode = 1
+        case "Mode 4 (320×256, 2 colors)": embeddedMode = 4
+        case "Mode 5 (160×256, 4 colors)": embeddedMode = 5
+        default: embeddedMode = 2  // Mode 2
+        }
+
         // Convert with error diffusion if selected
         let (resultPixels, nativeData) = convertToBBCMicro(pixels: pixels, width: width, height: height,
                                                            palette: selectedPalette, mode: mode,
+                                                           embeddedMode: embeddedMode,
                                                            bytesPerLine: bytesPerLine,
                                                            ditherAlg: ditherAlg, ditherAmount: ditherAmount,
                                                            colorMatch: colorMatch)
@@ -250,7 +261,8 @@ class BBCMicroConverter: RetroMachine {
     }
 
     private func convertToBBCMicro(pixels: [[Float]], width: Int, height: Int,
-                                    palette: [[UInt8]], mode: String, bytesPerLine: Int,
+                                    palette: [[UInt8]], mode: String, embeddedMode: UInt8,
+                                    bytesPerLine: Int,
                                     ditherAlg: String, ditherAmount: Double,
                                     colorMatch: String) -> ([UInt8], Data) {
 
@@ -396,6 +408,23 @@ class BBCMicroConverter: RetroMachine {
         }
 
         fileData.append(contentsOf: bitmap)
+
+        // Embed palette information after screen data
+        // Format: mode byte + palette indices (indices into bbcPalette for each logical color)
+        fileData.append(embeddedMode)
+
+        // Convert selected palette colors back to their indices in bbcPalette
+        for paletteColor in palette {
+            var bestIndex: UInt8 = 0
+            for (i, bbcColor) in Self.bbcPalette.enumerated() {
+                if bbcColor[0] == paletteColor[0] && bbcColor[1] == paletteColor[1] && bbcColor[2] == paletteColor[2] {
+                    bestIndex = UInt8(i)
+                    break
+                }
+            }
+            fileData.append(bestIndex)
+        }
+
         return (resultPixels, fileData)
     }
 

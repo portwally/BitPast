@@ -374,6 +374,16 @@ struct VIC20HelpContent: View {
             .background(Color(NSColor.controlBackgroundColor))
             .cornerRadius(8)
 
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Format Limitation")
+                    .font(.headline)
+                Text("The VIC-20 screen has 506 character cells (22×23) but only 256 character patterns can be defined. When converting images, character patterns may be reused across multiple cells, which can cause visual artifacts in complex images.")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color.orange.opacity(0.1))
+            .cornerRadius(8)
+
             Divider()
 
             FileFormatHelp(

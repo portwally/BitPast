@@ -35,6 +35,10 @@ All notable changes to BitPast will be documented in this file.
 - **ProDOS Button renamed to Create Disk** - Now supports all systems, not just Apple II/IIgs
 
 ### Fixed
+- **VIC-20 HiRes Dot Artifacts** - Fixed random dots appearing in uniform areas of VIC-20 HiRes images:
+  - Changed pixel comparison from `<=` to `<` so equidistant pixels default to background color
+  - Added 10% minimum contrast threshold for foreground color selection to ignore noise
+  - Prevents gray or noisy pixels from being incorrectly assigned to foreground
 - **D64/D71/D81 PETSCII Encoding** - Fixed filename and disk name display in Commodore disk images:
   - Now uses correct unshifted PETSCII range ($41-$5A) that displays properly on C64
   - Fixed BAM format with proper $A0 shifted space padding bytes

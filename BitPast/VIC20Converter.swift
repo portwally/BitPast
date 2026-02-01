@@ -248,7 +248,9 @@ class VIC20Converter: RetroMachine {
         var colorData = [UInt8](repeating: 0, count: 506)
         var charsetData = [UInt8](repeating: 0, count: 2048)  // 256 chars x 8 bytes
 
-        var charIndex = 0
+        // Dictionary to track unique character patterns and their assigned charCodes
+        var charPatternToCode = [[UInt8]: UInt8]()
+        var nextCharCode: Int = 0
 
         // Process each 8x8 character cell
         for cellY in 0..<23 {
@@ -258,8 +260,10 @@ class VIC20Converter: RetroMachine {
                 let baseY = cellY * 8
 
                 // Find foreground color (most contrasting to background in this cell)
-                var fgColor = 1  // Default to white
+                // Require minimum contrast to avoid noise affecting the selection
+                var fgColor = backgroundColor  // Default to same as background (will be fixed below)
                 var maxContrast: Float = 0
+                let minContrastThreshold: Float = 0.1  // Minimum 10% contrast to be considered foreground
 
                 for py in 0..<8 {
                     for px in 0..<8 {
@@ -269,7 +273,7 @@ class VIC20Converter: RetroMachine {
                             let idx = y * width + x
                             let luma = 0.299 * workPixels[idx][0] + 0.587 * workPixels[idx][1] + 0.114 * workPixels[idx][2]
                             let contrast = abs(luma - bgLuma)
-                            if contrast > maxContrast {
+                            if contrast > maxContrast && contrast >= minContrastThreshold {
                                 maxContrast = contrast
                                 // Only first 8 colors can be foreground
                                 fgColor = findNearestColor(r: workPixels[idx][0], g: workPixels[idx][1],
@@ -277,6 +281,12 @@ class VIC20Converter: RetroMachine {
                             }
                         }
                     }
+                }
+
+                // Ensure foreground is different from background (otherwise cell would be invisible)
+                if fgColor == backgroundColor {
+                    // Pick a contrasting foreground: white for dark bg, black for light bg
+                    fgColor = bgLuma < 0.5 ? 1 : 0
                 }
 
                 let fgR = Float(VIC20Converter.vic20Palette[fgColor][0]) / 255.0
@@ -298,10 +308,12 @@ class VIC20Converter: RetroMachine {
                             let b = workPixels[idx][2]
 
                             // Decide foreground or background
+                            // Use strict < so equidistant pixels default to background
+                            // This prevents noise/gray pixels from creating dots
                             let distFg = colorDistance(r, g, b, fgR, fgG, fgB, colorMatch)
                             let distBg = colorDistance(r, g, b, bgR, bgG, bgB, colorMatch)
 
-                            var useFg = distFg <= distBg
+                            var useFg = distFg < distBg
 
                             // Apply error diffusion dithering
                             if useFg {
@@ -338,17 +350,39 @@ class VIC20Converter: RetroMachine {
                     charBitmap[py] = rowByte
                 }
 
-                // Store character (simple: use cell index as char code, max 256)
-                let charCode = charIndex % 256
-                screenData[cellIdx] = UInt8(charCode)
-                colorData[cellIdx] = UInt8(fgColor)
-
-                // Store bitmap in charset
-                for i in 0..<8 {
-                    charsetData[charCode * 8 + i] = charBitmap[i]
+                // Check if this pattern already exists in charset
+                let charCode: UInt8
+                if let existingCode = charPatternToCode[charBitmap] {
+                    // Reuse existing character
+                    charCode = existingCode
+                } else if nextCharCode < 256 {
+                    // Create new character
+                    charCode = UInt8(nextCharCode)
+                    charPatternToCode[charBitmap] = charCode
+                    for i in 0..<8 {
+                        charsetData[nextCharCode * 8 + i] = charBitmap[i]
+                    }
+                    nextCharCode += 1
+                } else {
+                    // Charset full - find most similar existing pattern
+                    var bestMatch: UInt8 = 0
+                    var bestDiff = Int.max
+                    for (pattern, code) in charPatternToCode {
+                        var diff = 0
+                        for i in 0..<8 {
+                            let xor = charBitmap[i] ^ pattern[i]
+                            diff += xor.nonzeroBitCount
+                        }
+                        if diff < bestDiff {
+                            bestDiff = diff
+                            bestMatch = code
+                        }
+                    }
+                    charCode = bestMatch
                 }
 
-                charIndex += 1
+                screenData[cellIdx] = charCode
+                colorData[cellIdx] = UInt8(fgColor)
             }
         }
 
@@ -490,7 +524,9 @@ class VIC20Converter: RetroMachine {
         var colorData = [UInt8](repeating: 0, count: 506)
         var charsetData = [UInt8](repeating: 0, count: 2048)
 
-        var charIndex = 0
+        // Dictionary to track unique character patterns and their assigned charCodes
+        var charPatternToCode = [[UInt8]: UInt8]()
+        var nextCharCode: Int = 0
 
         // Process each 4x8 character cell (in lowres coordinates)
         for cellY in 0..<23 {
@@ -555,15 +591,39 @@ class VIC20Converter: RetroMachine {
                     charBitmap[py] = rowByte
                 }
 
-                let charCode = charIndex % 256
-                screenData[cellIdx] = UInt8(charCode)
-                colorData[cellIdx] = UInt8(color2 + 8)  // +8 for multicolor mode
-
-                for i in 0..<8 {
-                    charsetData[charCode * 8 + i] = charBitmap[i]
+                // Check if this pattern already exists in charset
+                let charCode: UInt8
+                if let existingCode = charPatternToCode[charBitmap] {
+                    // Reuse existing character
+                    charCode = existingCode
+                } else if nextCharCode < 256 {
+                    // Create new character
+                    charCode = UInt8(nextCharCode)
+                    charPatternToCode[charBitmap] = charCode
+                    for i in 0..<8 {
+                        charsetData[nextCharCode * 8 + i] = charBitmap[i]
+                    }
+                    nextCharCode += 1
+                } else {
+                    // Charset full - find most similar existing pattern
+                    var bestMatch: UInt8 = 0
+                    var bestDiff = Int.max
+                    for (pattern, code) in charPatternToCode {
+                        var diff = 0
+                        for i in 0..<8 {
+                            let xor = charBitmap[i] ^ pattern[i]
+                            diff += xor.nonzeroBitCount
+                        }
+                        if diff < bestDiff {
+                            bestDiff = diff
+                            bestMatch = code
+                        }
+                    }
+                    charCode = bestMatch
                 }
 
-                charIndex += 1
+                screenData[cellIdx] = charCode
+                colorData[cellIdx] = UInt8(color2 + 8)  // +8 for multicolor mode
             }
         }
 

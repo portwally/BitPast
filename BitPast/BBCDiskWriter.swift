@@ -168,11 +168,15 @@ class BBCDiskWriter {
         data[attrOffset + 4] = UInt8(length & 0xFF)
         data[attrOffset + 5] = UInt8((length >> 8) & 0xFF)
 
-        // High bits: exec[17:16], length[17:16], load[17:16], start[9:8]
-        let execBits = UInt8((execAddress >> 14) & 0xC0)
-        let lengthBits = UInt8((length >> 12) & 0x30)
-        let loadBits = UInt8((loadAddress >> 10) & 0x0C)
-        let startBits = UInt8((startSector >> 8) & 0x03)
+        // High bits byte format (DFS standard):
+        // Bits 0-1: Exec address bits 16-17
+        // Bits 2-3: Length bits 16-17
+        // Bits 4-5: Load address bits 16-17
+        // Bits 6-7: Start sector bits 8-9
+        let execBits = UInt8((execAddress >> 16) & 0x03)         // bits 0-1
+        let lengthBits = UInt8(((length >> 16) & 0x03) << 2)     // bits 2-3
+        let loadBits = UInt8(((loadAddress >> 16) & 0x03) << 4)  // bits 4-5
+        let startBits = UInt8(((startSector >> 8) & 0x03) << 6)  // bits 6-7
         data[attrOffset + 6] = execBits | lengthBits | loadBits | startBits
 
         // Start sector (low 8 bits)
