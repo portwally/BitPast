@@ -51,7 +51,7 @@ struct InputImage: Identifiable, Hashable {
 class ConverterViewModel: ObservableObject {
     static let shared = ConverterViewModel()
 
-    @Published var machines: [RetroMachine] = [AppleIIConverter(), AppleIIGSConverter(), Amiga500Converter(), Amiga1200Converter(), AmstradCPCConverter(), Atari800Converter(), AtariSTConverter(), BBCMicroConverter(), C64Converter(), MSXConverter(), PCConverter(), Plus4Converter(), VIC20Converter(), ZXSpectrumConverter()]
+    @Published var machines: [RetroMachine] = [AppleIIConverter(), AppleIIGSConverter(), Amiga500Converter(), Amiga1200Converter(), AmstradCPCConverter(), Atari800Converter(), AtariSTConverter(), BBCMicroConverter(), C64Converter(), MSXConverter(), PCConverter(), Plus4Converter(), TRS80CoCoConverter(), VIC20Converter(), ZXSpectrumConverter()]
     @Published var selectedMachineIndex: Int = 0
     
     @Published var inputImages: [InputImage] = []
@@ -864,6 +864,9 @@ class ConverterViewModel: ObservableObject {
 
         case .pc:
             createPCDisk(configuration: configuration)
+
+        case .trs80coco:
+            createCoCoDisk(configuration: configuration)
         }
     }
 
@@ -1270,6 +1273,51 @@ class ConverterViewModel: ObservableObject {
 
                     if !success {
                         await MainActor.run { self.errorMessage = "Failed to create PC disk image" }
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - TRS-80 CoCo Disk (DSK)
+
+    private func createCoCoDisk(configuration: DiskConfiguration) {
+        let imagesToConvert = getImagesToConvert()
+        guard !imagesToConvert.isEmpty else {
+            self.errorMessage = "No images to add to disk."
+            return
+        }
+
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [UTType(filenameExtension: "dsk") ?? .data]
+        panel.nameFieldStringValue = "IMAGES.dsk"
+        panel.title = "Create TRS-80 CoCo Disk Image"
+
+        panel.begin { response in
+            if response == .OK, let targetUrl = panel.url {
+                Task {
+                    await MainActor.run {
+                        self.isDiskCreating = true
+                        self.diskCreationStatus = "Preparing..."
+                    }
+                    defer { Task { await MainActor.run { self.isDiskCreating = false } } }
+
+                    let allFiles = await self.batchConvertAndCollectFiles()
+
+                    if allFiles.isEmpty {
+                        await MainActor.run { self.errorMessage = "No assets to write to disk." }
+                        return
+                    }
+
+                    let filesWritten = CoCoDiskWriter.shared.createDiskImage(
+                        at: targetUrl,
+                        volumeName: configuration.volumeName,
+                        size: configuration.size,
+                        files: allFiles
+                    )
+
+                    if filesWritten == 0 {
+                        await MainActor.run { self.errorMessage = "Failed to create TRS-80 CoCo disk image" }
                     }
                 }
             }

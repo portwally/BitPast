@@ -15,8 +15,9 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
     case msx = 9
     case pc = 10
     case plus4 = 11
-    case vic20 = 12
-    case zxSpectrum = 13
+    case trs80coco = 12
+    case vic20 = 13
+    case zxSpectrum = 14
 
     var id: Int { rawValue }
 
@@ -34,6 +35,7 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
         case .msx: return "MSX"
         case .pc: return "PC"
         case .plus4: return "Plus/4"
+        case .trs80coco: return "TRS-80 CoCo"
         case .vic20: return "VIC-20"
         case .zxSpectrum: return "ZX Spectrum"
         }
@@ -53,6 +55,7 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
         case .msx: return "icon_MSX"
         case .pc: return "icon_PC"
         case .plus4: return "icon_commodoreplus4"
+        case .trs80coco: return "icon_TRS80"
         case .vic20: return "icon_vic20"
         case .zxSpectrum: return "icon_ZXSpectrum"
         }
@@ -80,6 +83,8 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
             return [.ssd, .dsd]
         case .pc:
             return [.img]
+        case .trs80coco:
+            return [.dsk]
         }
     }
 
@@ -107,6 +112,8 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
             return [.kb100, .kb200, .kb400]
         case .pc:
             return [.kb360, .kb720, .mb1_2, .mb1_44]
+        case .trs80coco:
+            return [.kb180, .kb360]
         }
     }
 
@@ -144,6 +151,8 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
             return 12
         case .pc:
             return 11
+        case .trs80coco:
+            return 8
         }
     }
 
@@ -158,7 +167,7 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
         case .amiga500, .amiga1200:
             // AmigaDOS: Most ASCII
             return CharacterSet.alphanumerics.union(CharacterSet(charactersIn: " _-"))
-        case .atari800, .atariST, .msx, .pc:
+        case .atari800, .atariST, .msx, .pc, .trs80coco:
             // FAT-style: A-Z, 0-9
             return CharacterSet.uppercaseLetters.union(.decimalDigits)
         case .amstradCPC, .zxSpectrum, .bbcMicro:
