@@ -156,7 +156,7 @@ struct BitPastApp: App {
                 .keyboardShortcut("4", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 11)
 
-                Button("VIC-20") {
+                Button("TRS-80 CoCo") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 12 && vm.selectedMachineIndex != 12 {
@@ -165,10 +165,10 @@ struct BitPastApp: App {
                         }
                     }
                 }
-                .keyboardShortcut("V", modifiers: [.command, .shift])
+                .keyboardShortcut("T", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 12)
 
-                Button("ZX Spectrum") {
+                Button("VIC-20") {
                     Task { @MainActor in
                         let vm = ConverterViewModel.shared
                         if vm.machines.count > 13 && vm.selectedMachineIndex != 13 {
@@ -177,8 +177,20 @@ struct BitPastApp: App {
                         }
                     }
                 }
-                .keyboardShortcut("Z", modifiers: [.command, .shift])
+                .keyboardShortcut("V", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 13)
+
+                Button("ZX Spectrum") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 14 && vm.selectedMachineIndex != 14 {
+                            vm.selectedMachineIndex = 14
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("Z", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 14)
             }
 
             CommandGroup(replacing: .help) {

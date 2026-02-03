@@ -15,6 +15,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
     case amiga1200 = "Amiga 1200"
     case pc = "PC"
     case msx = "MSX"
+    case trs80coco = "TRS-80 CoCo"
     case diskImages = "Disk Images"
     case generalOptions = "General Options"
     case filters = "Preprocessing Filters"
@@ -37,6 +38,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
         case .amiga1200: return "desktopcomputer"
         case .pc: return "desktopcomputer"
         case .msx: return "tv"
+        case .trs80coco: return "tv"
         case .diskImages: return "externaldrive"
         case .generalOptions: return "slider.horizontal.3"
         case .filters: return "camera.filters"
@@ -51,7 +53,7 @@ struct HelpView: View {
         NavigationSplitView {
             List(selection: $selectedSection) {
                 Section("Systems") {
-                    ForEach([HelpSection.appleII, .appleIIgs, .bbcMicro, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atari800, .atariST, .amiga500, .amiga1200, .pc, .msx], id: \.self) { section in
+                    ForEach([HelpSection.appleII, .appleIIgs, .bbcMicro, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atari800, .atariST, .amiga500, .amiga1200, .pc, .msx, .trs80coco], id: \.self) { section in
                         Label(section.rawValue, systemImage: section.iconName)
                             .tag(section)
                     }
@@ -108,6 +110,8 @@ struct HelpView: View {
             PCHelpContent()
         case .msx:
             MSXHelpContent()
+        case .trs80coco:
+            TRS80CoCoHelpContent()
         case .diskImages:
             DiskImagesHelpContent()
         case .generalOptions:
@@ -1349,6 +1353,146 @@ struct MSXHelpContent: View {
                     name: "Screen 8 BSAVE",
                     size: "~54KB",
                     description: "MSX2 BSAVE format with 8bpp image data (3-3-2 RGB)."
+                )
+            }
+        }
+    }
+}
+
+// MARK: - TRS-80 CoCo Help
+
+struct TRS80CoCoHelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "TRS-80 Color Computer", subtitle: "MC6847 and GIME graphics modes")
+
+            ModeHelpSection(
+                title: "PMODE 3 (128×192, 4 colors)",
+                fileFormat: ".bin (6,144 bytes)",
+                description: "Standard CoCo graphics mode using the MC6847 VDG chip. 128×192 resolution with 4 colors from either Color Set 0 or Set 1. Most common mode for CoCo 1/2 graphics.",
+                bestFor: "General CoCo graphics, games, colorful images",
+                options: [
+                    OptionHelp(name: "Color Set 0", description: "Green, Yellow, Blue, Red on black background"),
+                    OptionHelp(name: "Color Set 1", description: "Buff, Cyan, Magenta, Orange on black background"),
+                    OptionHelp(name: "Dithering", description: "Bayer 4×4 recommended. Floyd-Steinberg for photos.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "PMODE 4 (256×192, 2 colors)",
+                fileFormat: ".bin (6,144 bytes)",
+                description: "High-resolution CoCo mode with 256×192 pixels but only 2 colors. Can use NTSC artifact coloring for additional colors on real hardware.",
+                bestFor: "Line art, text, high contrast images, artifact color graphics",
+                options: [
+                    OptionHelp(name: "Artifact (NTSC)", description: "Enables NTSC artifact colors (Blue/Orange) for additional color variety on composite displays"),
+                    OptionHelp(name: "Dithering", description: "Bayer dithering creates good patterns in 2-color mode")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "PMODE 1 (128×96, 4 colors)",
+                fileFormat: ".bin (1,536 bytes)",
+                description: "Low-resolution CoCo mode with 128×96 pixels and 4 colors. Uses less memory than other modes. Good for simple graphics.",
+                bestFor: "Simple graphics, memory-constrained applications",
+                options: [
+                    OptionHelp(name: "Color Set", description: "Same color sets as PMODE 3"),
+                    OptionHelp(name: "Dithering", description: "Light dithering recommended due to low resolution")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "PMODE 2 (128×192, 2 colors)",
+                fileFormat: ".bin (3,072 bytes)",
+                description: "Medium-resolution mode with 128×192 pixels and 2 colors. Uses half the memory of PMODE 3.",
+                bestFor: "Monochrome graphics, line art when memory is limited",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Bayer dithering recommended for photos")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "CoCo 3 (320×200, 16 colors)",
+                fileFormat: ".cm3 (32,000 bytes)",
+                description: "CoCo 3 GIME mode with 320×200 resolution and 16 colors from the 64-color RGB palette (2 bits per channel). Requires CoCo 3 hardware.",
+                bestFor: "Detailed colorful graphics, photos, CoCo 3 games",
+                options: [
+                    OptionHelp(name: "Fixed Palette", description: "Uses a standard 16-color palette for emulator compatibility"),
+                    OptionHelp(name: "Dithering", description: "Floyd-Steinberg recommended for photos, Bayer for pixel art")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "CoCo 3 (640×200, 4 colors)",
+                fileFormat: ".cm3 (32,000 bytes)",
+                description: "CoCo 3 high-resolution mode with 640×200 pixels and 4 colors. Good balance of resolution and color for text and detailed graphics.",
+                bestFor: "Text, CAD, detailed line art, desktop applications",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Ordered dithering (Bayer) works well with limited 4-color palette")
+                ]
+            )
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("MC6847 Video Display Generator")
+                    .font(.headline)
+                Text("The CoCo 1/2 uses the Motorola MC6847 VDG chip which provides:")
+                    .foregroundColor(.secondary)
+                Text("• Two 4-color sets (Set 0: Green/Yellow/Blue/Red, Set 1: Buff/Cyan/Magenta/Orange)")
+                    .foregroundColor(.secondary)
+                Text("• NTSC artifact coloring in high-res modes")
+                    .foregroundColor(.secondary)
+                Text("• All modes use black as the background color")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 12) {
+                Text("GIME Chip (CoCo 3)")
+                    .font(.headline)
+                Text("The CoCo 3's GIME chip provides enhanced graphics:")
+                    .foregroundColor(.secondary)
+                Text("• 64-color RGB palette (2 bits per R, G, B channel)")
+                    .foregroundColor(.secondary)
+                Text("• Resolutions up to 640×225")
+                    .foregroundColor(.secondary)
+                Text("• Up to 16 simultaneous colors")
+                    .foregroundColor(.secondary)
+                Text("• Hardware scrolling and multiple graphics pages")
+                    .foregroundColor(.secondary)
+            }
+            .padding()
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+
+            Divider()
+
+            HStack(spacing: 20) {
+                FileFormatHelp(
+                    extension_: ".bin",
+                    name: "Raw Binary",
+                    size: "1.5-6KB",
+                    description: "Raw bitmap data for CoCo 1/2 PMODE graphics. Load with LOADM or poke directly to video RAM."
+                )
+                FileFormatHelp(
+                    extension_: ".cm3",
+                    name: "CoCo 3 Format",
+                    size: "32KB",
+                    description: "CoCo 3 GIME graphics data. Compatible with CoCo 3 emulators like VCC and MAME."
                 )
             }
         }
