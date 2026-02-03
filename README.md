@@ -4,7 +4,7 @@
 ![Language](https://img.shields.io/badge/language-Swift%20%7C%20C-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**BitPast** is a modern, native macOS application for converting images into authentic retro computer graphic formats including **Apple II**, **Apple IIgs**, **BBC Micro**, **Commodore 64**, **VIC-20**, **ZX Spectrum**, **Amstrad CPC**, **Plus/4**, **Atari 800**, **Atari ST**, **Amiga 500**, **Amiga 1200**, **IBM PC**, and **MSX**.
+**BitPast** is a modern, native macOS application for converting images into authentic retro computer graphic formats including **Apple II**, **Apple IIgs**, **BBC Micro**, **Commodore 64**, **VIC-20**, **ZX Spectrum**, **Amstrad CPC**, **Plus/4**, **Atari 800**, **Atari ST**, **Amiga 500**, **Amiga 1200**, **IBM PC**, **MSX**, and **TRS-80 Color Computer**.
 
 ![Apple IIgs 3200 Color Mode](rsc/screenshot-iigs-dark.png)
 
@@ -133,6 +133,17 @@ TMS9918 and V9938 video chip graphics:
 - **Screen 8 (MSX2):** 256×212, 256 fixed colors (3-3-2 RGB).
 - **Output:** `.sc2`, `.sc5`, `.sc8` (BSAVE format).
 
+#### 🖥️ TRS-80 Color Computer
+MC6847 VDG and GIME chip graphics:
+- **PMODE 1:** 128×96, 4 colors from color set.
+- **PMODE 2:** 128×192, 2 colors (high-resolution).
+- **PMODE 3:** 128×192, 4 colors from color set.
+- **PMODE 4:** 256×192, 2 colors (highest CoCo 1/2 resolution).
+- **CoCo 3 320×200:** 16 colors from 64-color GIME palette.
+- **CoCo 3 640×200:** 4 colors (high-resolution mode).
+- **Color sets:** Set 0 (Green/Yellow/Blue/Red), Set 1 (Buff/Cyan/Magenta/Orange), NTSC Artifact.
+- **Output:** `.bin` (CoCo 1/2 raw), `.cm3` (CoCo 3 format).
+
 ### 🎛️ Fine-Tuning Control
 
 **Processing Options:**
@@ -167,12 +178,13 @@ TMS9918 and V9938 video chip graphics:
 | Amstrad CPC | .DSK | 180KB, 360KB |
 | ZX Spectrum | .TRD, .DSK | 640KB, 180KB |
 | PC | .IMG | 360KB, 720KB, 1.2MB, 1.44MB |
+| TRS-80 CoCo | .DSK | 180KB, 360KB |
 
 ## 🚀 How to Use
 
 1. **Drag Images** into the left "Image Browser" panel.
 2. Select an image to preview it.
-3. Choose your **System** from the horizontal bar at the top (Apple II, Apple IIgs, BBC Micro, C64, VIC-20, ZX Spectrum, Amstrad CPC, Plus/4, Atari 800, Atari ST, Amiga 500, Amiga 1200, PC, MSX).
+3. Choose your **System** from the horizontal bar at the top (Apple II, Apple IIgs, BBC Micro, C64, VIC-20, ZX Spectrum, Amstrad CPC, Plus/4, Atari 800, Atari ST, Amiga 500, Amiga 1200, PC, MSX, TRS-80 CoCo).
 4. Select the **Mode** and tweak **Dither**, **Contrast**, and other settings.
 5. Click **Export** in the bottom right corner.
    - Choose **PNG/JPG** for a visual preview.
