@@ -216,6 +216,21 @@ struct ContentView: View {
                             .buttonStyle(.plain)
                             .help("Remove selected image")
                         }
+                        // Lock/Unlock per-image settings button
+                        if viewModel.selectedImageId != nil {
+                            Button(action: {
+                                if viewModel.selectedImageIsLocked {
+                                    viewModel.unlockSettings()
+                                } else {
+                                    viewModel.lockCurrentSettings()
+                                }
+                            }) {
+                                Image(systemName: viewModel.selectedImageIsLocked ? "lock.fill" : "lock.open")
+                                    .foregroundStyle(viewModel.selectedImageIsLocked ? .orange : (isRetro ? retroTextColor : .secondary))
+                            }
+                            .buttonStyle(.plain)
+                            .help(viewModel.selectedImageIsLocked ? "Unlock settings (use global)" : "Lock current settings for this image")
+                        }
                         Button(action: { viewModel.selectImagesFromFinder() }) {
                             if isRetro {
                                 Text("+")
@@ -295,6 +310,7 @@ struct ContentView: View {
                                         item: item,
                                         isSelected: viewModel.selectedImageId == item.id,
                                         isMultiSelected: viewModel.selectedImageIds.contains(item.id),
+                                        isLocked: item.isLocked,
                                         isRetro: isRetro,
                                         isAppleII: isAppleII,
                                         onToggleSelection: {
@@ -1477,6 +1493,7 @@ struct ImageGridItem: View {
     let item: InputImage
     let isSelected: Bool
     var isMultiSelected: Bool = false
+    var isLocked: Bool = false  // Per-image settings locked
     var isRetro: Bool = false
     var isAppleII: Bool = false
     var onToggleSelection: (() -> Void)? = nil
@@ -1505,9 +1522,22 @@ struct ImageGridItem: View {
                     .frame(height: 70)
                     .padding(4)
 
-                // Selection circle overlay (top-right corner)
+                // Selection circle overlay (top-right corner) and lock indicator (top-left)
                 VStack {
                     HStack {
+                        // Lock indicator (top-left)
+                        if isLocked {
+                            Image(systemName: "lock.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.orange)
+                                .padding(4)
+                                .background(
+                                    Circle()
+                                        .fill(Color.black.opacity(0.5))
+                                        .frame(width: 18, height: 18)
+                                )
+                                .padding(2)
+                        }
                         Spacer()
                         Button(action: { onToggleSelection?() }) {
                             ZStack {

@@ -97,9 +97,12 @@ class TRS80CoCoConverter: RetroMachine {
         coco3Palette[7]    // 15: Sky Blue (R0G1B3)
     ]
 
-    func convert(sourceImage: NSImage) async throws -> ConversionResult {
-        let mode = options.first(where: { $0.key == "mode" })?.selectedValue ?? "PMODE 3 (128×192, 4 colors)"
-        let colorSet = options.first(where: { $0.key == "colorset" })?.selectedValue ?? "Set 0 (Green/Yellow/Blue/Red)"
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        // Use provided settings or fall back to instance options
+        let opts = settings ?? options
+
+        let mode = opts.first(where: { $0.key == "mode" })?.selectedValue ?? "PMODE 3 (128×192, 4 colors)"
+        let colorSet = opts.first(where: { $0.key == "colorset" })?.selectedValue ?? "Set 0 (Green/Yellow/Blue/Red)"
 
         let (width, height, numColors, isCoCo3): (Int, Int, Int, Bool)
         switch mode {
@@ -122,13 +125,13 @@ class TRS80CoCoConverter: RetroMachine {
         }
 
         // Get options
-        let ditherAlg = options.first(where: { $0.key == "dither" })?.selectedValue ?? "Bayer 4x4"
-        let ditherAmount = Double(options.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "0.5") ?? 0.5
-        let contrast = options.first(where: { $0.key == "contrast" })?.selectedValue ?? "None"
-        let filter = options.first(where: { $0.key == "filter" })?.selectedValue ?? "None"
-        let colorMatch = options.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
-        let saturation = Double(options.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
-        let gamma = Double(options.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
+        let ditherAlg = opts.first(where: { $0.key == "dither" })?.selectedValue ?? "Bayer 4x4"
+        let ditherAmount = Double(opts.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "0.5") ?? 0.5
+        let contrast = opts.first(where: { $0.key == "contrast" })?.selectedValue ?? "None"
+        let filter = opts.first(where: { $0.key == "filter" })?.selectedValue ?? "None"
+        let colorMatch = opts.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
+        let saturation = Double(opts.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
+        let gamma = Double(opts.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
 
         // Scale image
         var pixels = scaleImage(cgImage, toWidth: width, height: height)

@@ -18,7 +18,11 @@ struct InputImage: Identifiable, Hashable {
     let dpi: Int?
     let hasAlpha: Bool
 
-    init(name: String, image: NSImage, details: String, fileURL: URL? = nil, fileSize: Int64? = nil, format: String = "Unknown", bitsPerPixel: Int? = nil, colorSpace: String? = nil, dpi: Int? = nil, hasAlpha: Bool = false) {
+    // Per-image conversion settings (for batch export with individual settings)
+    var lockedSettings: [ConversionOption]?
+    var lockedMachineIndex: Int?  // Which machine these settings are for
+
+    init(name: String, image: NSImage, details: String, fileURL: URL? = nil, fileSize: Int64? = nil, format: String = "Unknown", bitsPerPixel: Int? = nil, colorSpace: String? = nil, dpi: Int? = nil, hasAlpha: Bool = false, lockedSettings: [ConversionOption]? = nil, lockedMachineIndex: Int? = nil) {
         self.name = name
         self.image = image
         self.details = details
@@ -29,6 +33,12 @@ struct InputImage: Identifiable, Hashable {
         self.colorSpace = colorSpace
         self.dpi = dpi
         self.hasAlpha = hasAlpha
+        self.lockedSettings = lockedSettings
+        self.lockedMachineIndex = lockedMachineIndex
+    }
+
+    var isLocked: Bool {
+        lockedSettings != nil
     }
 
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
@@ -164,6 +174,45 @@ class ConverterViewModel: ObservableObject {
         }
     }
 
+    // MARK: - Per-Image Settings Lock/Unlock
+
+    /// Lock the current settings for the selected image
+    func lockCurrentSettings() {
+        guard let selectedId = selectedImageId,
+              let index = inputImages.firstIndex(where: { $0.id == selectedId }) else { return }
+
+        // Copy current machine settings to the image
+        var updatedImage = inputImages[index]
+        updatedImage.lockedSettings = currentMachine.options
+        updatedImage.lockedMachineIndex = selectedMachineIndex
+        inputImages[index] = updatedImage
+    }
+
+    /// Unlock (remove) per-image settings for the selected image
+    func unlockSettings() {
+        guard let selectedId = selectedImageId,
+              let index = inputImages.firstIndex(where: { $0.id == selectedId }) else { return }
+
+        var updatedImage = inputImages[index]
+        updatedImage.lockedSettings = nil
+        updatedImage.lockedMachineIndex = nil
+        inputImages[index] = updatedImage
+    }
+
+    /// Check if the selected image has locked settings
+    var selectedImageIsLocked: Bool {
+        guard let selectedId = selectedImageId,
+              let image = inputImages.first(where: { $0.id == selectedId }) else { return false }
+        return image.isLocked
+    }
+
+    /// Check if the selected image's locked settings match the current machine
+    var selectedImageLockedForCurrentMachine: Bool {
+        guard let selectedId = selectedImageId,
+              let image = inputImages.first(where: { $0.id == selectedId }) else { return false }
+        return image.lockedMachineIndex == selectedMachineIndex
+    }
+
     func batchExport() {
         guard !selectedImageIds.isEmpty else { return }
 
@@ -188,8 +237,10 @@ class ConverterViewModel: ObservableObject {
         Task {
             for (index, imageItem) in imagesToExport.enumerated() {
                 do {
-                    // Convert the image
-                    let result = try await currentMachine.convert(sourceImage: imageItem.image)
+                    // Convert the image using per-image settings if locked, otherwise use global settings
+                    let settingsToUse = (imageItem.lockedSettings != nil && imageItem.lockedMachineIndex == self.selectedMachineIndex)
+                        ? imageItem.lockedSettings : nil
+                    let result = try await currentMachine.convert(sourceImage: imageItem.image, withSettings: settingsToUse)
 
                     // Copy native file to export folder
                     if let sourceURL = result.fileAssets.first {
@@ -246,8 +297,10 @@ class ConverterViewModel: ObservableObject {
         Task {
             for (index, imageItem) in imagesToExport.enumerated() {
                 do {
-                    // Convert the image
-                    let result = try await currentMachine.convert(sourceImage: imageItem.image)
+                    // Convert the image using per-image settings if locked, otherwise use global settings
+                    let settingsToUse = (imageItem.lockedSettings != nil && imageItem.lockedMachineIndex == self.selectedMachineIndex)
+                        ? imageItem.lockedSettings : nil
+                    let result = try await currentMachine.convert(sourceImage: imageItem.image, withSettings: settingsToUse)
 
                     // Save as specified image format
                     let baseName = (imageItem.name as NSString).deletingPathExtension
@@ -309,8 +362,10 @@ class ConverterViewModel: ObservableObject {
         Task {
             for (index, imageItem) in imagesToExport.enumerated() {
                 do {
-                    // Convert the image
-                    let result = try await currentMachine.convert(sourceImage: imageItem.image)
+                    // Convert the image using per-image settings if locked, otherwise use global settings
+                    let settingsToUse = (imageItem.lockedSettings != nil && imageItem.lockedMachineIndex == self.selectedMachineIndex)
+                        ? imageItem.lockedSettings : nil
+                    let result = try await currentMachine.convert(sourceImage: imageItem.image, withSettings: settingsToUse)
 
                     // Copy native file to export folder
                     if let sourceURL = result.fileAssets.first {
@@ -674,8 +729,10 @@ class ConverterViewModel: ObservableObject {
                         }
 
                         do {
-                            // Convert the image
-                            let result = try await self.currentMachine.convert(sourceImage: imageItem.image)
+                            // Convert the image using per-image settings if locked, otherwise use global settings
+                            let settingsToUse = (imageItem.lockedSettings != nil && imageItem.lockedMachineIndex == self.selectedMachineIndex)
+                                ? imageItem.lockedSettings : nil
+                            let result = try await self.currentMachine.convert(sourceImage: imageItem.image, withSettings: settingsToUse)
 
                             for assetUrl in result.fileAssets {
                                 // Build target filename from original image name
@@ -791,7 +848,10 @@ class ConverterViewModel: ObservableObject {
             }
 
             do {
-                let result = try await currentMachine.convert(sourceImage: imageItem.image)
+                // Convert the image using per-image settings if locked, otherwise use global settings
+                let settingsToUse = (imageItem.lockedSettings != nil && imageItem.lockedMachineIndex == self.selectedMachineIndex)
+                    ? imageItem.lockedSettings : nil
+                let result = try await currentMachine.convert(sourceImage: imageItem.image, withSettings: settingsToUse)
                 // Get base name without extension from original image
                 let baseName = (imageItem.name as NSString).deletingPathExtension
                 for (assetIndex, assetUrl) in result.fileAssets.enumerated() {

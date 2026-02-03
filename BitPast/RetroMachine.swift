@@ -76,7 +76,14 @@ struct ConversionOption: Identifiable {
 protocol RetroMachine {
     var name: String { get }
     var options: [ConversionOption] { get set }
-    func convert(sourceImage: NSImage) async throws -> ConversionResult
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]?) async throws -> ConversionResult
+}
+
+// Extension to provide default parameter value
+extension RetroMachine {
+    func convert(sourceImage: NSImage) async throws -> ConversionResult {
+        try await convert(sourceImage: sourceImage, withSettings: nil)
+    }
 }
 
 // Hilfserweiterung für Scaling

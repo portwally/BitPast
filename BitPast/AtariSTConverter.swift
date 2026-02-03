@@ -50,8 +50,11 @@ class AtariSTConverter: RetroMachine {
         return palette
     }()
 
-    func convert(sourceImage: NSImage) async throws -> ConversionResult {
-        let mode = options.first(where: { $0.key == "mode" })?.selectedValue ?? "Low Res (320×200)"
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        // Use provided settings or fall back to instance options
+        let opts = settings ?? options
+
+        let mode = opts.first(where: { $0.key == "mode" })?.selectedValue ?? "Low Res (320×200)"
 
         // Determine resolution and colors based on mode
         let width: Int

@@ -133,16 +133,19 @@ class Plus4Converter: RetroMachine {
         [0xff, 0xff, 0xfd], [0xff, 0xff, 0xff], [0xff, 0xff, 0xff], [0xdb, 0xff, 0xff]
     ]
 
-    func convert(sourceImage: NSImage) async throws -> ConversionResult {
-        let mode = options.first(where: { $0.key == "mode" })?.selectedValue ?? "HiRes (320×200)"
-        let ditherAlg = options.first(where: { $0.key == "dither" })?.selectedValue ?? "Bayer 2x2"
-        let ditherAmount = Double(options.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "0.5") ?? 0.5
-        let contrastMode = options.first(where: { $0.key == "contrast" })?.selectedValue ?? "None"
-        let filterMode = options.first(where: { $0.key == "filter" })?.selectedValue ?? "None"
-        let pixelMerge = options.first(where: { $0.key == "pixel_merge" })?.selectedValue ?? "Average"
-        let colorMatch = options.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
-        let saturation = Double(options.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
-        let gamma = Double(options.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        // Use provided settings or fall back to instance options
+        let opts = settings ?? options
+
+        let mode = opts.first(where: { $0.key == "mode" })?.selectedValue ?? "HiRes (320×200)"
+        let ditherAlg = opts.first(where: { $0.key == "dither" })?.selectedValue ?? "Bayer 2x2"
+        let ditherAmount = Double(opts.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "0.5") ?? 0.5
+        let contrastMode = opts.first(where: { $0.key == "contrast" })?.selectedValue ?? "None"
+        let filterMode = opts.first(where: { $0.key == "filter" })?.selectedValue ?? "None"
+        let pixelMerge = opts.first(where: { $0.key == "pixel_merge" })?.selectedValue ?? "Average"
+        let colorMatch = opts.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
+        let saturation = Double(opts.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
+        let gamma = Double(opts.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
 
         let isMulticolor = mode.contains("Multicolor")
         let screenWidth = 320

@@ -312,24 +312,26 @@ class AppleIIGSConverter: RetroMachine {
     
     // MARK: - Main Conversion
     
-    func convert(sourceImage: NSImage) async throws -> ConversionResult {
-        
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        // Use provided settings or fall back to instance options
+        let opts = settings ?? options
+
         // --- CONFIG ---
-        let mode = options.first(where: {$0.key == "mode"})?.selectedValue ?? "3200 Mode (Smart Scanlines)"
-        let ditherName = options.first(where: {$0.key == "dither"})?.selectedValue ?? "None"
-        let ditherAmount = Double(options.first(where: {$0.key == "dither_amount"})?.selectedValue ?? "1.0") ?? 1.0
-        let saturation = Double(options.first(where: {$0.key == "saturation"})?.selectedValue ?? "1.0") ?? 1.0
-        let quantMethod = options.first(where: {$0.key == "quantization_method"})?.selectedValue ?? "Per-Scanline (Default)"
-        let mergeThreshold = Double(options.first(where: {$0.key == "threshold"})?.selectedValue ?? "10.0") ?? 10.0
-        let preprocessFilter = options.first(where: {$0.key == "preprocess"})?.selectedValue ?? "None"
+        let mode = opts.first(where: {$0.key == "mode"})?.selectedValue ?? "3200 Mode (Smart Scanlines)"
+        let ditherName = opts.first(where: {$0.key == "dither"})?.selectedValue ?? "None"
+        let ditherAmount = Double(opts.first(where: {$0.key == "dither_amount"})?.selectedValue ?? "1.0") ?? 1.0
+        let saturation = Double(opts.first(where: {$0.key == "saturation"})?.selectedValue ?? "1.0") ?? 1.0
+        let quantMethod = opts.first(where: {$0.key == "quantization_method"})?.selectedValue ?? "Per-Scanline (Default)"
+        let mergeThreshold = Double(opts.first(where: {$0.key == "threshold"})?.selectedValue ?? "10.0") ?? 10.0
+        let preprocessFilter = opts.first(where: {$0.key == "preprocess"})?.selectedValue ?? "None"
 
         // Get filter-specific parameters
-        let medianSize = options.first(where: {$0.key == "median_size"})?.selectedValue ?? "3x3"
-        let sharpenStrength = Double(options.first(where: {$0.key == "sharpen_strength"})?.selectedValue ?? "1.0") ?? 1.0
-        let sigmaRange = Double(options.first(where: {$0.key == "sigma_range"})?.selectedValue ?? "20.0") ?? 20.0
-        let solarizeThreshold = Double(options.first(where: {$0.key == "solarize_threshold"})?.selectedValue ?? "128.0") ?? 128.0
-        let embossDepth = Double(options.first(where: {$0.key == "emboss_depth"})?.selectedValue ?? "1.0") ?? 1.0
-        let edgeThreshold = Double(options.first(where: {$0.key == "edge_threshold"})?.selectedValue ?? "50.0") ?? 50.0
+        let medianSize = opts.first(where: {$0.key == "median_size"})?.selectedValue ?? "3x3"
+        let sharpenStrength = Double(opts.first(where: {$0.key == "sharpen_strength"})?.selectedValue ?? "1.0") ?? 1.0
+        let sigmaRange = Double(opts.first(where: {$0.key == "sigma_range"})?.selectedValue ?? "20.0") ?? 20.0
+        let solarizeThreshold = Double(opts.first(where: {$0.key == "solarize_threshold"})?.selectedValue ?? "128.0") ?? 128.0
+        let embossDepth = Double(opts.first(where: {$0.key == "emboss_depth"})?.selectedValue ?? "1.0") ?? 1.0
+        let edgeThreshold = Double(opts.first(where: {$0.key == "edge_threshold"})?.selectedValue ?? "50.0") ?? 50.0
 
         let is640 = mode.contains("640")
         let is3200Brooks = mode.contains("3200 Colors")

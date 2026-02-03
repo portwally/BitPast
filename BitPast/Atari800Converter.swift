@@ -71,8 +71,11 @@ class Atari800Converter: RetroMachine {
         return palette
     }()
 
-    func convert(sourceImage: NSImage) async throws -> ConversionResult {
-        let mode = options.first(where: { $0.key == "mode" })?.selectedValue ?? "Graphics 15 (160×192, 4 colors)"
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        // Use provided settings or fall back to instance options
+        let opts = settings ?? options
+
+        let mode = opts.first(where: { $0.key == "mode" })?.selectedValue ?? "Graphics 15 (160×192, 4 colors)"
 
         let (width, height, numColors): (Int, Int, Int)
         switch mode {

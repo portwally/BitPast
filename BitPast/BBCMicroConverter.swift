@@ -47,8 +47,11 @@ class BBCMicroConverter: RetroMachine {
         [255, 255, 255]  // 7 - White
     ]
 
-    func convert(sourceImage: NSImage) async throws -> ConversionResult {
-        let mode = options.first(where: { $0.key == "mode" })?.selectedValue ?? "Mode 2 (160×256, 8 colors)"
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        // Use provided settings or fall back to instance options
+        let opts = settings ?? options
+
+        let mode = opts.first(where: { $0.key == "mode" })?.selectedValue ?? "Mode 2 (160×256, 8 colors)"
 
         let (width, height, numColors, bytesPerLine): (Int, Int, Int, Int)
         switch mode {

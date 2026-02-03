@@ -109,17 +109,20 @@ class VIC20Converter: RetroMachine {
         [0xFF, 0xFF, 0x00]   // 15: Light Yellow
     ]
 
-    func convert(sourceImage: NSImage) throws -> ConversionResult {
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) throws -> ConversionResult {
+        // Use provided settings or fall back to instance options
+        let opts = settings ?? options
+
         // Get options
-        let mode = options.first(where: { $0.key == "mode" })?.selectedValue ?? "HiRes"
-        let ditherAlg = options.first(where: { $0.key == "dither" })?.selectedValue ?? "None"
-        let ditherAmount = Double(options.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "1.0") ?? 1.0
-        let contrastMode = options.first(where: { $0.key == "contrast" })?.selectedValue ?? "SWAHE"
-        let filterMode = options.first(where: { $0.key == "filter" })?.selectedValue ?? "Sharpen"
-        let pixelMerge = options.first(where: { $0.key == "pixel_merge" })?.selectedValue ?? "Average"
-        let colorMatch = options.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
-        let saturation = Double(options.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
-        let gamma = Double(options.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
+        let mode = opts.first(where: { $0.key == "mode" })?.selectedValue ?? "HiRes"
+        let ditherAlg = opts.first(where: { $0.key == "dither" })?.selectedValue ?? "None"
+        let ditherAmount = Double(opts.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "1.0") ?? 1.0
+        let contrastMode = opts.first(where: { $0.key == "contrast" })?.selectedValue ?? "SWAHE"
+        let filterMode = opts.first(where: { $0.key == "filter" })?.selectedValue ?? "Sharpen"
+        let pixelMerge = opts.first(where: { $0.key == "pixel_merge" })?.selectedValue ?? "Average"
+        let colorMatch = opts.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
+        let saturation = Double(opts.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
+        let gamma = Double(opts.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
 
         // VIC-20 screen size: 176x184 (22x23 character cells)
         let screenWidth = 176

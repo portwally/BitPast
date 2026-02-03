@@ -91,18 +91,21 @@ class AppleIIConverter: RetroMachine {
         )
     ]
     
-    func convert(sourceImage: NSImage) async throws -> ConversionResult {
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        // Use provided settings or fall back to instance options
+        let opts = settings ?? options
+
         let fileManager = FileManager.default
         let tempDir = fileManager.temporaryDirectory
         let uuid = UUID().uuidString.prefix(8)
-        
+
         let baseNameRaw = "bp_\(uuid)"
         let inputFilename = "\(baseNameRaw).bmp"
         let inputUrl = tempDir.appendingPathComponent(inputFilename)
-        
+
         // --- CONFIG ---
-        let mode = options.first(where: {$0.key == "mode"})?.selectedValue ?? ""
-        let resString = options.first(where: {$0.key == "resolution"})?.selectedValue ?? ""
+        let mode = opts.first(where: {$0.key == "mode"})?.selectedValue ?? ""
+        let resString = opts.first(where: {$0.key == "resolution"})?.selectedValue ?? ""
         
         // --- SAFE RESOLUTION MAPPING ---
         var targetW = 280
@@ -175,7 +178,7 @@ class AppleIIConverter: RetroMachine {
         // DHGR mode (default) - no flags needed for color DHGR
         
         // --- DITHER MAPPING (matching b2d.c defines) ---
-        let ditherName = options.first(where: {$0.key == "dither"})?.selectedValue ?? ""
+        let ditherName = opts.first(where: {$0.key == "dither"})?.selectedValue ?? ""
         switch ditherName {
         case "None":           break  // No dither flag
         case "Floyd-Steinberg": args.append("-D1")
@@ -193,7 +196,7 @@ class AppleIIConverter: RetroMachine {
         // --- ERROR MATRIX (E) ---
         // Only add error matrix if dithering is enabled (not "None")
         if ditherName != "None" {
-            if let eStr = options.first(where: {$0.key == "error_matrix"})?.selectedValue,
+            if let eStr = opts.first(where: {$0.key == "error_matrix"})?.selectedValue,
                let eVal = Double(eStr),
                eVal > 0 {
                 args.append("-E\(Int(eVal))")
@@ -201,7 +204,7 @@ class AppleIIConverter: RetroMachine {
         }
 
         // --- PALETTE MAPPING (matching b2d.c palname[] indices) ---
-        let palName = options.first(where: {$0.key == "palette"})?.selectedValue ?? ""
+        let palName = opts.first(where: {$0.key == "palette"})?.selectedValue ?? ""
 
         // For Mono mode, DO NOT set any palette - palette flags can trigger HGR internally!
         if mode != "Mono" {
@@ -219,12 +222,12 @@ class AppleIIConverter: RetroMachine {
             default:                     args.append("-P5")  // Fallback to tohgr
             }
         }
-        
+
         // --- SLIDERS (X, Z) ---
-        if let valStr = options.first(where: {$0.key == "crosshatch"})?.selectedValue, let val = Double(valStr), val > 0 {
+        if let valStr = opts.first(where: {$0.key == "crosshatch"})?.selectedValue, let val = Double(valStr), val > 0 {
             args.append("-X\(Int(val))")
         }
-        if let valStr = options.first(where: {$0.key == "z_threshold"})?.selectedValue, let val = Double(valStr), val > 0 {
+        if let valStr = opts.first(where: {$0.key == "z_threshold"})?.selectedValue, let val = Double(valStr), val > 0 {
             args.append("-Z\(Int(val))")
         }
         

@@ -95,14 +95,17 @@ class ZXSpectrumConverter: RetroMachine {
         [0xFF, 0xFF, 0xFF]   // 15: White (bright)
     ]
 
-    func convert(sourceImage: NSImage) throws -> ConversionResult {
-        let ditherAlg = options.first(where: { $0.key == "dither" })?.selectedValue ?? "Bayer 2x2"
-        let ditherAmount = Double(options.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "1.0") ?? 1.0
-        let contrastMode = options.first(where: { $0.key == "contrast" })?.selectedValue ?? "SWAHE"
-        let filterMode = options.first(where: { $0.key == "filter" })?.selectedValue ?? "None"
-        let colorMatch = options.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
-        let saturation = Double(options.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
-        let gamma = Double(options.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
+    func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) throws -> ConversionResult {
+        // Use provided settings or fall back to instance options
+        let opts = settings ?? options
+
+        let ditherAlg = opts.first(where: { $0.key == "dither" })?.selectedValue ?? "Bayer 2x2"
+        let ditherAmount = Double(opts.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "1.0") ?? 1.0
+        let contrastMode = opts.first(where: { $0.key == "contrast" })?.selectedValue ?? "SWAHE"
+        let filterMode = opts.first(where: { $0.key == "filter" })?.selectedValue ?? "None"
+        let colorMatch = opts.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
+        let saturation = Double(opts.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
+        let gamma = Double(opts.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
 
         // ZX Spectrum screen: 256×192 (32×24 attribute cells of 8×8)
         let screenWidth = 256
