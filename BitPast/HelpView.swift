@@ -1678,6 +1678,33 @@ struct GeneralOptionsHelpContent: View {
                     "0.8-1.2: Typical useful range"
                 ]
             )
+
+            Divider()
+
+            GeneralOptionHelp(
+                name: "Per-Image Settings (Lock)",
+                options: [
+                    "Lock Icon: Click to save current settings for the selected image",
+                    "Orange Lock: Indicates image has locked settings",
+                    "Batch Export: Locked images use their saved settings",
+                    "Unlocked Images: Use current global settings",
+                    "Machine-Specific: Settings only apply to the same system type"
+                ]
+            )
+
+            Text("To use per-image settings:")
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .padding(.top, 4)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("1. Select an image and adjust conversion settings")
+                Text("2. Click the lock icon to save those settings")
+                Text("3. Repeat for other images with different settings")
+                Text("4. Export - each locked image uses its own settings")
+            }
+            .font(.caption)
+            .foregroundColor(.secondary)
         }
     }
 }

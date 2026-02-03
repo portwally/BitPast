@@ -2,6 +2,24 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [4.1] - 2026-02-03
+
+### Added
+- **Per-Image Conversion Settings** - Lock individual settings for each image during batch export:
+  - Click the **lock icon** in the image toolbar to save current settings for the selected image
+  - Locked images display an **orange lock indicator** on their thumbnail
+  - During batch export or disk creation, each locked image uses its saved settings
+  - Unlocked images continue to use the current global settings
+  - Settings are tied to the machine type (e.g., C64 settings won't apply to Apple IIgs)
+  - Click the lock again to unlock and revert to global settings
+
+### Technical
+- Added `lockedSettings` and `lockedMachineIndex` fields to `InputImage` struct
+- Extended `RetroMachine` protocol with optional settings parameter
+- Updated all 15 converters to accept per-image settings
+- Modified batch export methods to use per-image settings when available
+- Added lock/unlock button and thumbnail indicator in ContentView
+
 ## [4.0] - 2026-01-31
 
 ### Added
