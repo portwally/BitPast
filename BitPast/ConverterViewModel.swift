@@ -213,6 +213,16 @@ class ConverterViewModel: ObservableObject {
         return image.lockedMachineIndex == selectedMachineIndex
     }
 
+    /// Clear all locked settings from all images (called when changing system)
+    func clearAllLocks() {
+        for index in inputImages.indices {
+            var updatedImage = inputImages[index]
+            updatedImage.lockedSettings = nil
+            updatedImage.lockedMachineIndex = nil
+            inputImages[index] = updatedImage
+        }
+    }
+
     func batchExport() {
         guard !selectedImageIds.isEmpty else { return }
 
@@ -565,8 +575,19 @@ class ConverterViewModel: ObservableObject {
         isConverting = true
         errorMessage = nil
         let machine = currentMachine
+        
+        // Use locked settings if the selected image has them for the current machine
+        let settingsToUse: [ConversionOption]?
+        if let selectedId = selectedImageId,
+           let image = inputImages.first(where: { $0.id == selectedId }),
+           image.lockedSettings != nil && image.lockedMachineIndex == selectedMachineIndex {
+            settingsToUse = image.lockedSettings
+        } else {
+            settingsToUse = nil
+        }
+        
         do {
-            let result = try await machine.convert(sourceImage: input)
+            let result = try await machine.convert(sourceImage: input, withSettings: settingsToUse)
             if !Task.isCancelled { self.currentResult = result }
         } catch {
             if !Task.isCancelled { self.errorMessage = "\(error.localizedDescription)" }

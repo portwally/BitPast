@@ -2,6 +2,25 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [4.2] - 2026-02-04
+
+### Fixed
+- **Per-Image Lock Now Works During Live Preview** - Locked images now correctly use their saved settings when selected:
+  - Previously, locked settings were only applied during batch export
+  - Now the live preview also respects locked settings, showing the actual conversion result
+  - Switching between images correctly displays each image with its locked (or global) settings
+
+### Changed
+- **Locks Cleared on System Change** - When switching to a different retro system, all image locks are now automatically cleared:
+  - Prevents confusion from stale locks that don't apply to the new system
+  - Users must re-lock images with desired settings for the new target system
+  - Lock indicators immediately disappear when changing systems
+
+### Technical
+- Modified `performConversion()` to check for locked settings before converting
+- Added `clearAllLocks()` method to remove all per-image locked settings
+- System selector now calls `clearAllLocks()` before changing `selectedMachineIndex`
+
 ## [4.1] - 2026-02-03
 
 ### Added

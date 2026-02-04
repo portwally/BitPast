@@ -1926,6 +1926,7 @@ struct HorizontalSystemBar: View {
                         isC64: isC64
                     ) {
                         if viewModel.selectedMachineIndex != index {
+                            viewModel.clearAllLocks()
                             viewModel.selectedMachineIndex = index
                             viewModel.triggerLivePreview()
                         }
