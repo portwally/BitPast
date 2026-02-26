@@ -70,6 +70,9 @@ class IMGWriter {
         // Add volume label as first directory entry
         addVolumeLabelEntry(in: &diskData, dirOffset: rootDirOffset, volumeName: volumeName)
 
+        // Calculate available data space
+        let totalDataClusters = (totalSectors * sectorSize - dataStartSector * sectorSize) / bytesPerCluster
+
         // Write files
         var nextCluster = 2
         var dirEntryIndex = 1  // Start after volume label
@@ -77,6 +80,19 @@ class IMGWriter {
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
                 print("IMGWriter: Could not read file \(file.name)")
+                continue
+            }
+
+            // Check if there's enough space for this file
+            let clustersNeeded = (fileData.count + bytesPerCluster - 1) / bytesPerCluster
+            if nextCluster - 2 + clustersNeeded > totalDataClusters {
+                print("IMGWriter: Disk full — cannot fit \(file.name) (\(fileData.count) bytes, needs \(clustersNeeded) clusters, only \(totalDataClusters - (nextCluster - 2)) available)")
+                continue
+            }
+
+            // Check if there's room in the root directory
+            if dirEntryIndex >= rootDirEntries {
+                print("IMGWriter: Root directory full — cannot add \(file.name) (max \(rootDirEntries) entries)")
                 continue
             }
 
@@ -96,9 +112,7 @@ class IMGWriter {
 
                 let clusterOffset = dataStartSector * sectorSize + (currentCluster - 2) * bytesPerCluster
                 for (i, byte) in chunk.enumerated() {
-                    if clusterOffset + i < diskData.count {
-                        diskData[clusterOffset + i] = byte
-                    }
+                    diskData[clusterOffset + i] = byte
                 }
 
                 clusterList.append(currentCluster)

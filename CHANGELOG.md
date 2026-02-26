@@ -28,6 +28,16 @@ All notable changes to BitPast will be documented in this file.
 - Replaced `try?` with `do/catch` blocks in `saveImage()` and `createProDOSDisk()` file read
 - Added `failedFiles` tracking array to all three batch export methods
 
+- **Progress Bar Tracking** - Fixed disk creation progress never reaching 100%:
+  - `createProDOSDisk()` and `batchConvertAndCollectFiles()` now use `(index + 1) / count` instead of `index / count` for progress calculation
+  - Progress bar now correctly shows 100% when all images are processed
+
+- **Disk Full Detection** - Disk writers now detect and report when files cannot fit instead of silently truncating data:
+  - MSXDiskWriter, STWriter, and IMGWriter all pre-check available cluster space before writing each file
+  - Files that exceed remaining disk capacity are cleanly skipped with a diagnostic message instead of being silently corrupted
+  - Root directory entry limits are also checked to prevent overflow
+  - Removed unsafe bounds-checking pattern (`if clusterOffset + i < diskData.count`) that masked truncation
+
 ## [4.2] - 2026-02-04
 
 ### Fixed

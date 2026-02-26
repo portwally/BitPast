@@ -795,7 +795,7 @@ class ConverterViewModel: ObservableObject {
                         // Update progress
                         await MainActor.run {
                             self.diskCreationCurrent = imageIndex + 1
-                            self.diskCreationProgress = Double(imageIndex) / Double(imagesToConvert.count)
+                            self.diskCreationProgress = Double(imageIndex + 1) / Double(imagesToConvert.count)
                             self.diskCreationStatus = "Converting \(imageItem.name)..."
                         }
 
@@ -920,7 +920,7 @@ class ConverterViewModel: ObservableObject {
             // Update progress
             await MainActor.run {
                 self.diskCreationCurrent = index + 1
-                self.diskCreationProgress = Double(index) / Double(imagesToConvert.count)
+                self.diskCreationProgress = Double(index + 1) / Double(imagesToConvert.count)
                 self.diskCreationStatus = "Converting \(imageItem.name)..."
             }
 

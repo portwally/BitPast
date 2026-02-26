@@ -50,6 +50,9 @@ class STWriter {
         // Root directory offset
         let rootDirOffset = (reservedSectors + numberOfFATs * fatSectors) * sectorSize
 
+        // Calculate available data space
+        let totalDataClusters = (totalSectors * sectorSize - dataStartSector * sectorSize) / bytesPerCluster
+
         // Write files
         var nextCluster = 2  // First data cluster
         var dirEntryIndex = 0
@@ -57,6 +60,19 @@ class STWriter {
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
                 print("STWriter: Could not read file \(file.name)")
+                continue
+            }
+
+            // Check if there's enough space for this file
+            let clustersNeeded = (fileData.count + bytesPerCluster - 1) / bytesPerCluster
+            if nextCluster - 2 + clustersNeeded > totalDataClusters {
+                print("STWriter: Disk full — cannot fit \(file.name) (\(fileData.count) bytes, needs \(clustersNeeded) clusters, only \(totalDataClusters - (nextCluster - 2)) available)")
+                continue
+            }
+
+            // Check if there's room in the root directory
+            if dirEntryIndex >= rootEntries {
+                print("STWriter: Root directory full — cannot add \(file.name) (max \(rootEntries) entries)")
                 continue
             }
 
@@ -77,9 +93,7 @@ class STWriter {
                 // Write cluster data
                 let clusterOffset = dataStartSector * sectorSize + (currentCluster - 2) * bytesPerCluster
                 for (i, byte) in chunk.enumerated() {
-                    if clusterOffset + i < diskData.count {
-                        diskData[clusterOffset + i] = byte
-                    }
+                    diskData[clusterOffset + i] = byte
                 }
 
                 clusterList.append(currentCluster)
