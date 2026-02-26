@@ -96,6 +96,7 @@ class ZXSpectrumConverter: RetroMachine {
     ]
 
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) throws -> ConversionResult {
+        try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
 
@@ -342,7 +343,7 @@ class ZXSpectrumConverter: RetroMachine {
             }
         }
 
-        return bestIdx
+        return min(max(bestIdx, 0), ZXSpectrumConverter.zxPalette.count - 1)
     }
 
     private func colorDistance(_ r1: Float, _ g1: Float, _ b1: Float,

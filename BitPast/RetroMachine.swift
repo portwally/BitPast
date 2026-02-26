@@ -79,10 +79,38 @@ protocol RetroMachine {
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]?) async throws -> ConversionResult
 }
 
-// Extension to provide default parameter value
+// MARK: - Input Validation
+
+enum ConversionValidationError: LocalizedError {
+    case emptyImage
+    case invalidDimensions(width: Int, height: Int)
+
+    var errorDescription: String? {
+        switch self {
+        case .emptyImage:
+            return "Cannot convert: the source image is empty or has no pixel data."
+        case .invalidDimensions(let w, let h):
+            return "Cannot convert: invalid image dimensions (\(w)×\(h)). Width and height must be greater than zero."
+        }
+    }
+}
+
+// Extension to provide default parameter value and shared validation
 extension RetroMachine {
     func convert(sourceImage: NSImage) async throws -> ConversionResult {
         try await convert(sourceImage: sourceImage, withSettings: nil)
+    }
+
+    /// Validates that a source image has valid, non-zero dimensions before conversion.
+    func validateSourceImage(_ image: NSImage) throws {
+        let w = Int(image.size.width)
+        let h = Int(image.size.height)
+        guard w > 0 && h > 0 else {
+            if w == 0 && h == 0 {
+                throw ConversionValidationError.emptyImage
+            }
+            throw ConversionValidationError.invalidDimensions(width: w, height: h)
+        }
     }
 }
 

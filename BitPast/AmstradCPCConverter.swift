@@ -128,6 +128,7 @@ class AmstradCPCConverter: RetroMachine {
     ]
 
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
 
@@ -562,7 +563,7 @@ class AmstradCPCConverter: RetroMachine {
             }
         }
 
-        return bestIndex
+        return min(max(bestIndex, 0), palette.count - 1)
     }
 
     // MARK: - Error Diffusion

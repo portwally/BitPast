@@ -51,6 +51,7 @@ class AtariSTConverter: RetroMachine {
     }()
 
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
 
@@ -461,7 +462,7 @@ class AtariSTConverter: RetroMachine {
             }
         }
 
-        return bestIndex
+        return min(max(bestIndex, 0), palette.count - 1)
     }
 
     // MARK: - Preprocessing functions

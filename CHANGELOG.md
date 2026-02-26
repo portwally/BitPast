@@ -2,6 +2,32 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [4.3] - 2026-02-26
+
+### Fixed
+- **Input Validation Guards** - All 15 converters now validate source images before processing:
+  - Added `ConversionValidationError` type and shared `validateSourceImage()` helper to the `RetroMachine` protocol extension
+  - `performConversion()` in ConverterViewModel now rejects zero-dimension images with a clear user-facing error message
+  - Each converter's `convert()` method validates the source image as its first operation (defense-in-depth)
+  - All 13 color-matching functions (`findNearestColor`, `findClosestColor`, `findClosestPaletteColor`) now clamp returned palette indices to valid bounds, preventing potential out-of-range array access
+
+- **Error Propagation** - Replaced silent `try?` error suppression with proper user-facing error reporting:
+  - `saveImage()`: Write failures now display an error message instead of silently failing
+  - `createProDOSDisk()`: File read errors now update the disk creation status with the skipped filename instead of silently continuing
+  - `batchExport()`, `batchSaveImages()`, `batchSaveNativeFiles()`: All three batch operations now collect failed filenames and display a summary error (e.g., "Failed to export 3 file(s): foo.png, bar.png, baz.png")
+
+- **Stale Preview Prevention** - Added a generation counter to prevent outdated conversion results from overwriting newer ones:
+  - `triggerLivePreview()` and `convertImmediately()` increment a generation counter before launching their task
+  - `performConversion()` checks the generation before applying results, so rapid slider changes or image switches no longer cause stale previews to flash on screen
+
+### Technical
+- Added `ConversionValidationError` enum and `validateSourceImage()` to `RetroMachine.swift`
+- Added `conversionGeneration` counter to `ConverterViewModel`
+- Modified `performConversion()` to accept an optional `generation` parameter for staleness detection
+- Added `min(max(bestIdx, 0), palette.count - 1)` clamping to all color-matching return values across 13 converter files
+- Replaced `try?` with `do/catch` blocks in `saveImage()` and `createProDOSDisk()` file read
+- Added `failedFiles` tracking array to all three batch export methods
+
 ## [4.2] - 2026-02-04
 
 ### Fixed

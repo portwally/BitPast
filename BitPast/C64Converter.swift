@@ -121,6 +121,7 @@ class C64Converter: RetroMachine {
     ]
 
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
 
@@ -821,7 +822,7 @@ class C64Converter: RetroMachine {
             }
         }
 
-        return bestIdx
+        return min(max(bestIdx, 0), Self.c64Palette.count - 1)
     }
 
     private func colorDistance(pixel: [Float], colorIdx: Int, colorMatch: String) -> Float {

@@ -134,6 +134,7 @@ class Plus4Converter: RetroMachine {
     ]
 
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
 
@@ -548,7 +549,7 @@ class Plus4Converter: RetroMachine {
             }
         }
 
-        return bestIndex
+        return min(max(bestIndex, 0), Self.plus4Palette.count - 1)
     }
 
     private func colorDistance(r1: Int, g1: Int, b1: Int, r2: Int, g2: Int, b2: Int, method: String) -> Float {

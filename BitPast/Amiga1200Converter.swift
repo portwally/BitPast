@@ -35,6 +35,7 @@ class Amiga1200Converter: RetroMachine {
     ]
 
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
 
@@ -309,7 +310,7 @@ class Amiga1200Converter: RetroMachine {
             let d = colorDistance(r, g, b, Float(c[0]), Float(c[1]), Float(c[2]), method)
             if d < bestDist { bestDist = d; bestIdx = i }
         }
-        return bestIdx
+        return min(max(bestIdx, 0), palette.count - 1)
     }
 
     private func distributeError(_ work: inout [[Float]], width: Int, height: Int, x: Int, y: Int,

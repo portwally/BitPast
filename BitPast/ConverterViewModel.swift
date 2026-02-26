@@ -97,7 +97,8 @@ class ConverterViewModel: ObservableObject {
         }
     
     private var previewTask: Task<Void, Never>?
-    
+    private var conversionGeneration: Int = 0
+
     var convertedImage: NSImage? { currentResult?.previewImage }
     var currentOriginalImage: NSImage? {
         guard let id = selectedImageId, let item = inputImages.first(where: { $0.id == id }) else { return nil }
@@ -245,6 +246,8 @@ class ConverterViewModel: ObservableObject {
         isBatchExporting = true
 
         Task {
+            var failedFiles: [String] = []
+
             for (index, imageItem) in imagesToExport.enumerated() {
                 do {
                     // Convert the image using per-image settings if locked, otherwise use global settings
@@ -272,13 +275,17 @@ class ConverterViewModel: ObservableObject {
                     }
                 } catch {
                     print("Error exporting \(imageItem.name): \(error)")
+                    failedFiles.append(imageItem.name)
                 }
             }
 
             await MainActor.run {
                 isBatchExporting = false
-                // Optionally clear selection after export
-                // selectedImageIds.removeAll()
+                if !failedFiles.isEmpty {
+                    let preview = failedFiles.prefix(3).joined(separator: ", ")
+                    let more = failedFiles.count > 3 ? " and \(failedFiles.count - 3) more" : ""
+                    self.errorMessage = "Failed to export \(failedFiles.count) file(s): \(preview)\(more)"
+                }
             }
         }
     }
@@ -305,6 +312,8 @@ class ConverterViewModel: ObservableObject {
         isBatchExporting = true
 
         Task {
+            var failedFiles: [String] = []
+
             for (index, imageItem) in imagesToExport.enumerated() {
                 do {
                     // Convert the image using per-image settings if locked, otherwise use global settings
@@ -339,11 +348,17 @@ class ConverterViewModel: ObservableObject {
                     }
                 } catch {
                     print("Error exporting \(imageItem.name): \(error)")
+                    failedFiles.append(imageItem.name)
                 }
             }
 
             await MainActor.run {
                 isBatchExporting = false
+                if !failedFiles.isEmpty {
+                    let preview = failedFiles.prefix(3).joined(separator: ", ")
+                    let more = failedFiles.count > 3 ? " and \(failedFiles.count - 3) more" : ""
+                    self.errorMessage = "Failed to save \(failedFiles.count) image(s): \(preview)\(more)"
+                }
             }
         }
     }
@@ -370,6 +385,8 @@ class ConverterViewModel: ObservableObject {
         isBatchExporting = true
 
         Task {
+            var failedFiles: [String] = []
+
             for (index, imageItem) in imagesToExport.enumerated() {
                 do {
                     // Convert the image using per-image settings if locked, otherwise use global settings
@@ -397,11 +414,17 @@ class ConverterViewModel: ObservableObject {
                     }
                 } catch {
                     print("Error exporting \(imageItem.name): \(error)")
+                    failedFiles.append(imageItem.name)
                 }
             }
 
             await MainActor.run {
                 isBatchExporting = false
+                if !failedFiles.isEmpty {
+                    let preview = failedFiles.prefix(3).joined(separator: ", ")
+                    let more = failedFiles.count > 3 ? " and \(failedFiles.count - 3) more" : ""
+                    self.errorMessage = "Failed to export \(failedFiles.count) native file(s): \(preview)\(more)"
+                }
             }
         }
     }
@@ -558,24 +581,39 @@ class ConverterViewModel: ObservableObject {
     func triggerLivePreview() {
         guard currentOriginalImage != nil else { return }
         previewTask?.cancel()
+        conversionGeneration += 1
+        let expectedGeneration = conversionGeneration
         previewTask = Task {
             try? await Task.sleep(nanoseconds: 300 * 1_000_000)
-            if Task.isCancelled { return }
-            await performConversion()
+            if Task.isCancelled || expectedGeneration != conversionGeneration { return }
+            await performConversion(generation: expectedGeneration)
         }
     }
-    
+
     func convertImmediately() {
         previewTask?.cancel()
-        Task { await performConversion() }
+        conversionGeneration += 1
+        let expectedGeneration = conversionGeneration
+        Task { await performConversion(generation: expectedGeneration) }
     }
     
-    private func performConversion() async {
+    private func performConversion(generation: Int? = nil) async {
         guard let input = currentOriginalImage else { return }
+        let gen = generation ?? conversionGeneration
+
+        // Validate image dimensions before attempting conversion
+        let w = Int(input.size.width)
+        let h = Int(input.size.height)
+        guard w > 0 && h > 0 else {
+            self.errorMessage = "Cannot convert: invalid image dimensions (\(w)×\(h))."
+            self.isConverting = false
+            return
+        }
+
         isConverting = true
         errorMessage = nil
         let machine = currentMachine
-        
+
         // Use locked settings if the selected image has them for the current machine
         let settingsToUse: [ConversionOption]?
         if let selectedId = selectedImageId,
@@ -585,14 +623,20 @@ class ConverterViewModel: ObservableObject {
         } else {
             settingsToUse = nil
         }
-        
+
         do {
             let result = try await machine.convert(sourceImage: input, withSettings: settingsToUse)
-            if !Task.isCancelled { self.currentResult = result }
+            if !Task.isCancelled && gen == conversionGeneration {
+                self.currentResult = result
+            }
         } catch {
-            if !Task.isCancelled { self.errorMessage = "\(error.localizedDescription)" }
+            if !Task.isCancelled && gen == conversionGeneration {
+                self.errorMessage = "\(error.localizedDescription)"
+            }
         }
-        if !Task.isCancelled { self.isConverting = false }
+        if !Task.isCancelled && gen == conversionGeneration {
+            self.isConverting = false
+        }
     }
     
     // MARK: - Export Logic
@@ -630,10 +674,16 @@ class ConverterViewModel: ObservableObject {
                     case .tiff: fileType = .tiff
                     }
                     
-                    if let tiffData = result.previewImage.tiffRepresentation,
-                       let bitmap = NSBitmapImageRep(data: tiffData),
-                       let fileData = bitmap.representation(using: fileType, properties: props) {
-                        try? fileData.write(to: targetUrl)
+                    do {
+                        guard let tiffData = result.previewImage.tiffRepresentation,
+                              let bitmap = NSBitmapImageRep(data: tiffData),
+                              let fileData = bitmap.representation(using: fileType, properties: props) else {
+                            DispatchQueue.main.async { self.errorMessage = "Failed to encode image data." }
+                            return
+                        }
+                        try fileData.write(to: targetUrl)
+                    } catch {
+                        DispatchQueue.main.async { self.errorMessage = "Failed to save image: \(error.localizedDescription)" }
                     }
                 }
             }
@@ -791,8 +841,14 @@ class ConverterViewModel: ObservableObject {
                                 let finalProDOSName = "\(finalBaseName).\(proDOSExt)"
 
                                 // Read file data
-                                guard let fileData = try? Data(contentsOf: assetUrl) else {
-                                    print("Could not read file: \(assetUrl.path)")
+                                let fileData: Data
+                                do {
+                                    fileData = try Data(contentsOf: assetUrl)
+                                } catch {
+                                    print("Could not read file: \(assetUrl.path) — \(error.localizedDescription)")
+                                    await MainActor.run {
+                                        self.diskCreationStatus = "Skipped: \(assetUrl.lastPathComponent) (read error)"
+                                    }
                                     continue
                                 }
 

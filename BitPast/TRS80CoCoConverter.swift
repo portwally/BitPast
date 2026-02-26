@@ -98,6 +98,7 @@ class TRS80CoCoConverter: RetroMachine {
     ]
 
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
+        try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
 
@@ -553,7 +554,7 @@ class TRS80CoCoConverter: RetroMachine {
             }
         }
 
-        return bestIndex
+        return min(max(bestIndex, 0), palette.count - 1)
     }
 
     private func rgbToHsl(_ r: Float, _ g: Float, _ b: Float) -> (Float, Float, Float) {

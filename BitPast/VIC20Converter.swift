@@ -110,6 +110,7 @@ class VIC20Converter: RetroMachine {
     ]
 
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) throws -> ConversionResult {
+        try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
 
@@ -699,7 +700,7 @@ class VIC20Converter: RetroMachine {
             }
         }
 
-        return bestIdx
+        return min(max(bestIdx, 0), VIC20Converter.vic20Palette.count - 1)
     }
 
     private func colorDistance(_ r1: Float, _ g1: Float, _ b1: Float,
