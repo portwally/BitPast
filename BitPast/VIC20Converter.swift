@@ -1090,7 +1090,7 @@ class VIC20Converter: RetroMachine {
                 for i in 0...bin {
                     cumulative += histogram[i]
                 }
-                let newLuma = Float(cumulative) / Float(windowPixels)
+                let newLuma = windowPixels > 0 ? Float(cumulative) / Float(windowPixels) : Float(bin) / 255.0
 
                 let r = pixels[idx][0]
                 let g = pixels[idx][1]

@@ -153,7 +153,7 @@ struct BitPastApp: App {
                         }
                     }
                 }
-                .keyboardShortcut("4", modifiers: [.command, .shift])
+                .keyboardShortcut("L", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 11)
 
                 Button("TRS-80 CoCo") {

@@ -753,7 +753,7 @@ class BBCMicroConverter: RetroMachine {
                     cdf += histogram[i]
                 }
 
-                let newLuma = Float(cdf * 255 / max(1, pixelCount))
+                let newLuma = pixelCount > 0 ? Float(cdf) / Float(pixelCount) * 255.0 : Float(luma) / 255.0
                 // Use additive adjustment instead of ratio to avoid black output
                 let lumaDiff = newLuma - Float(luma)
 

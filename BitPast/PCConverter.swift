@@ -937,7 +937,7 @@ class PCConverter: RetroMachine {
                 let bin = lumaBins[idx]
                 var cumulative = 0
                 for i in 0...bin { cumulative += histogram[i] }
-                let newLuma = Float(cumulative) / Float(windowPixels) * 255.0
+                let newLuma = windowPixels > 0 ? Float(cumulative) / Float(windowPixels) * 255.0 : Float(bin) / 255.0
 
                 let r = pixels[idx][0], g = pixels[idx][1], b = pixels[idx][2]
                 let luma = 0.299 * r + 0.587 * g + 0.114 * b

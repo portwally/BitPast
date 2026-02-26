@@ -558,7 +558,7 @@ class Amiga500Converter: RetroMachine {
                 }
                 let idx = y * width + x
                 var cumulative = 0; for i in 0...lumaBins[idx] { cumulative += histogram[i] }
-                let newLuma = Float(cumulative) / Float(windowPixels) * 255.0
+                let newLuma = windowPixels > 0 ? Float(cumulative) / Float(windowPixels) * 255.0 : Float(lumaBins[idx]) / 255.0
                 let r = pixels[idx][0], g = pixels[idx][1], b = pixels[idx][2]
                 let luma = 0.299 * r + 0.587 * g + 0.114 * b
                 if luma > 0.001 { let scale = newLuma / luma; result[idx][0] = max(0, min(255, r * scale)); result[idx][1] = max(0, min(255, g * scale)); result[idx][2] = max(0, min(255, b * scale)) }

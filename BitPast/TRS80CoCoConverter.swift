@@ -748,7 +748,7 @@ class TRS80CoCoConverter: RetroMachine {
                     cdf += histogram[i]
                 }
 
-                let newLuma = Float(cdf * 255 / max(1, pixelCount))
+                let newLuma = pixelCount > 0 ? Float(cdf) / Float(pixelCount) * 255.0 : Float(luma) / 255.0
                 let ratio = luma > 0 ? newLuma / Float(luma) : 1.0
 
                 result[y * width + x][0] = max(0, min(255, pixels[y * width + x][0] * ratio))

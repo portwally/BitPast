@@ -38,6 +38,37 @@ All notable changes to BitPast will be documented in this file.
   - Root directory entry limits are also checked to prevent overflow
   - Removed unsafe bounds-checking pattern (`if clusterOffset + i < diskData.count`) that masked truncation
 
+- **ADF Hash Collision Fix** - ADFWriter now correctly handles filename hash collisions:
+  - Previously, when two filenames hashed to the same root block bucket, the second silently overwrote the first
+  - Now uses Amiga OFS hash chain linking: new entries link to previous entries via the file header's hash chain pointer (offset +496)
+  - Block checksums are recalculated after chain updates
+
+- **Force Unwrap Safety** - Replaced crash-prone force unwraps in DiskFormats.swift:
+  - `defaultFormat` and `defaultSize` now use nil-coalescing (`?? .po` / `?? .kb140`) instead of `first!`
+  - Prevents crash if a platform configuration returns an empty formats or sizes array
+
+- **Keyboard Shortcut Collision** - Fixed duplicate Cmd+Shift+4 shortcut:
+  - "Plus/4" menu item changed from Cmd+Shift+4 to Cmd+Shift+L to avoid collision with "Amiga 1200"
+
+- **ProDOS Year Overflow** - Clamped ProDOS date year field to 7-bit range (0–127):
+  - Year values are now capped at 127 (2027) to prevent bit overflow into the month/day fields
+  - Applied to both file entry and volume directory date calculations in ProDOSWriter
+
+- **Amiga 1200 Aspect Ratio** - Fixed incorrect aspect ratio for 320×512 resolution:
+  - Both 320×256 and 320×512 now correctly use `aspectX = 44` (low-res pixel aspect)
+  - Previously 320×512 incorrectly used `aspectX = 22` (same as 640×512 hi-res), causing horizontal stretching
+
+- **SWAHE Division by Zero** - Fixed potential floating-point division by zero in histogram equalization:
+  - All 13 converter files with `applySWAHE` now guard against `windowPixels == 0` before dividing
+  - Falls back to the current pixel's luma value when the sliding window is empty
+
+- **ADF Large File Support** - Fixed Amiga disk images losing files larger than ~35KB:
+  - Added T_LIST extension block support for files requiring more than 72 data blocks
+  - An 83KB IFF file needs 170 data blocks but the file header only holds 72 pointers — the remaining 98 were silently lost
+  - Extension blocks chain from the file header's extension field (offset 504) and each hold up to 72 additional pointers
+  - Also fixed hash collision handling: files sharing a hash bucket are now linked via hash_chain (offset 496) instead of overwriting
+  - Fixed parent directory pointer position (moved from offset 504 to correct offset 500) which was blocking the extension field
+
 ## [4.2] - 2026-02-04
 
 ### Fixed

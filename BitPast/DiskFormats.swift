@@ -118,11 +118,11 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
     }
 
     var defaultFormat: DiskFormat {
-        availableFormats.first!
+        availableFormats.first ?? .po
     }
 
     var defaultSize: DiskSize {
-        availableSizes.first!
+        availableSizes.first ?? .kb140
     }
 
     var supportsVolumeName: Bool {

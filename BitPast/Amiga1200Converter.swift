@@ -101,7 +101,7 @@ class Amiga1200Converter: RetroMachine {
         default: videoMode = 0x0000
         }
 
-        let aspectX: UInt8 = (resolution == "640×512") ? 22 : (resolution == "320×512" ? 22 : 44)
+        let aspectX: UInt8 = (resolution == "640×512") ? 22 : 44
         let aspectY: UInt8 = 44
 
         let iffData = createIFF(width: width, height: height, palette: selectedPalette, bitplanes: bitplanes,
@@ -531,7 +531,7 @@ class Amiga1200Converter: RetroMachine {
                 }
                 let idx = y * width + x
                 var cumulative = 0; for i in 0...lumaBins[idx] { cumulative += histogram[i] }
-                let newLuma = Float(cumulative) / Float(windowPixels) * 255.0
+                let newLuma = windowPixels > 0 ? Float(cumulative) / Float(windowPixels) * 255.0 : Float(lumaBins[idx]) / 255.0
                 let luma = 0.299 * pixels[idx][0] + 0.587 * pixels[idx][1] + 0.114 * pixels[idx][2]
                 if luma > 0.001 { let scale = newLuma / luma; result[idx][0] = max(0, min(255, pixels[idx][0] * scale)); result[idx][1] = max(0, min(255, pixels[idx][1] * scale)); result[idx][2] = max(0, min(255, pixels[idx][2] * scale)) }
             }

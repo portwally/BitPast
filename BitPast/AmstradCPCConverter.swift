@@ -789,7 +789,7 @@ class AmstradCPCConverter: RetroMachine {
                     cdfValue += histogram[i]
                 }
 
-                let newLuma = Float(cdfValue * 255) / Float(max(1, count))
+                let newLuma = count > 0 ? Float(cdfValue * 255) / Float(count) : Float(currentLuma)
                 let ratio = (currentLuma > 0) ? newLuma / Float(currentLuma) : 1.0
 
                 result[y * width + x][0] = max(0, min(255, pixels[y * width + x][0] * ratio))

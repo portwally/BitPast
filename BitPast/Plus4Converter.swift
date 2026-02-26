@@ -743,7 +743,7 @@ class Plus4Converter: RetroMachine {
                 let currentLuma = Int(pixels[y * width + x][0] * 0.299 + pixels[y * width + x][1] * 0.587 + pixels[y * width + x][2] * 0.114)
                 var cdfValue = 0
                 for i in 0...max(0, min(255, currentLuma)) { cdfValue += histogram[i] }
-                let newLuma = Float(cdfValue * 255) / Float(max(1, count))
+                let newLuma = count > 0 ? Float(cdfValue * 255) / Float(count) : Float(currentLuma)
                 let ratio = (currentLuma > 0) ? newLuma / Float(currentLuma) : 1.0
                 result[y * width + x][0] = max(0, min(255, pixels[y * width + x][0] * ratio))
                 result[y * width + x][1] = max(0, min(255, pixels[y * width + x][1] * ratio))

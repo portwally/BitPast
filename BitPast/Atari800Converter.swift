@@ -865,7 +865,7 @@ class Atari800Converter: RetroMachine {
                     cdf += histogram[i]
                 }
 
-                let newLuma = Float(cdf * 255 / max(1, pixelCount))
+                let newLuma = pixelCount > 0 ? Float(cdf * 255) / Float(pixelCount) : Float(luma)
                 let ratio = luma > 0 ? newLuma / Float(luma) : 1.0
 
                 result[y * width + x][0] = max(0, min(255, pixels[y * width + x][0] * ratio))

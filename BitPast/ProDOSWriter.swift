@@ -483,7 +483,7 @@ class ProDOSWriter {
         let calendar = Calendar.current
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: now)
 
-        let year = (components.year ?? 2024) - 1900
+        let year = min((components.year ?? 2024) - 1900, 127)
         let month = components.month ?? 1
         let day = components.day ?? 1
         let hour = components.hour ?? 0
@@ -588,7 +588,7 @@ class ProDOSWriter {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: now)
 
         if let year = components.year, let month = components.month, let day = components.day {
-            let proDOSYear = year - 1900
+            let proDOSYear = min(year - 1900, 127)
             let dateWord = UInt16((proDOSYear << 9) | (month << 5) | day)
             bytes[blockOffset + 0x1C] = UInt8(dateWord & 0xFF)
             bytes[blockOffset + 0x1D] = UInt8((dateWord >> 8) & 0xFF)
