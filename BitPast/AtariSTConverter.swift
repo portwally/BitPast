@@ -94,13 +94,13 @@ class AtariSTConverter: RetroMachine {
         }
 
         // Get options
-        let ditherAlg = options.first(where: { $0.key == "dither" })?.selectedValue ?? "Bayer 4x4"
-        let ditherAmount = Double(options.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "0.5") ?? 0.5
-        let contrast = options.first(where: { $0.key == "contrast" })?.selectedValue ?? "None"
-        let filter = options.first(where: { $0.key == "filter" })?.selectedValue ?? "None"
-        let colorMatch = options.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
-        let saturation = Double(options.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
-        let gamma = Double(options.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
+        let ditherAlg = opts.first(where: { $0.key == "dither" })?.selectedValue ?? "Bayer 4x4"
+        let ditherAmount = Double(opts.first(where: { $0.key == "dither_amount" })?.selectedValue ?? "0.5") ?? 0.5
+        let contrast = opts.first(where: { $0.key == "contrast" })?.selectedValue ?? "None"
+        let filter = opts.first(where: { $0.key == "filter" })?.selectedValue ?? "None"
+        let colorMatch = opts.first(where: { $0.key == "color_match" })?.selectedValue ?? "Perceptive"
+        let saturation = Double(opts.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
+        let gamma = Double(opts.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
 
         // Scale image to 320×200
         var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
