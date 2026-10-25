@@ -553,16 +553,8 @@ class PCConverter: RetroMachine {
     // MARK: - Palette selection
 
     private func selectOptimalPalette(pixels: [[Float]], palette: [[UInt8]], numColors: Int) -> [[UInt8]] {
-        var colorCounts: [Int: Int] = [:]
-        for pixel in pixels {
-            let idx = findClosestColor(r: pixel[0], g: pixel[1], b: pixel[2], palette: palette, method: "Euclidean")
-            colorCounts[idx, default: 0] += 1
-        }
-        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
-        var result: [[UInt8]] = []
-        for (idx, _) in sorted.prefix(numColors) {
-            result.append(palette[idx])
-        }
+        // Colors that cover the picture, from the given hardware palette
+        var result = CoveringPalette.pick(numColors, from: palette, pixels: pixels).map { palette[$0] }
         while result.count < numColors { result.append([0, 0, 0]) }
         return result
     }

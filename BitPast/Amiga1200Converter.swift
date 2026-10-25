@@ -117,23 +117,10 @@ class Amiga1200Converter: RetroMachine {
     }
 
     private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int, numColors: Int) -> [[UInt8]] {
-        // Simple frequency-based palette selection
-        var colorCounts: [[UInt8]: Int] = [:]
-        for pixel in pixels {
-            let r = UInt8(max(0, min(255, pixel[0])))
-            let g = UInt8(max(0, min(255, pixel[1])))
-            let b = UInt8(max(0, min(255, pixel[2])))
-            // Quantize to reduce unique colors
-            let qr = (r / 4) * 4
-            let qg = (g / 4) * 4
-            let qb = (b / 4) * 4
-            colorCounts[[qr, qg, qb], default: 0] += 1
-        }
-
-        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key.lexicographicallyPrecedes($1.key) }  // ties by key, so output is repeatable
-        var palette: [[UInt8]] = []
-        for (color, _) in sorted.prefix(numColors) {
-            palette.append(color)
+        // Colors that cover the picture; AGA can show any color, rounded down
+        // to steps of 4 per channel as before
+        var palette = CoveringPalette.pick(numColors, pixels: pixels) { c in
+            [c.x, c.y, c.z].map { UInt8(max(0, min(255, $0))) / 4 * 4 }
         }
         while palette.count < numColors { palette.append([0, 0, 0]) }
         return palette

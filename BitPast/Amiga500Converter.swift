@@ -120,24 +120,8 @@ class Amiga500Converter: RetroMachine {
     }
 
     private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int, numColors: Int) -> [[UInt8]] {
-        // Count colors mapped to OCS palette
-        var colorCounts: [Int: Int] = [:]
-        for pixel in pixels {
-            let r = Int(max(0, min(255, pixel[0])))
-            let g = Int(max(0, min(255, pixel[1])))
-            let b = Int(max(0, min(255, pixel[2])))
-            let rIdx = (r + 8) / 17
-            let gIdx = (g + 8) / 17
-            let bIdx = (b + 8) / 17
-            let colorIdx = rIdx * 256 + gIdx * 16 + bIdx
-            colorCounts[colorIdx, default: 0] += 1
-        }
-
-        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
-        var palette: [[UInt8]] = []
-        for (idx, _) in sorted.prefix(numColors) {
-            palette.append(Self.ocsPalette[idx])
-        }
+        // Colors that cover the picture, from the 4096-color OCS palette
+        var palette = CoveringPalette.pick(numColors, from: Self.ocsPalette, pixels: pixels).map { Self.ocsPalette[$0] }
         while palette.count < numColors { palette.append([0, 0, 0]) }
         return palette
     }

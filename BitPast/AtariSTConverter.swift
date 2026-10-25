@@ -192,47 +192,18 @@ class AtariSTConverter: RetroMachine {
     }
 
     private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int, numColors: Int = 16) -> [[UInt8]] {
-        // For monochrome (high res), just use black and white
+        var palette: [[UInt8]]
         if numColors == 2 {
-            // Pad to 16 entries (DEGAS format requirement)
-            var palette: [[UInt8]] = [[255, 255, 255], [0, 0, 0]]  // White background, black foreground
-            while palette.count < 16 {
-                palette.append([0, 0, 0])
-            }
-            return palette
+            // Monochrome (high res): white background, black foreground
+            palette = [[255, 255, 255], [0, 0, 0]]
+        } else {
+            // Colors that cover the picture, from the 512-color palette
+            palette = CoveringPalette.pick(numColors, from: Self.stPalette, pixels: pixels).map { Self.stPalette[$0] }
         }
-
-        // Use median cut to select optimal colors from 512-color palette
-        var colorCounts: [Int: Int] = [:]
-
-        // Count colors mapped to ST palette
-        for pixel in pixels {
-            let r = Int(max(0, min(255, pixel[0])))
-            let g = Int(max(0, min(255, pixel[1])))
-            let b = Int(max(0, min(255, pixel[2])))
-
-            // Map to nearest ST palette color
-            let rIdx = (r * 7 + 127) / 255
-            let gIdx = (g * 7 + 127) / 255
-            let bIdx = (b * 7 + 127) / 255
-            let colorIdx = rIdx * 64 + gIdx * 8 + bIdx
-
-            colorCounts[colorIdx, default: 0] += 1
-        }
-
-        // Sort by frequency and take top N colors
-        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
-        var palette: [[UInt8]] = []
-
-        for (idx, _) in sorted.prefix(numColors) {
-            palette.append(Self.stPalette[idx])
-        }
-
         // Pad to 16 (DEGAS format always stores 16 palette entries)
         while palette.count < 16 {
             palette.append([0, 0, 0])
         }
-
         return palette
     }
 

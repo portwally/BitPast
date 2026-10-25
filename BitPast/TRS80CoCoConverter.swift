@@ -257,43 +257,6 @@ class TRS80CoCoConverter: RetroMachine {
         )
     }
 
-    private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int, numColors: Int, fromPalette: [[UInt8]]) -> [[UInt8]] {
-        var colorCounts: [Int: Int] = [:]
-
-        for pixel in pixels {
-            let r = Int(max(0, min(255, pixel[0])))
-            let g = Int(max(0, min(255, pixel[1])))
-            let b = Int(max(0, min(255, pixel[2])))
-
-            var bestIdx = 0
-            var bestDist = Int.max
-            for (i, color) in fromPalette.enumerated() {
-                let dr = r - Int(color[0])
-                let dg = g - Int(color[1])
-                let db = b - Int(color[2])
-                let dist = dr * dr + dg * dg + db * db
-                if dist < bestDist {
-                    bestDist = dist
-                    bestIdx = i
-                }
-            }
-            colorCounts[bestIdx, default: 0] += 1
-        }
-
-        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
-        var palette: [[UInt8]] = []
-
-        for (idx, _) in sorted.prefix(numColors) {
-            palette.append(fromPalette[idx])
-        }
-
-        while palette.count < numColors {
-            palette.append([0, 0, 0])
-        }
-
-        return palette
-    }
-
     private func convertToCoCo(pixels: [[Float]], width: Int, height: Int,
                                palette: [[UInt8]], mode: String,
                                ditherAlg: String, ditherAmount: Double,
