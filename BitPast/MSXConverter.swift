@@ -370,37 +370,11 @@ nonisolated class MSXConverter: RetroMachine {
     }
 
     private func selectOptimalPalette(pixels: [[Float]], palette: [[UInt8]], numColors: Int) -> [[UInt8]] {
-        // Count color usage
-        var colorCounts = [Int](repeating: 0, count: palette.count)
-        for (n, pixel) in pixels.enumerated() {
-            if n % 1024 == 0 && Task.isCancelled { break }  // stop early if this preview was replaced
-            var bestIdx = 0
-            var bestDist = Float.greatestFiniteMagnitude
-            for (i, c) in palette.enumerated() {
-                let dr = pixel[0] - Float(c[0])
-                let dg = pixel[1] - Float(c[1])
-                let db = pixel[2] - Float(c[2])
-                let dist = dr * dr + dg * dg + db * db
-                if dist < bestDist {
-                    bestDist = dist
-                    bestIdx = i
-                }
-            }
-            colorCounts[bestIdx] += 1
-        }
-
-        // Select top colors
-        let indexed = colorCounts.enumerated().sorted { $0.element > $1.element }
-        var selected: [[UInt8]] = []
-        for i in 0..<min(numColors, indexed.count) {
-            selected.append(palette[indexed[i].offset])
-        }
-
-        // Ensure we have enough colors
+        // Colors that cover the picture, from the given hardware palette
+        var selected = CoveringPalette.pick(numColors, from: palette, pixels: pixels).map { palette[$0] }
         while selected.count < numColors {
             selected.append([0, 0, 0])
         }
-
         return selected
     }
 
