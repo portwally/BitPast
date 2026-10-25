@@ -148,19 +148,7 @@ extension ContentView {
                                 )
                         }
                     } else if viewModel.isConverting {
-                        VStack(spacing: 12) {
-                            if isRetro {
-                                Text("[ ... ]")
-                                    .font(retroBoldFont)
-                                    .foregroundColor(isAppleII ? AppleIITheme.textColor : .white.opacity(0.8))
-                            } else {
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                            }
-                            Text("Converting...")
-                                .font(isRetro ? retroSmallFont : .subheadline)
-                                .foregroundColor(isAppleII ? AppleIITheme.textColor : .white.opacity(0.8))
-                        }
+                        convertingIndicator
                     } else {
                         VStack(spacing: 12) {
                             if isRetro {
@@ -185,6 +173,17 @@ extension ContentView {
                         }
                     }
 
+                    // While a new image is calculated, show the indicator over the old one
+                    if viewModel.convertedImage != nil && viewModel.isConverting {
+                        DelayedAppearance {
+                            convertingIndicator
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 16)
+                                .background(RoundedRectangle(cornerRadius: isRetro ? 0 : 12).fill(Color.black.opacity(0.65)))
+                        }
+                        .allowsHitTesting(false)
+                    }
+
                     // Histogram Overlay (top-right corner)
                     VStack {
                         HStack {
@@ -196,5 +195,22 @@ extension ContentView {
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
         }.frame(minWidth: 350)
+    }
+
+    /// Spinner and "Converting..." label, in the current theme.
+    var convertingIndicator: some View {
+        VStack(spacing: 12) {
+            if isRetro {
+                Text("[ ... ]")
+                    .font(retroBoldFont)
+                    .foregroundColor(isAppleII ? AppleIITheme.textColor : .white.opacity(0.8))
+            } else {
+                ProgressView()
+                    .scaleEffect(1.2)
+            }
+            Text("Converting...")
+                .font(isRetro ? retroSmallFont : .subheadline)
+                .foregroundColor(isAppleII ? AppleIITheme.textColor : .white.opacity(0.8))
+        }
     }
 }
