@@ -305,7 +305,7 @@ class TRS80CoCoConverter: RetroMachine {
             colorCounts[bestIdx, default: 0] += 1
         }
 
-        let sorted = colorCounts.sorted { $0.value > $1.value }
+        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
         var palette: [[UInt8]] = []
 
         for (idx, _) in sorted.prefix(numColors) {

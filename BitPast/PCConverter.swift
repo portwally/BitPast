@@ -558,7 +558,7 @@ class PCConverter: RetroMachine {
             let idx = findClosestColor(r: pixel[0], g: pixel[1], b: pixel[2], palette: palette, method: "Euclidean")
             colorCounts[idx, default: 0] += 1
         }
-        let sorted = colorCounts.sorted { $0.value > $1.value }
+        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
         var result: [[UInt8]] = []
         for (idx, _) in sorted.prefix(numColors) {
             result.append(palette[idx])

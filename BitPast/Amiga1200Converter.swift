@@ -144,7 +144,7 @@ class Amiga1200Converter: RetroMachine {
             colorCounts[[qr, qg, qb], default: 0] += 1
         }
 
-        let sorted = colorCounts.sorted { $0.value > $1.value }
+        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key.lexicographicallyPrecedes($1.key) }  // ties by key, so output is repeatable
         var palette: [[UInt8]] = []
         for (color, _) in sorted.prefix(numColors) {
             palette.append(color)

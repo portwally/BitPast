@@ -332,7 +332,7 @@ class Atari800Converter: RetroMachine {
         }
 
         // Sort by frequency and take top colors
-        let sorted = colorCounts.sorted { $0.value > $1.value }
+        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
         var palette: [[UInt8]] = []
         var atariRegisters: [UInt8] = []
 

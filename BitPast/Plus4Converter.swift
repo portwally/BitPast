@@ -287,7 +287,7 @@ class Plus4Converter: RetroMachine {
                 }
 
                 // Get two most common colors
-                let sortedColors = colorCounts.sorted { $0.value > $1.value }
+                let sortedColors = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
                 let fg = sortedColors.count > 0 ? sortedColors[0].key : 0
                 let bg = sortedColors.count > 1 ? sortedColors[1].key : 0
 
@@ -433,7 +433,7 @@ class Plus4Converter: RetroMachine {
         }
 
         // Get two most common colors as global background
-        let sortedGlobal = globalColorCounts.sorted { $0.value > $1.value }
+        let sortedGlobal = globalColorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
         let bgColor1 = sortedGlobal.count > 0 ? sortedGlobal[0].key : 0
         let bgColor2 = sortedGlobal.count > 1 ? sortedGlobal[1].key : 0
 
@@ -454,7 +454,7 @@ class Plus4Converter: RetroMachine {
                 }
 
                 // Get two most common cell colors
-                let sortedCell = cellColorCounts.sorted { $0.value > $1.value }
+                let sortedCell = cellColorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
                 let cellColor1 = sortedCell.count > 0 ? sortedCell[0].key : 0
                 let cellColor2 = sortedCell.count > 1 ? sortedCell[1].key : 0
 

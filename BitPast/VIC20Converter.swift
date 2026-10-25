@@ -377,7 +377,8 @@ class VIC20Converter: RetroMachine {
                             let xor = charBitmap[i] ^ pattern[i]
                             diff += xor.nonzeroBitCount
                         }
-                        if diff < bestDiff {
+                        // Lowest code wins a tie, so output does not depend on dictionary order
+                        if diff < bestDiff || (diff == bestDiff && code < bestMatch) {
                             bestDiff = diff
                             bestMatch = code
                         }
@@ -617,7 +618,8 @@ class VIC20Converter: RetroMachine {
                             let xor = charBitmap[i] ^ pattern[i]
                             diff += xor.nonzeroBitCount
                         }
-                        if diff < bestDiff {
+                        // Lowest code wins a tie, so output does not depend on dictionary order
+                        if diff < bestDiff || (diff == bestDiff && code < bestMatch) {
                             bestDiff = diff
                             bestMatch = code
                         }

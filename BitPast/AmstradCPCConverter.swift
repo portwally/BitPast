@@ -250,7 +250,7 @@ class AmstradCPCConverter: RetroMachine {
         }
 
         // Sort by frequency and take top colors
-        let sortedColors = colorCounts.sorted { $0.value > $1.value }
+        let sortedColors = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
         var selectedColors: [(index: Int, color: [UInt8])] = []
 
         for (index, _) in sortedColors.prefix(numColors) {
