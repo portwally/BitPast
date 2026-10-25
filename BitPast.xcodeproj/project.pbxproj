@@ -6,8 +6,19 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		3E7E57A12F20000000ABCD07 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3E4ACDFD2EF3F66000568170 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3E4ACE042EF3F66000568170;
+			remoteInfo = BitPast;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		3E4ACE052EF3F66000568170 /* BitPast.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BitPast.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3E7E57A12F20000000ABCD01 /* BitPastTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = BitPastTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -30,10 +41,22 @@
 			path = BitPast;
 			sourceTree = "<group>";
 		};
+		3E7E57A12F20000000ABCD02 /* BitPastTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BitPastTests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		3E4ACE022EF3F66000568170 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E7E57A12F20000000ABCD05 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -47,6 +70,7 @@
 			isa = PBXGroup;
 			children = (
 				3E4ACE072EF3F66000568170 /* BitPast */,
+				3E7E57A12F20000000ABCD02 /* BitPastTests */,
 				3E4ACE062EF3F66000568170 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -55,6 +79,7 @@
 			isa = PBXGroup;
 			children = (
 				3E4ACE052EF3F66000568170 /* BitPast.app */,
+				3E7E57A12F20000000ABCD01 /* BitPastTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -84,6 +109,29 @@
 			productReference = 3E4ACE052EF3F66000568170 /* BitPast.app */;
 			productType = "com.apple.product-type.application";
 		};
+		3E7E57A12F20000000ABCD03 /* BitPastTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3E7E57A12F20000000ABCD09 /* Build configuration list for PBXNativeTarget "BitPastTests" */;
+			buildPhases = (
+				3E7E57A12F20000000ABCD04 /* Sources */,
+				3E7E57A12F20000000ABCD05 /* Frameworks */,
+				3E7E57A12F20000000ABCD06 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				3E7E57A12F20000000ABCD08 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				3E7E57A12F20000000ABCD02 /* BitPastTests */,
+			);
+			name = BitPastTests;
+			packageProductDependencies = (
+			);
+			productName = BitPastTests;
+			productReference = 3E7E57A12F20000000ABCD01 /* BitPastTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -97,6 +145,10 @@
 					3E4ACE042EF3F66000568170 = {
 						CreatedOnToolsVersion = 26.2;
 						LastSwiftMigration = 2620;
+					};
+					3E7E57A12F20000000ABCD03 = {
+						CreatedOnToolsVersion = 26.5;
+						TestTargetID = 3E4ACE042EF3F66000568170;
 					};
 				};
 			};
@@ -115,12 +167,20 @@
 			projectRoot = "";
 			targets = (
 				3E4ACE042EF3F66000568170 /* BitPast */,
+				3E7E57A12F20000000ABCD03 /* BitPastTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		3E4ACE032EF3F66000568170 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E7E57A12F20000000ABCD06 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -137,7 +197,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3E7E57A12F20000000ABCD04 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		3E7E57A12F20000000ABCD08 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3E4ACE042EF3F66000568170 /* BitPast */;
+			targetProxy = 3E7E57A12F20000000ABCD07 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		3E4ACE242EF3F66200568170 /* Debug */ = {
@@ -359,6 +434,49 @@
 			};
 			name = Release;
 		};
+		3E7E57A12F20000000ABCD0A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 450;
+				DEVELOPMENT_TEAM = ZFE2VJD462;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.7;
+				MARKETING_VERSION = 4.3;
+				PRODUCT_BUNDLE_IDENTIFIER = portwally.BitPastTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BitPast.app/Contents/MacOS/BitPast";
+			};
+			name = Debug;
+		};
+		3E7E57A12F20000000ABCD0B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 450;
+				DEVELOPMENT_TEAM = ZFE2VJD462;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 15.7;
+				MARKETING_VERSION = 4.3;
+				PRODUCT_BUNDLE_IDENTIFIER = portwally.BitPastTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BitPast.app/Contents/MacOS/BitPast";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -376,6 +494,15 @@
 			buildConfigurations = (
 				3E4ACE272EF3F66200568170 /* Debug */,
 				3E4ACE282EF3F66200568170 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3E7E57A12F20000000ABCD09 /* Build configuration list for PBXNativeTarget "BitPastTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3E7E57A12F20000000ABCD0A /* Debug */,
+				3E7E57A12F20000000ABCD0B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
