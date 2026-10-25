@@ -54,12 +54,30 @@ struct SpectrumDiskTests {
         #expect(files.map(\.data) == samples.map(\.data))
     }
 
-    /// The disk sheet offers "180 KB .dsk" for the Spectrum (+3 format).
-    /// It should produce an Extended DSK image of that size, not a 640 KB TR-DOS image.
-    @Test("180 KB .dsk option writes a +3 DSK image")
+    /// The disk sheet offers "180 KB .dsk" for the Spectrum: a +3DOS disk with
+    /// sector IDs 1-9, track 0 reserved, and a PLUS3DOS header on each file.
+    @Test("180 KB .dsk option writes a +3 disk that reads back")
     func plus3Dsk() throws {
-        let image = try Self.write(format: .dsk, size: .kb180, files: TestDisk.standardFiles(ext: "scr"))
-        #expect(image.count != 655_360, "should not be a 640 KB TR-DOS image")
-        #expect(image.count >= 16 && image.slice(0, 16) == Data("EXTENDED CPC DSK".utf8), "Extended DSK signature")
+        let samples = TestDisk.standardFiles(ext: "scr") + [SampleFile(name: "SCREEN", ext: "scr", data: TestDisk.bytes(6912, seed: 6))]
+        let image = try Self.write(format: .dsk, size: .kb180, files: samples)
+        #expect(image.slice(0, 34) == Data("EXTENDED CPC DSK File\r\nDisk-Info\r\n".utf8))
+        let disk = AmstradDiskTests.Disk(image: image, firstSectorID: 0x01, reservedTracks: 1)
+        #expect(disk.tracks == 40 && disk.sides == 1)
+
+        // Disk specification in track 0, sector 1
+        let spec = disk.sector(trackIndex: 0, id: 0x01)?.slice(0, 10)
+        #expect(spec == Data([0x00, 0x00, 0x28, 0x09, 0x02, 0x01, 0x03, 0x02, 0x2A, 0x52]))
+
+        let files = disk.files()
+        #expect(files.map(\.name) == samples.map { "\($0.name).SCR" })
+        for (file, sample) in zip(files, samples) {
+            let header = file.data.slice(0, 128)
+            #expect(header.slice(0, 8) == Data("PLUS3DOS".utf8), "\(sample.name) header")
+            #expect(header.u8(127) == header.prefix(127).reduce(0) { ($0 + Int($1)) & 0xFF }, "\(sample.name) header checksum")
+            #expect(header.le32(11) == sample.data.count + 128, "\(sample.name) total length")
+            #expect(header.u8(15) == 3 && header.le16(16) == sample.data.count, "\(sample.name) CODE header")
+            #expect(file.data.dropFirst(128).prefix(sample.data.count) == sample.data, "\(sample.name) contents")
+        }
+        #expect(files.last?.data.slice(0, 128).le16(18) == 16384, "screens load at 16384")
     }
 }

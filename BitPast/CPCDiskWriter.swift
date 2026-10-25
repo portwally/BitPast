@@ -19,12 +19,38 @@ class CPCDiskWriter {
     private let directoryEntries = 64
     private let extentSize = 16384  // 16KB per extent
 
+    /// CP/M-based disk formats written by this class. Both use 9 sectors of
+    /// 512 bytes per track, 1 KB blocks and a 64-entry directory.
+    enum Format {
+        /// Amstrad CPC AMSDOS "Data" format: sector IDs &C1-&C9, no reserved tracks.
+        case amstradData
+        /// ZX Spectrum +3DOS format: sector IDs 1-9, track 0 reserved for the
+        /// disk specification, and a 128-byte PLUS3DOS header on every file.
+        case spectrumPlus3
+    }
+
+    /// Where things live on the disk for one format and size.
+    private struct Layout {
+        let tracks: Int
+        let sides: Int
+        let firstSectorID: Int
+        let reservedTracks: Int
+
+        init(size: DiskSize, format: Format) {
+            tracks = 40
+            sides = size == .kb360 ? 2 : 1
+            firstSectorID = format == .spectrumPlus3 ? 0x01 : 0xC1
+            reservedTracks = format == .spectrumPlus3 ? 1 : 0
+        }
+    }
+
     // MARK: - Public Interface
 
-    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
-        let geometry = diskGeometry(for: size)
-        let numTracks = geometry.tracks
-        let numSides = geometry.sides
+    func createDiskImage(at url: URL, volumeName: String, size: DiskSize, files: [(url: URL, name: String)],
+                         format: Format = .amstradData) -> Bool {
+        let layout = Layout(size: size, format: format)
+        let numTracks = layout.tracks
+        let numSides = layout.sides
 
         // Calculate total size with headers
         let trackSize = trackHeaderSize + sectorsPerTrack * sectorSize
@@ -40,21 +66,29 @@ class CPCDiskWriter {
             for side in 0..<numSides {
                 let trackIndex = track * numSides + side
                 let trackOffset = diskHeaderSize + trackIndex * trackSize
-                initializeTrackHeader(in: &diskData, at: trackOffset, track: track, side: side)
+                initializeTrackHeader(in: &diskData, at: trackOffset, track: track, side: side,
+                                      firstSectorID: layout.firstSectorID)
             }
         }
 
-        // Initialize directory (first 4 sectors of track 0)
-        initializeDirectory(in: &diskData, numTracks: numTracks, numSides: numSides)
+        // Initialize directory (first 4 sectors after the reserved tracks)
+        initializeDirectory(in: &diskData, layout: layout)
+
+        if format == .spectrumPlus3 {
+            writePlus3DiskSpec(in: &diskData)
+        }
 
         // Write files
         var nextBlock = 2  // First two blocks are directory
         var dirEntryIndex = 0
 
         for file in files {
-            guard let fileData = try? Data(contentsOf: file.url) else {
+            guard var fileData = try? Data(contentsOf: file.url) else {
                 print("CPCDiskWriter: Could not read file \(file.name)")
                 continue
+            }
+            if format == .spectrumPlus3 {
+                fileData = plus3Header(for: fileData, ext: file.url.pathExtension) + fileData
             }
 
             // Use provided name with extension from URL
@@ -74,7 +108,7 @@ class CPCDiskWriter {
                 remaining = remaining.dropFirst(blockSize)
 
                 // Write block to disk
-                writeBlock(in: &diskData, block: currentBlock, data: chunk, numTracks: numTracks, numSides: numSides)
+                writeBlock(in: &diskData, block: currentBlock, data: chunk, layout: layout)
 
                 blockList.append(currentBlock)
                 currentBlock += 1
@@ -88,8 +122,7 @@ class CPCDiskWriter {
                 fileExt: fileExt,
                 blocks: blockList,
                 fileSize: fileData.count,
-                numTracks: numTracks,
-                numSides: numSides
+                layout: layout
             )
 
             dirEntryIndex += entriesUsed
@@ -111,10 +144,9 @@ class CPCDiskWriter {
 
     private func initializeDiskHeader(in data: inout Data, tracks: Int, sides: Int) {
         // Extended CPC DSK format signature
-        let signature = "EXTENDED CPC DSK File\r\nDisk-Info\r\n"
-        for (i, char) in signature.enumerated() {
-            data[i] = char.asciiValue ?? 0
-        }
+        // Written as raw bytes: Swift treats "\r\n" as one Character
+        let signature = Array("EXTENDED CPC DSK File\r\nDisk-Info\r\n".utf8)
+        data.replaceSubrange(0..<signature.count, with: signature)
 
         // Creator name (offset 34, 14 bytes)
         let creator = "BitPast       "
@@ -137,12 +169,10 @@ class CPCDiskWriter {
 
     // MARK: - Track Header
 
-    private func initializeTrackHeader(in data: inout Data, at offset: Int, track: Int, side: Int) {
-        // Track-Info signature
-        let signature = "Track-Info\r\n"
-        for (i, char) in signature.enumerated() {
-            data[offset + i] = char.asciiValue ?? 0
-        }
+    private func initializeTrackHeader(in data: inout Data, at offset: Int, track: Int, side: Int, firstSectorID: Int) {
+        // Track-Info signature (raw bytes, see initializeDiskHeader)
+        let signature = Array("Track-Info\r\n".utf8)
+        data.replaceSubrange(offset..<(offset + signature.count), with: signature)
 
         // Track number
         data[offset + 16] = UInt8(track)
@@ -172,8 +202,8 @@ class CPCDiskWriter {
             // Side ID
             data[sectorInfoOffset + 1] = UInt8(side)
 
-            // Sector ID (CPC uses 0xC1-0xC9)
-            data[sectorInfoOffset + 2] = UInt8(0xC1 + sector)
+            // Sector ID (&C1-&C9 on CPC Data disks, 1-9 on +3 disks)
+            data[sectorInfoOffset + 2] = UInt8(firstSectorID + sector)
 
             // Sector size (2 = 512 bytes)
             data[sectorInfoOffset + 3] = 2
@@ -196,10 +226,10 @@ class CPCDiskWriter {
 
     // MARK: - Directory
 
-    private func initializeDirectory(in data: inout Data, numTracks: Int, numSides: Int) {
+    private func initializeDirectory(in data: inout Data, layout: Layout) {
         // Directory is in first 4 sectors (2KB)
         // Initialize all entries as empty (0xE5)
-        let dirOffset = sectorOffset(track: 0, sector: 0, numSides: numSides)
+        let dirOffset = sectorOffset(track: 0, sector: 0, layout: layout)
         for i in 0..<(directoryEntries * 32) {
             data[dirOffset + i] = 0xE5
         }
@@ -211,8 +241,8 @@ class CPCDiskWriter {
     /// Returns the number of directory entries used
     private func addDirectoryEntry(in data: inout Data, entryIndex: Int, fileName: String,
                                    fileExt: String, blocks: [Int], fileSize: Int,
-                                   numTracks: Int, numSides: Int) -> Int {
-        let dirOffset = sectorOffset(track: 0, sector: 0, numSides: numSides)
+                                   layout: Layout) -> Int {
+        let dirOffset = sectorOffset(track: 0, sector: 0, layout: layout)
         let blocksPerExtent = 16
         let bytesPerExtent = blocksPerExtent * 1024  // 16KB per extent
 
@@ -277,7 +307,7 @@ class CPCDiskWriter {
     // MARK: - Block Writing
 
     private func writeBlock(in data: inout Data, block: Int, data chunk: Data.SubSequence,
-                            numTracks: Int, numSides: Int) {
+                            layout: Layout) {
         // CPC uses 1KB blocks (2 sectors of 512 bytes each)
         let sectorsPerBlock = 2
         let startSector = block * sectorsPerBlock
@@ -292,7 +322,7 @@ class CPCDiskWriter {
             let track = absoluteSector / sectorsPerTrack
             let sectorInTrack = absoluteSector % sectorsPerTrack
 
-            let offset = sectorOffset(track: track, sector: sectorInTrack, numSides: numSides)
+            let offset = sectorOffset(track: track, sector: sectorInTrack, layout: layout)
 
             // Write up to 512 bytes for this sector
             let remainingBytes = chunk.count - chunkOffset
@@ -309,25 +339,48 @@ class CPCDiskWriter {
 
     // MARK: - Helpers
 
-    private func sectorOffset(track: Int, sector: Int, numSides: Int) -> Int {
+    /// Offset of a filesystem sector. `track` counts from the first track after
+    /// the reserved ones; the filesystem only uses side 0.
+    private func sectorOffset(track: Int, sector: Int, layout: Layout) -> Int {
         let trackSize = trackHeaderSize + sectorsPerTrack * sectorSize
-        let trackIndex = track * numSides + (sector >= sectorsPerTrack ? 1 : 0)
+        let trackIndex = (track + layout.reservedTracks) * layout.sides + (sector >= sectorsPerTrack ? 1 : 0)
         let sectorInTrack = sector % sectorsPerTrack
 
         return diskHeaderSize + trackIndex * trackSize + trackHeaderSize + sectorInTrack * sectorSize
     }
 
-    private struct DiskGeometry {
-        let tracks: Int
-        let sides: Int
+    // MARK: - Spectrum +3
+
+    /// Disk specification in the first sector of track 0: standard +3 format,
+    /// single sided, 40 tracks, 9 sectors of 512 bytes, 1 reserved track,
+    /// 1 KB blocks, 2 directory blocks.
+    private func writePlus3DiskSpec(in data: inout Data) {
+        let spec: [UInt8] = [0x00, 0x00, 0x28, 0x09, 0x02, 0x01, 0x03, 0x02, 0x2A, 0x52, 0, 0, 0, 0, 0, 0]
+        let offset = diskHeaderSize + trackHeaderSize  // track 0, first sector
+        data.replaceSubrange(offset..<(offset + spec.count), with: spec)
     }
 
-    private func diskGeometry(for size: DiskSize) -> DiskGeometry {
-        switch size {
-        case .kb180: return DiskGeometry(tracks: 40, sides: 1)
-        case .kb360: return DiskGeometry(tracks: 40, sides: 2)
-        default: return DiskGeometry(tracks: 40, sides: 1)
-        }
+    /// 128-byte PLUS3DOS header describing the file as CODE. Screens load at
+    /// 16384, anything else at 32768.
+    private func plus3Header(for fileData: Data, ext: String) -> Data {
+        var header = Data(count: 128)
+        header.replaceSubrange(0..<8, with: Array("PLUS3DOS".utf8))
+        header[8] = 0x1A  // soft EOF
+        header[9] = 0x01  // issue
+        header[10] = 0x00 // version
+        let total = fileData.count + 128
+        for i in 0..<4 { header[11 + i] = UInt8((total >> (8 * i)) & 0xFF) }
+        let isScreen = ext.lowercased() == "scr" || fileData.count == 6912
+        let loadAddress = isScreen ? 16384 : 32768
+        header[15] = 0x03  // CODE
+        header[16] = UInt8(fileData.count & 0xFF)
+        header[17] = UInt8((fileData.count >> 8) & 0xFF)
+        header[18] = UInt8(loadAddress & 0xFF)
+        header[19] = UInt8((loadAddress >> 8) & 0xFF)
+        header[20] = 0x00
+        header[21] = 0x80  // 32768: unused for CODE, the conventional value
+        header[127] = UInt8(header.prefix(127).reduce(0) { ($0 + Int($1)) & 0xFF })
+        return header
     }
 
     private func splitCPCFileName(_ name: String) -> (String, String) {

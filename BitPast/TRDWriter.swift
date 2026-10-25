@@ -24,6 +24,12 @@ class TRDWriter {
     // MARK: - Public Interface
 
     func createDiskImage(at url: URL, volumeName: String, format: DiskFormat, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
+        // The .dsk option is a Spectrum +3 disk, which uses the CP/M layout
+        if format == .dsk {
+            return CPCDiskWriter.shared.createDiskImage(at: url, volumeName: volumeName, size: size,
+                                                        files: files, format: .spectrumPlus3)
+        }
+
         // TR-DOS uses 640KB (2560 sectors * 256 bytes)
         var diskData = Data(count: totalSectors * sectorSize)
 
@@ -170,9 +176,9 @@ class TRDWriter {
         // Sector count
         data[entryOffset + 13] = UInt8(sectorCount)
 
-        // Start sector and track
-        let startTrack = startSector / (sectorsPerTrack * sides)
-        let startSectorInTrack = startSector % (sectorsPerTrack * sides)
+        // Start sector (0-15) and logical track (cylinder * 2 + side)
+        let startTrack = startSector / sectorsPerTrack
+        let startSectorInTrack = startSector % sectorsPerTrack
         data[entryOffset + 14] = UInt8(startSectorInTrack)
         data[entryOffset + 15] = UInt8(startTrack)
     }
@@ -189,9 +195,9 @@ class TRDWriter {
         data[sysOffset + 0xE5] = UInt8(freeSectors & 0xFF)
         data[sysOffset + 0xE6] = UInt8((freeSectors >> 8) & 0xFF)
 
-        // First free sector
-        let freeTrack = firstFreeSector / (sectorsPerTrack * sides)
-        let freeSectorInTrack = firstFreeSector % (sectorsPerTrack * sides)
+        // First free sector (0-15) and logical track
+        let freeTrack = firstFreeSector / sectorsPerTrack
+        let freeSectorInTrack = firstFreeSector % sectorsPerTrack
         data[sysOffset + 0xE1] = UInt8(freeSectorInTrack)
         data[sysOffset + 0xE2] = UInt8(freeTrack)
     }

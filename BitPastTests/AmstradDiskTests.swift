@@ -9,6 +9,9 @@ struct AmstradDiskTests {
 
     nonisolated struct Disk {
         let image: Data
+        /// &C1 for CPC Data disks; Spectrum +3 disks use 1 and reserve track 0.
+        var firstSectorID = 0xC1
+        var reservedTracks = 0
         var tracks: Int { image.u8(0x30) }
         var sides: Int { image.u8(0x31) }
 
@@ -29,9 +32,9 @@ struct AmstradDiskTests {
             return nil
         }
 
-        /// Logical sector k of the Data format lives on track k / 9, side 0.
+        /// Logical sector k lives on track k / 9 (after reserved tracks), side 0.
         func logicalSector(_ k: Int) -> Data {
-            sector(trackIndex: (k / 9) * sides, id: 0xC1 + k % 9) ?? Data(count: 512)
+            sector(trackIndex: (k / 9 + reservedTracks) * sides, id: firstSectorID + k % 9) ?? Data(count: 512)
         }
 
         func block(_ n: Int) -> Data { logicalSector(n * 2) + logicalSector(n * 2 + 1) }
