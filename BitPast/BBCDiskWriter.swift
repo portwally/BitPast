@@ -38,12 +38,12 @@ class BBCDiskWriter {
 
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
-                print("BBCDiskWriter: Could not read file \(file.name)")
+                Log.error("BBCDiskWriter: Could not read file \(file.name)")
                 continue
             }
 
             if entries.count >= maxFiles {
-                print("BBCDiskWriter: Maximum file count reached")
+                Log.error("BBCDiskWriter: Maximum file count reached")
                 break
             }
 
@@ -52,7 +52,7 @@ class BBCDiskWriter {
             let sectorCount = (fileData.count + sectorSize - 1) / sectorSize
 
             if nextSector + sectorCount > sectorsPerSide {
-                print("BBCDiskWriter: Disk full")
+                Log.error("BBCDiskWriter: Disk full")
                 break
             }
 
@@ -87,10 +87,10 @@ class BBCDiskWriter {
         // Write to file
         do {
             try diskData.write(to: url)
-            print("BBCDiskWriter: Created \(format == .dsd ? "DSD" : "SSD") at \(url.path)")
+            Log.debug("BBCDiskWriter: Created \(format == .dsd ? "DSD" : "SSD") at \(url.path)")
             return true
         } catch {
-            print("BBCDiskWriter: Failed to write disk: \(error)")
+            Log.error("BBCDiskWriter: Failed to write disk: \(error)")
             return false
         }
     }

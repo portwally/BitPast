@@ -63,20 +63,20 @@ class MSXDiskWriter {
 
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
-                print("MSXDiskWriter: Could not read file \(file.name)")
+                Log.error("MSXDiskWriter: Could not read file \(file.name)")
                 continue
             }
 
             // Check if there's enough space for this file
             let clustersNeeded = (fileData.count + bytesPerCluster - 1) / bytesPerCluster
             if nextCluster - 2 + clustersNeeded > totalDataClusters {
-                print("MSXDiskWriter: Disk full — cannot fit \(file.name) (\(fileData.count) bytes, needs \(clustersNeeded) clusters, only \(totalDataClusters - (nextCluster - 2)) available)")
+                Log.error("MSXDiskWriter: Disk full — cannot fit \(file.name) (\(fileData.count) bytes, needs \(clustersNeeded) clusters, only \(totalDataClusters - (nextCluster - 2)) available)")
                 continue
             }
 
             // Check if there's room in the root directory
             if dirEntryIndex >= rootDirEntries {
-                print("MSXDiskWriter: Root directory full — cannot add \(file.name) (max \(rootDirEntries) entries)")
+                Log.error("MSXDiskWriter: Root directory full — cannot add \(file.name) (max \(rootDirEntries) entries)")
                 continue
             }
 
@@ -128,10 +128,10 @@ class MSXDiskWriter {
         // Write to file
         do {
             try diskData.write(to: url)
-            print("MSXDiskWriter: Created DSK at \(url.path)")
+            Log.debug("MSXDiskWriter: Created DSK at \(url.path)")
             return true
         } catch {
-            print("MSXDiskWriter: Failed to write DSK: \(error)")
+            Log.error("MSXDiskWriter: Failed to write DSK: \(error)")
             return false
         }
     }

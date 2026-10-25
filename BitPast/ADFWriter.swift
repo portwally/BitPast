@@ -57,7 +57,7 @@ class ADFWriter {
 
         for (fileIndex, file) in files.enumerated() {
             guard let fileData = try? Data(contentsOf: file.url) else {
-                print("ADFWriter: Could not read file \(file.name)")
+                Log.error("ADFWriter: Could not read file \(file.name)")
                 continue
             }
 
@@ -71,7 +71,7 @@ class ADFWriter {
 
             // Check if disk is full
             if nextBlock >= totalSectors {
-                print("ADFWriter: Disk full, cannot add file \(fileName)")
+                Log.error("ADFWriter: Disk full, cannot add file \(fileName)")
                 break
             }
 
@@ -176,10 +176,10 @@ class ADFWriter {
         // Write to file
         do {
             try diskData.write(to: url)
-            print("ADFWriter: Created ADF at \(url.path)")
+            Log.debug("ADFWriter: Created ADF at \(url.path)")
             return true
         } catch {
-            print("ADFWriter: Failed to write ADF: \(error)")
+            Log.error("ADFWriter: Failed to write ADF: \(error)")
             return false
         }
     }
@@ -279,7 +279,7 @@ class ADFWriter {
 
         // Bounds check: bitmap data is 504 bytes (offset 4..507)
         guard wordOffset >= 0 && wordOffset + 4 <= data.count && wordIndex < 127 else {
-            print("ADFWriter: Block \(block) out of bitmap range")
+            Log.error("ADFWriter: Block \(block) out of bitmap range")
             return
         }
 
@@ -413,7 +413,7 @@ class ADFWriter {
                     nextBlock = rootBlock + 2
                 }
                 guard nextBlock < totalSectors else {
-                    print("ADFWriter: Disk full, cannot create extension block")
+                    Log.error("ADFWriter: Disk full, cannot create extension block")
                     break
                 }
 
@@ -535,7 +535,7 @@ class ADFWriter {
     private func writeInt32(in data: inout Data, at offset: Int, value: Int32) {
         // Bounds check
         guard offset >= 0 && offset + 4 <= data.count else {
-            print("ADFWriter: writeInt32 out of bounds at offset \(offset), data size \(data.count)")
+            Log.error("ADFWriter: writeInt32 out of bounds at offset \(offset), data size \(data.count)")
             return
         }
         // Big-endian
@@ -548,7 +548,7 @@ class ADFWriter {
     private func readInt32(from data: Data, at offset: Int) -> Int32 {
         // Bounds check
         guard offset >= 0 && offset + 4 <= data.count else {
-            print("ADFWriter: readInt32 out of bounds at offset \(offset), data size \(data.count)")
+            Log.error("ADFWriter: readInt32 out of bounds at offset \(offset), data size \(data.count)")
             return 0
         }
         let b0 = Int32(data[offset]) << 24

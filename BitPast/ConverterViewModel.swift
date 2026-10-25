@@ -274,7 +274,7 @@ class ConverterViewModel: ObservableObject {
                         batchExportProgress = Double(index + 1) / Double(batchExportTotal)
                     }
                 } catch {
-                    print("Error exporting \(imageItem.name): \(error)")
+                    Log.error("Error exporting \(imageItem.name): \(error)")
                     failedFiles.append(imageItem.name)
                 }
             }
@@ -347,7 +347,7 @@ class ConverterViewModel: ObservableObject {
                         batchExportProgress = Double(index + 1) / Double(batchExportTotal)
                     }
                 } catch {
-                    print("Error exporting \(imageItem.name): \(error)")
+                    Log.error("Error exporting \(imageItem.name): \(error)")
                     failedFiles.append(imageItem.name)
                 }
             }
@@ -413,7 +413,7 @@ class ConverterViewModel: ObservableObject {
                         batchExportProgress = Double(index + 1) / Double(batchExportTotal)
                     }
                 } catch {
-                    print("Error exporting \(imageItem.name): \(error)")
+                    Log.error("Error exporting \(imageItem.name): \(error)")
                     failedFiles.append(imageItem.name)
                 }
             }
@@ -757,8 +757,8 @@ class ConverterViewModel: ObservableObject {
                     if let first = safeVolume.first, !first.isLetter { safeVolume = "V" + safeVolume }
                     safeVolume = String(safeVolume.prefix(15))
 
-                    print("Creating ProDOS disk: \(targetUrl.lastPathComponent)")
-                    print("Converting \(imagesToConvert.count) image(s)...")
+                    Log.debug("Creating ProDOS disk: \(targetUrl.lastPathComponent)")
+                    Log.debug("Converting \(imagesToConvert.count) image(s)...")
 
                     // Remove existing file if present
                     try? FileManager.default.removeItem(at: targetUrl)
@@ -845,7 +845,7 @@ class ConverterViewModel: ObservableObject {
                                 do {
                                     fileData = try Data(contentsOf: assetUrl)
                                 } catch {
-                                    print("Could not read file: \(assetUrl.path) — \(error.localizedDescription)")
+                                    Log.error("Could not read file: \(assetUrl.path) — \(error.localizedDescription)")
                                     await MainActor.run {
                                         self.diskCreationStatus = "Skipped: \(assetUrl.lastPathComponent) (read error)"
                                     }
@@ -858,17 +858,17 @@ class ConverterViewModel: ObservableObject {
                                     await MainActor.run {
                                         self.errorMessage = "Disk full! Only \(fileIndex) file(s) added. Choose a larger disk size."
                                     }
-                                    print("Disk full after \(fileIndex) files")
+                                    Log.error("Disk full after \(fileIndex) files")
                                     return
                                 }
 
-                                print("Adding file \(fileIndex+1): \(finalProDOSName) (type $\(String(format: "%02X", fileType)), \(fileData.count) bytes)")
+                                Log.debug("Adding file \(fileIndex+1): \(finalProDOSName) (type $\(String(format: "%02X", fileType)), \(fileData.count) bytes)")
 
                                 // Add file using native ProDOSWriter
                                 await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
                                     ProDOSWriter.shared.addFile(diskImagePath: targetUrl, fileName: finalProDOSName, fileData: fileData, fileType: fileType, auxType: auxType) { success, message in
                                         if !success {
-                                            print("Failed to add file: \(message)")
+                                            Log.error("Failed to add file: \(message)")
                                         }
                                         continuation.resume()
                                     }
@@ -877,7 +877,7 @@ class ConverterViewModel: ObservableObject {
                                 fileIndex += 1
                             }
                         } catch {
-                            print("Error converting \(imageItem.name): \(error)")
+                            Log.error("Error converting \(imageItem.name): \(error)")
                         }
                     }
 
@@ -887,7 +887,7 @@ class ConverterViewModel: ObservableObject {
                         self.diskCreationStatus = "Complete!"
                     }
 
-                    print("Disk creation complete! Added \(fileIndex) file(s), \(totalBytesUsed) bytes used")
+                    Log.debug("Disk creation complete! Added \(fileIndex) file(s), \(totalBytesUsed) bytes used")
                 }
             }
         }
@@ -937,7 +937,7 @@ class ConverterViewModel: ObservableObject {
                     allFiles.append((url: assetUrl, name: fileName))
                 }
             } catch {
-                print("Error converting \(imageItem.name): \(error)")
+                Log.error("Error converting \(imageItem.name): \(error)")
             }
         }
 

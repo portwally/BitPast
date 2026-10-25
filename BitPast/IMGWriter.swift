@@ -79,20 +79,20 @@ class IMGWriter {
 
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
-                print("IMGWriter: Could not read file \(file.name)")
+                Log.error("IMGWriter: Could not read file \(file.name)")
                 continue
             }
 
             // Check if there's enough space for this file
             let clustersNeeded = (fileData.count + bytesPerCluster - 1) / bytesPerCluster
             if nextCluster - 2 + clustersNeeded > totalDataClusters {
-                print("IMGWriter: Disk full — cannot fit \(file.name) (\(fileData.count) bytes, needs \(clustersNeeded) clusters, only \(totalDataClusters - (nextCluster - 2)) available)")
+                Log.error("IMGWriter: Disk full — cannot fit \(file.name) (\(fileData.count) bytes, needs \(clustersNeeded) clusters, only \(totalDataClusters - (nextCluster - 2)) available)")
                 continue
             }
 
             // Check if there's room in the root directory
             if dirEntryIndex >= rootDirEntries {
-                print("IMGWriter: Root directory full — cannot add \(file.name) (max \(rootDirEntries) entries)")
+                Log.error("IMGWriter: Root directory full — cannot add \(file.name) (max \(rootDirEntries) entries)")
                 continue
             }
 
@@ -150,10 +150,10 @@ class IMGWriter {
         // Write to file
         do {
             try diskData.write(to: url)
-            print("IMGWriter: Created IMG at \(url.path)")
+            Log.debug("IMGWriter: Created IMG at \(url.path)")
             return true
         } catch {
-            print("IMGWriter: Failed to write IMG: \(error)")
+            Log.error("IMGWriter: Failed to write IMG: \(error)")
             return false
         }
     }

@@ -47,12 +47,12 @@ class CoCoDiskWriter {
 
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
-                print("CoCoDiskWriter: Could not read file \(file.name)")
+                Log.error("CoCoDiskWriter: Could not read file \(file.name)")
                 continue
             }
 
             if dirEntryIndex >= maxDirectoryEntries {
-                print("CoCoDiskWriter: Maximum file count reached")
+                Log.error("CoCoDiskWriter: Maximum file count reached")
                 break
             }
 
@@ -77,7 +77,7 @@ class CoCoDiskWriter {
             }
 
             if allocatedGranules.count < granulesNeeded {
-                print("CoCoDiskWriter: Disk full")
+                Log.error("CoCoDiskWriter: Disk full")
                 break
             }
 
@@ -123,10 +123,10 @@ class CoCoDiskWriter {
         // Write to file
         do {
             try diskData.write(to: url)
-            print("CoCoDiskWriter: Created DSK at \(url.path) with \(filesWritten) files")
+            Log.debug("CoCoDiskWriter: Created DSK at \(url.path) with \(filesWritten) files")
             return filesWritten
         } catch {
-            print("CoCoDiskWriter: Failed to write DSK: \(error)")
+            Log.error("CoCoDiskWriter: Failed to write DSK: \(error)")
             return 0
         }
     }

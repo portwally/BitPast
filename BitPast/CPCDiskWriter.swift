@@ -84,7 +84,7 @@ class CPCDiskWriter {
 
         for file in files {
             guard var fileData = try? Data(contentsOf: file.url) else {
-                print("CPCDiskWriter: Could not read file \(file.name)")
+                Log.error("CPCDiskWriter: Could not read file \(file.name)")
                 continue
             }
             if format == .spectrumPlus3 {
@@ -132,10 +132,10 @@ class CPCDiskWriter {
         // Write to file
         do {
             try diskData.write(to: url)
-            print("CPCDiskWriter: Created DSK at \(url.path)")
+            Log.debug("CPCDiskWriter: Created DSK at \(url.path)")
             return true
         } catch {
-            print("CPCDiskWriter: Failed to write DSK: \(error)")
+            Log.error("CPCDiskWriter: Failed to write DSK: \(error)")
             return false
         }
     }

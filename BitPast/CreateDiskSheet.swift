@@ -304,6 +304,6 @@ struct DiskSystemButton: View {
         selectedSystemIndex: .constant(8),
         viewModel: ConverterViewModel()
     ) { config in
-        print("Export: \(config.system.displayName) \(config.format.displayName) \(config.size.displayName)")
+        Log.debug("Export: \(config.system.displayName) \(config.format.displayName) \(config.size.displayName)")
     }
 }

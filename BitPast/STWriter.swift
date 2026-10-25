@@ -59,20 +59,20 @@ class STWriter {
 
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
-                print("STWriter: Could not read file \(file.name)")
+                Log.error("STWriter: Could not read file \(file.name)")
                 continue
             }
 
             // Check if there's enough space for this file
             let clustersNeeded = (fileData.count + bytesPerCluster - 1) / bytesPerCluster
             if nextCluster - 2 + clustersNeeded > totalDataClusters {
-                print("STWriter: Disk full — cannot fit \(file.name) (\(fileData.count) bytes, needs \(clustersNeeded) clusters, only \(totalDataClusters - (nextCluster - 2)) available)")
+                Log.error("STWriter: Disk full — cannot fit \(file.name) (\(fileData.count) bytes, needs \(clustersNeeded) clusters, only \(totalDataClusters - (nextCluster - 2)) available)")
                 continue
             }
 
             // Check if there's room in the root directory
             if dirEntryIndex >= rootEntries {
-                print("STWriter: Root directory full — cannot add \(file.name) (max \(rootEntries) entries)")
+                Log.error("STWriter: Root directory full — cannot add \(file.name) (max \(rootEntries) entries)")
                 continue
             }
 
@@ -125,10 +125,10 @@ class STWriter {
         // Write to file
         do {
             try diskData.write(to: url)
-            print("STWriter: Created ST at \(url.path)")
+            Log.debug("STWriter: Created ST at \(url.path)")
             return true
         } catch {
-            print("STWriter: Failed to write ST: \(error)")
+            Log.error("STWriter: Failed to write ST: \(error)")
             return false
         }
     }

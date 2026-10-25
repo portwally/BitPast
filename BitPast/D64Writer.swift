@@ -51,7 +51,7 @@ class D64Writer {
         case .d81:
             return createD81(at: url, volumeName: volumeName, files: files)
         default:
-            print("D64Writer: Unsupported format \(format)")
+            Log.error("D64Writer: Unsupported format \(format)")
             return false
         }
     }
@@ -78,7 +78,7 @@ class D64Writer {
 
         for (fileUrl, originalName) in files {
             guard let fileData = try? Data(contentsOf: fileUrl) else {
-                print("D64Writer: Could not read file \(fileUrl.lastPathComponent)")
+                Log.error("D64Writer: Could not read file \(fileUrl.lastPathComponent)")
                 continue
             }
 
@@ -113,7 +113,7 @@ class D64Writer {
 
                 // Check if we've exceeded disk capacity
                 if currentTrack > d64TracksPerSide {
-                    print("D64Writer: Disk full")
+                    Log.error("D64Writer: Disk full")
                     break
                 }
 
@@ -168,10 +168,10 @@ class D64Writer {
         // Write disk image to file
         do {
             try diskData.write(to: url)
-            print("D64Writer: Created D64 at \(url.path)")
+            Log.debug("D64Writer: Created D64 at \(url.path)")
             return true
         } catch {
-            print("D64Writer: Failed to write disk image: \(error)")
+            Log.error("D64Writer: Failed to write disk image: \(error)")
             return false
         }
     }
@@ -249,10 +249,10 @@ class D64Writer {
 
         do {
             try diskData.write(to: url)
-            print("D64Writer: Created D71 at \(url.path)")
+            Log.debug("D64Writer: Created D71 at \(url.path)")
             return true
         } catch {
-            print("D64Writer: Failed to write D71: \(error)")
+            Log.error("D64Writer: Failed to write D71: \(error)")
             return false
         }
     }
@@ -336,10 +336,10 @@ class D64Writer {
 
         do {
             try diskData.write(to: url)
-            print("D64Writer: Created D81 at \(url.path)")
+            Log.debug("D64Writer: Created D81 at \(url.path)")
             return true
         } catch {
-            print("D64Writer: Failed to write D81: \(error)")
+            Log.error("D64Writer: Failed to write D81: \(error)")
             return false
         }
     }

@@ -42,12 +42,12 @@ class TRDWriter {
 
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
-                print("TRDWriter: Could not read file \(file.name)")
+                Log.error("TRDWriter: Could not read file \(file.name)")
                 continue
             }
 
             if fileIndex >= maxFiles {
-                print("TRDWriter: Maximum file count reached")
+                Log.error("TRDWriter: Maximum file count reached")
                 break
             }
 
@@ -59,7 +59,7 @@ class TRDWriter {
 
             // Check if file fits
             if nextSector + sectorCount > totalSectors {
-                print("TRDWriter: Disk full")
+                Log.error("TRDWriter: Disk full")
                 break
             }
 
@@ -101,10 +101,10 @@ class TRDWriter {
         // Write to file
         do {
             try diskData.write(to: url)
-            print("TRDWriter: Created TRD at \(url.path)")
+            Log.debug("TRDWriter: Created TRD at \(url.path)")
             return true
         } catch {
-            print("TRDWriter: Failed to write TRD: \(error)")
+            Log.error("TRDWriter: Failed to write TRD: \(error)")
             return false
         }
     }

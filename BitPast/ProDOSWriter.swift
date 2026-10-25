@@ -75,10 +75,10 @@ class ProDOSWriter {
             do {
                 let sanitizedVolume = self.sanitizeProDOSFilename(volumeName)
 
-                print("Creating ProDOS disk image:")
-                print("   Path: \(path.path)")
-                print("   Volume: \(sanitizedVolume)")
-                print("   Blocks: \(totalBlocks)")
+                Log.debug("Creating ProDOS disk image:")
+                Log.debug("   Path: \(path.path)")
+                Log.debug("   Volume: \(sanitizedVolume)")
+                Log.debug("   Blocks: \(totalBlocks)")
 
                 let diskData = NSMutableData(length: totalBlocks * self.BLOCK_SIZE)!
 
@@ -88,14 +88,14 @@ class ProDOSWriter {
 
                 try diskData.write(to: path, options: .atomic)
 
-                print("   Disk image created successfully!")
+                Log.debug("   Disk image created successfully!")
 
                 DispatchQueue.main.async {
                     completion(true, "Disk image created successfully")
                 }
 
             } catch {
-                print("   Error: \(error)")
+                Log.error("   Error: \(error)")
                 DispatchQueue.main.async {
                     completion(false, "Error creating disk: \(error.localizedDescription)")
                 }
@@ -132,10 +132,10 @@ class ProDOSWriter {
                     }
                 }
 
-                print("Adding file to ProDOS image:")
-                print("   File: \(finalName)")
-                print("   Size: \(fileData.count) bytes")
-                print("   Type: $\(String(format: "%02X", fileType))")
+                Log.debug("Adding file to ProDOS image:")
+                Log.debug("   File: \(finalName)")
+                Log.debug("   Size: \(fileData.count) bytes")
+                Log.debug("   Type: $\(String(format: "%02X", fileType))")
 
                 // Find free directory entry
                 guard let (dirBlock, entryOffset) = self.findFreeDirectoryEntry(diskData) else {
@@ -214,14 +214,14 @@ class ProDOSWriter {
                 // Write back to disk
                 try diskData.write(to: diskImagePath, options: .atomic)
 
-                print("   File added successfully!")
+                Log.debug("   File added successfully!")
 
                 DispatchQueue.main.async {
                     completion(true, "File added successfully")
                 }
 
             } catch {
-                print("   Error: \(error)")
+                Log.error("   Error: \(error)")
                 DispatchQueue.main.async {
                     completion(false, "Error: \(error.localizedDescription)")
                 }
@@ -663,29 +663,29 @@ class ProDOSWriter {
             do {
                 let sanitizedVolume = self.sanitizeProDOSFilename(volumeName)
 
-                print("Creating bootable ProDOS disk image:")
-                print("   Path: \(path.path)")
-                print("   Template: \(templatePath.path)")
-                print("   Volume: \(sanitizedVolume)")
+                Log.debug("Creating bootable ProDOS disk image:")
+                Log.debug("   Path: \(path.path)")
+                Log.debug("   Template: \(templatePath.path)")
+                Log.debug("   Volume: \(sanitizedVolume)")
 
                 // Check if template file exists
                 let fileManager = FileManager.default
                 let templateExists = fileManager.fileExists(atPath: templatePath.path)
-                print("   Template exists: \(templateExists)")
+                Log.debug("   Template exists: \(templateExists)")
 
                 if templateExists {
                     let attrs = try? fileManager.attributesOfItem(atPath: templatePath.path)
-                    print("   Template size: \(attrs?[.size] ?? "unknown")")
-                    print("   Template readable: \(fileManager.isReadableFile(atPath: templatePath.path))")
+                    Log.debug("   Template size: \(attrs?[.size] ?? "unknown")")
+                    Log.debug("   Template readable: \(fileManager.isReadableFile(atPath: templatePath.path))")
                 }
 
                 // Try using Data first for better error reporting
                 let templateData: Data
                 do {
                     templateData = try Data(contentsOf: templatePath)
-                    print("   Template read successfully: \(templateData.count) bytes")
+                    Log.debug("   Template read successfully: \(templateData.count) bytes")
                 } catch {
-                    print("   Error reading template: \(error)")
+                    Log.error("   Error reading template: \(error)")
                     DispatchQueue.main.async {
                         completion(false, "Could not read ProDOS template disk: \(error.localizedDescription)")
                     }
@@ -718,14 +718,14 @@ class ProDOSWriter {
                 // Write modified disk to destination (NSSavePanel grants access)
                 try diskData.write(to: path, options: .atomic)
 
-                print("   Bootable disk created and volume renamed successfully!")
+                Log.debug("   Bootable disk created and volume renamed successfully!")
 
                 DispatchQueue.main.async {
                     completion(true, "Bootable disk image created successfully")
                 }
 
             } catch {
-                print("   Error: \(error)")
+                Log.error("   Error: \(error)")
                 DispatchQueue.main.async {
                     completion(false, "Error creating bootable disk: \(error.localizedDescription)")
                 }

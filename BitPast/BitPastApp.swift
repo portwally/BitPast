@@ -261,7 +261,7 @@ struct BitPastApp: App {
             }
 
             if cleanedCount > 0 {
-                print("Cleaned up \(cleanedCount) temporary file(s)")
+                Log.debug("Cleaned up \(cleanedCount) temporary file(s)")
             }
         } catch {
             // Silently ignore errors - temp cleanup is not critical

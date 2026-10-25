@@ -59,7 +59,7 @@ class ATRWriter {
 
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
-                print("ATRWriter: Could not read file \(file.name)")
+                Log.error("ATRWriter: Could not read file \(file.name)")
                 continue
             }
 
@@ -150,10 +150,10 @@ class ATRWriter {
         // Write to file
         do {
             try fullImage.write(to: url)
-            print("ATRWriter: Created ATR at \(url.path)")
+            Log.debug("ATRWriter: Created ATR at \(url.path)")
             return true
         } catch {
-            print("ATRWriter: Failed to write ATR: \(error)")
+            Log.error("ATRWriter: Failed to write ATR: \(error)")
             return false
         }
     }
