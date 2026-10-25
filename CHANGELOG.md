@@ -2,6 +2,59 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [4.5] - 2026-10-25
+
+### Added
+- **Spectrum +3 Disk Images** - The "180 KB .dsk" option for the ZX Spectrum now writes a real +3DOS disk:
+  - Extended DSK image with sector IDs 1-9, reserved track 0 with the disk specification block, and a 128-byte `PLUS3DOS` header (with checksum) on every file
+  - Screens are stored as CODE files loading at 16384; previously this option wrote a 640 KB TR-DOS image with a `.dsk` name
+- **Double-Sided CoCo Disks** - 360 KB TRS-80 CoCo images are now proper double-sided JVC files:
+  - 2-byte JVC header (18 sectors, 2 sides), tracks interleaved side by side, and an RS-DOS volume on each side
+  - Files fill side 0 first and continue on side 1
+- **DOS 2.5 Support for 130 KB Atari Disks** - Enhanced-density ATR images now include VTOC2 at sector 1024, so DOS 2.5 sees sectors 720-1023
+- **Conversion Progress Indicator** - A "Converting..." spinner (with retro-theme variants) now appears over the current preview while a new image is calculated, after a short delay so quick conversions don't flicker
+- **Test Suite** - New `BitPastTests` target (Swift Testing):
+  - Disk writer tests for every format (CBM DOS, Amiga OFS, FAT12/16, Atari DOS 2/2.5, AMSDOS, +3DOS, TR-DOS, Acorn DFS, RS-DOS, ProDOS), reading each image back with an independent, spec-based reader
+  - Converter golden-output tests that fingerprint all 15 converters across 392 setting combinations (opt-in: `TEST_RUNNER_BITPAST_GOLDEN=1`)
+  - Concurrency and cancellation tests for background conversion
+
+### Changed
+- **Smarter Colour Selection** - Converters that choose their colours from a large hardware palette now pick colours that cover the whole picture instead of the most frequent ones (median cut plus k-means refinement, shared in `CoveringPalette`):
+  - Atari 800 (Graphics 15 and 10), Atari ST (16 of 512), Amiga 500 (incl. HAM base palette), Amiga 1200, PC EGA 64 and MSX Screen 5
+  - Small but distinct areas, such as the darkest colour of a map or legend flags, no longer turn grey
+  - BBC Micro and Amstrad CPC keep frequency-based selection: with 8 and 27 colours, averaging then snapping gave worse results
+- **Atari 800 Graphics 8 Hardware Accuracy** - Both colours now share one hue with two luminances, as COLPF2/COLPF1 work on real hardware (previously any two colours, e.g. blue and pink, could be chosen)
+- **Background Conversion** - Conversions no longer run on the main thread, so the UI stays responsive while converting
+- **Replaced Previews Stop Early** - When a slider changes quickly, superseded conversions are cancelled and stop at the next stage instead of running to the end (Debug build: Amiga 500 5.4s to 0.66s, MSX 5.4s to 0.60s)
+- **Faster PC 256-Colour Conversion** - Median cut computes each box's range once (Debug build: PC VGA 13.0s to 2.0s, Amiga 1200 12.8s to 4.5s), with identical output
+- **Logging** - Progress messages now only print in debug builds; failures are logged with `os.Logger` and appear in Console.app
+
+### Fixed
+- **Build Error** - Amiga 1200 CLAHE expression that failed to type-check, which stopped the project from building
+- **C64 PETSCII Programs** - The exported `.prg` crashed on a real C64: wrong `SYS` address, loop branch offsets that looped forever, data placed 2 bytes early, and a final jump that skipped itself
+- **BBC Micro Disks** - The catalogue's high-bits byte was packed in reverse order (wrong start sectors and lengths over 192 KB); an operator-precedence bug dropped the sector-count high bits; catalogue entries are now sorted by start sector as DFS expects; DSD images now interleave sides track by track
+- **TRS-80 CoCo Disks** - Directory entries were shifted by one byte; the last-sector byte count was 0, truncating every file; granule numbering now skips the directory track
+- **Amiga ADF Disks** - The free-block bitmap was offset by two blocks, so AmigaDOS saw the root and bitmap blocks as free
+- **Atari 800 ATR Disks** - VTOC bitmap bit order was reversed; sectors are now allocated before writing, so files that don't fit are skipped instead of leaving a broken sector chain
+- **ZX Spectrum TRD Disks** - Directory sector numbers above 15 were invalid for TR-DOS
+- **Amstrad CPC** - The 27-colour palette was stored as BGR, so native files used the wrong firmware colours (an orange area showed sky blue on a real CPC); the EDSK and Track-Info signatures lost their carriage returns
+- **Locked Settings Ignored** - Atari 800, Atari ST and BBC Micro read every option except the mode from the on-screen settings, so images with locked settings and batch conversions used the wrong settings
+- **Non-Repeatable Output** - Palette selection in nine converters, and VIC-20 character matching, depended on Dictionary order, which Swift randomises per launch; the same picture could convert differently each time
+- **Create Disk Sheet** - Format and size are now always pre-selected (they could stay blank after opening the sheet for another system)
+- **Native Export** - Overwriting an existing file no longer deletes it first; the copy is staged and swapped in, so a failed save keeps the original
+- **Apple II Concurrency** - b2d's C globals and the process-wide current-directory change are now protected by one lock; cancelled conversions no longer leak their argument strings or input file
+- **Apple IIgs Concurrency** - The 3200-colour palette mapping was shared between conversions; it is now per conversion
+
+### Removed
+- Unused `DiskExportSheet` and `SystemSelectButton` views, the CoCo converter's never-called palette picker, and other dead code
+
+### Technical
+- 40 identical helper functions moved from the converters into `AtariFamilyImageOps`, `CommodoreFamilyImageOps` and `AmigaFamilyImageOps` (about 2,500 duplicate lines removed); only functions identical in code and everything they call were shared, verified by golden fingerprints
+- Ten near-identical disk-creation functions in `ConverterViewModel` merged into one `createBatchDisk`
+- `ContentView.swift` split from 2,946 to 169 lines: standalone views moved to `BitPast/Views/`, body sections moved to `ContentView+*.swift` extensions (snapshots pixel-identical before and after)
+- Converters and their shared types are `nonisolated`; conversions go through `ConverterViewModel.convertInBackground` with a settings snapshot
+- `Info.plist` excluded from Copy Bundle Resources; compiler warnings cleared
+
 ## [4.3] - 2026-02-26
 
 ### Fixed
