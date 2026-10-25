@@ -16,6 +16,7 @@ class CoCoDiskWriter {
     private let granulesPerTrack = 2
     private let sectorsPerGranule = 9
     private let maxDirectoryEntries = 72  // 9 sectors × 8 entries per sector
+    private let totalGranules = 68        // 34 data tracks × 2 (track 17 is the directory)
 
     // MARK: - Public Interface
 
@@ -66,16 +67,8 @@ class CoCoDiskWriter {
             // Find available granules
             var allocatedGranules: [Int] = []
             var searchGranule = nextGranule
-            let maxGranules = totalTracks * granulesPerTrack
 
-            while allocatedGranules.count < granulesNeeded && searchGranule < maxGranules {
-                // Skip directory track granules
-                let trackForGranule = searchGranule / granulesPerTrack
-                if trackForGranule == directoryTrack {
-                    searchGranule += granulesPerTrack
-                    continue
-                }
-
+            while allocatedGranules.count < granulesNeeded && searchGranule < totalGranules {
                 // Check if granule is free in GAT
                 if isGranuleFree(in: diskData, granule: searchGranule, sides: sides) {
                     allocatedGranules.append(searchGranule)
@@ -107,6 +100,9 @@ class CoCoDiskWriter {
             // Update GAT with allocation chain
             updateGAT(in: &diskData, granules: allocatedGranules, lastSectorCount: lastSectorUsed, sides: sides)
 
+            // Bytes used in the last sector: 1-256 (0 only for an empty file)
+            let lastSectorBytes = fileData.isEmpty ? 0 : (fileData.count - 1) % sectorSize + 1
+
             // Add directory entry
             addDirectoryEntry(
                 in: &diskData,
@@ -114,9 +110,9 @@ class CoCoDiskWriter {
                 fileName: fileName,
                 fileExt: fileExt,
                 firstGranule: allocatedGranules.first ?? 0,
-                fileType: 0x02,  // Binary file
+                fileType: 0x02,  // Machine language (LOADM)
                 asciiFlag: 0x00,  // Binary
-                sides: sides
+                lastSectorBytes: lastSectorBytes
             )
 
             dirEntryIndex += 1
@@ -154,23 +150,10 @@ class CoCoDiskWriter {
         // GAT is in sector 2 of track 17 (0-indexed = sector 1)
         let gatOffset = sectorOffset(track: directoryTrack, sector: 1, side: 0)
 
-        // Initialize all granules as free (0xFF)
+        // The first 68 bytes describe the granules; 0xFF means free.
+        // The directory track has no granule numbers, so nothing is reserved here.
         for i in 0..<sectorSize {
-            data[gatOffset + i] = 0xFF
-        }
-
-        // Mark directory track granules as used (0xFC = system use)
-        let dirGranuleStart = directoryTrack * granulesPerTrack
-        for g in 0..<granulesPerTrack {
-            data[gatOffset + dirGranuleStart + g] = 0xFC
-        }
-
-        // Mark any non-existent granules as unavailable
-        let maxGranules = totalTracks * granulesPerTrack
-        for g in maxGranules..<256 {
-            if gatOffset + g < data.count {
-                data[gatOffset + g] = 0xFC  // Mark as unavailable
-            }
+            data[gatOffset + i] = i < totalGranules ? 0xFF : 0x00
         }
     }
 
@@ -198,26 +181,29 @@ class CoCoDiskWriter {
 
     private func addDirectoryEntry(in data: inout Data, entryIndex: Int, fileName: String,
                                    fileExt: String, firstGranule: Int, fileType: UInt8,
-                                   asciiFlag: UInt8, sides: Int) {
+                                   asciiFlag: UInt8, lastSectorBytes: Int) {
         // Directory entries start at sector 3 of track 17
         let dirSector = 2 + (entryIndex / 8)  // 8 entries per sector
         let entryInSector = entryIndex % 8
         let entryOffset = sectorOffset(track: directoryTrack, sector: dirSector, side: 0) + entryInSector * 32
 
-        // File type (0 = killed, 1 = BASIC, 2 = data, 3 = ML)
-        data[entryOffset] = fileType
+        // RS-DOS entry: name (0-7), extension (8-10), type (11), ASCII flag (12),
+        // first granule (13), bytes used in last sector (14-15, big-endian).
 
         // Filename (8 bytes, padded with spaces)
         let paddedName = fileName.uppercased().padding(toLength: 8, withPad: " ", startingAt: 0)
         for (i, char) in paddedName.prefix(8).enumerated() {
-            data[entryOffset + 1 + i] = char.asciiValue ?? 0x20
+            data[entryOffset + i] = char.asciiValue ?? 0x20
         }
 
         // Extension (3 bytes, padded with spaces)
         let paddedExt = fileExt.uppercased().padding(toLength: 3, withPad: " ", startingAt: 0)
         for (i, char) in paddedExt.prefix(3).enumerated() {
-            data[entryOffset + 9 + i] = char.asciiValue ?? 0x20
+            data[entryOffset + 8 + i] = char.asciiValue ?? 0x20
         }
+
+        // File type (0 = BASIC, 1 = data, 2 = machine language, 3 = text)
+        data[entryOffset + 11] = fileType
 
         // ASCII flag (0 = binary, 0xFF = ASCII)
         data[entryOffset + 12] = asciiFlag
@@ -225,9 +211,9 @@ class CoCoDiskWriter {
         // First granule
         data[entryOffset + 13] = UInt8(firstGranule)
 
-        // Bytes in last sector (2 bytes, little-endian) - set to 0 for full sectors
-        data[entryOffset + 14] = 0
-        data[entryOffset + 15] = 0
+        // Bytes used in last sector
+        data[entryOffset + 14] = UInt8((lastSectorBytes >> 8) & 0xFF)
+        data[entryOffset + 15] = UInt8(lastSectorBytes & 0xFF)
 
         // Reserved bytes (16-31) - fill with zeros
         for i in 16..<32 {
@@ -238,7 +224,9 @@ class CoCoDiskWriter {
     // MARK: - Granule Writing
 
     private func writeGranule(in data: inout Data, granule: Int, data chunk: Data.SubSequence, sides: Int) {
-        let track = granule / granulesPerTrack
+        // Granules 0-33 are tracks 0-16; granules 34-67 skip the directory track
+        var track = granule / granulesPerTrack
+        if track >= directoryTrack { track += 1 }
         let granuleInTrack = granule % granulesPerTrack
         let startSector = granuleInTrack * sectorsPerGranule
 
