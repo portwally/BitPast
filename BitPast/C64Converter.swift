@@ -1,6 +1,6 @@
 import Cocoa
 
-class C64Converter: RetroMachine {
+nonisolated class C64Converter: RetroMachine {
     var name: String = "C64"
 
     var options: [ConversionOption] = [

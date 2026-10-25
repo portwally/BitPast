@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-class Atari800Converter: RetroMachine {
+nonisolated class Atari800Converter: RetroMachine {
     var name: String = "Atari 800"
 
     // Atari 800 has 128 colors (16 hues × 8 luminances)

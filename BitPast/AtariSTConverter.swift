@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-class AtariSTConverter: RetroMachine {
+nonisolated class AtariSTConverter: RetroMachine {
     var name: String = "Atari ST"
 
     // Atari ST has 512 colors (8 levels each for R, G, B)

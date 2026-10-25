@@ -1,6 +1,9 @@
 import Cocoa
 
-class AppleIIConverter: RetroMachine {
+nonisolated class AppleIIConverter: RetroMachine {
+    /// b2d keeps its state in C globals and needs the temp folder as the
+    /// current directory, so conversions must not overlap.
+    private static let b2dLock = NSLock()
     var name: String = "Apple II"
     
     var options: [ConversionOption] = [
@@ -234,10 +237,6 @@ class AppleIIConverter: RetroMachine {
         
         args.append("-V") // Preview
 
-        // Switch to temp directory (b2d expects this)
-        let originalDir = fileManager.currentDirectoryPath
-        fileManager.changeCurrentDirectoryPath(tempDir.path)
-        
         // Build argv array for C
         var cArgs: [UnsafeMutablePointer<CChar>?] = []
         cArgs.append(strdup("b2d")) // argv[0] = program name
@@ -247,11 +246,15 @@ class AppleIIConverter: RetroMachine {
         }
         cArgs.append(nil) // argv must end with NULL
 
-        // Call b2d conversion
-        let exitCode = b2d_main_wrapper(Int32(cArgs.count - 1), &cArgs)
-
-        // Return to original directory
-        fileManager.changeCurrentDirectoryPath(originalDir)
+        // b2d works on relative paths in the temp folder and keeps its state in
+        // C globals, so the directory change and the call happen under one lock.
+        // The current directory is process-wide.
+        let exitCode = Self.b2dLock.withLock {
+            let originalDir = fileManager.currentDirectoryPath
+            fileManager.changeCurrentDirectoryPath(tempDir.path)
+            defer { fileManager.changeCurrentDirectoryPath(originalDir) }
+            return b2d_main_wrapper(Int32(cArgs.count - 1), &cArgs)
+        }
         
         // Cleanup
         for ptr in cArgs where ptr != nil {
@@ -298,7 +301,7 @@ class AppleIIConverter: RetroMachine {
     }
 }
 
-extension NSImage {
+nonisolated extension NSImage {
     func saveAsStrict24BitBMP(to url: URL) throws {
         let width = Int(self.size.width)
         let height = Int(self.size.height)

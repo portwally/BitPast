@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-class BBCMicroConverter: RetroMachine {
+nonisolated class BBCMicroConverter: RetroMachine {
     var name: String = "BBC Micro"
 
     // BBC Micro has 8 fixed colors (no flashing support in static images)

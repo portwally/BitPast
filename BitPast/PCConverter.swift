@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-class PCConverter: RetroMachine {
+nonisolated class PCConverter: RetroMachine {
     var name: String = "PC"
 
     // PC Graphics modes:

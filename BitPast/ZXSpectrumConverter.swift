@@ -1,6 +1,6 @@
 import Cocoa
 
-class ZXSpectrumConverter: RetroMachine {
+nonisolated class ZXSpectrumConverter: RetroMachine {
     var name: String = "ZX Spectrum"
 
     var options: [ConversionOption] = [

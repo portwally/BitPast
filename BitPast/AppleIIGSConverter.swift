@@ -1,11 +1,8 @@
 import Cocoa
 
-class AppleIIGSConverter: RetroMachine {
+nonisolated class AppleIIGSConverter: RetroMachine {
     var name: String = "Apple IIgs"
-    
-    // Store palette mapping for 3200 mode
-    private var paletteSlotMapping: [Int] = []
-    
+
     var options: [ConversionOption] = [
         // 1. MODE
         ConversionOption(
@@ -380,8 +377,8 @@ class AppleIIGSConverter: RetroMachine {
         
         // --- PALETTE LOGIC ---
         
-        // Reset palette mapping
-        paletteSlotMapping = []
+        // Palette slot per scanline for 3200-color modes; empty for single-palette modes
+        var paletteSlotMapping: [Int] = []
         
         if isDesktop {
             // DESKTOP MODE - Column-aware dithering (Even/Odd palettes)
@@ -865,7 +862,8 @@ class AppleIIGSConverter: RetroMachine {
         }
         
         // 5. Generate Results
-        let preview = generatePreviewImage(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH)
+        let preview = generatePreviewImage(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH,
+                                           paletteSlotMapping: paletteSlotMapping)
 
         let fileManager = FileManager.default
         let uuid = UUID().uuidString.prefix(8)
@@ -880,7 +878,8 @@ class AppleIIGSConverter: RetroMachine {
         } else {
             // Standard SHR format (32,768 bytes with 16 palettes)
             let shrIs640Mode = is640
-            outputData = generateSHRData(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH, is640: shrIs640Mode)
+            outputData = generateSHRData(indices: outputIndices, palettes: finalPalettes, width: targetW, height: targetH, is640: shrIs640Mode,
+                                         paletteSlotMapping: paletteSlotMapping)
             outputUrl = fileManager.temporaryDirectory.appendingPathComponent("iigs_\(uuid).shr")
         }
 
@@ -1243,7 +1242,8 @@ class AppleIIGSConverter: RetroMachine {
         return (0 << 12) | (r4 << 8) | (g4 << 4) | b4
     }
     
-    func generateSHRData(indices: [Int], palettes: [[RGB]], width: Int, height: Int, is640: Bool) -> Data {
+    func generateSHRData(indices: [Int], palettes: [[RGB]], width: Int, height: Int, is640: Bool,
+                         paletteSlotMapping: [Int]) -> Data {
         var data = Data(count: 32768)
         let scbOffset = 32000
         let palOffset = 32256
@@ -1352,7 +1352,8 @@ class AppleIIGSConverter: RetroMachine {
         return data
     }
 
-    func generatePreviewImage(indices: [Int], palettes: [[RGB]], width: Int, height: Int) -> NSImage {
+    func generatePreviewImage(indices: [Int], palettes: [[RGB]], width: Int, height: Int,
+                              paletteSlotMapping: [Int]) -> NSImage {
         var bytes = [UInt8](repeating: 255, count: width * height * 4)
         for y in 0..<height {
             // Determine which palette to use for this line

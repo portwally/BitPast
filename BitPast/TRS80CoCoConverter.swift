@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-class TRS80CoCoConverter: RetroMachine {
+nonisolated class TRS80CoCoConverter: RetroMachine {
     var name: String = "TRS-80 CoCo"
 
     // TRS-80 Color Computer graphics modes

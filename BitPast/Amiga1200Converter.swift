@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-class Amiga1200Converter: RetroMachine {
+nonisolated class Amiga1200Converter: RetroMachine {
     var name: String = "Amiga 1200"
 
     // Amiga 1200 AGA: 24-bit color (16.7M), 256 colors in STD mode, HAM8 for more

@@ -30,7 +30,7 @@ struct ConverterGoldenTests {
         "BBCMicro", "C64", "MSX", "PC", "Plus4", "TRS80CoCo", "VIC20", "ZXSpectrum",
     ]
 
-    static func makeMachine(_ name: String) -> RetroMachine {
+    nonisolated static func makeMachine(_ name: String) -> RetroMachine {
         switch name {
         case "AppleII": AppleIIConverter()
         case "AppleIIGS": AppleIIGSConverter()
@@ -82,7 +82,7 @@ struct ConverterGoldenTests {
     }
 
     /// A 400×300 picture with gradients, hard edges, skin-like tones and fine detail.
-    static func testPicture() -> NSImage {
+    nonisolated static func testPicture() -> NSImage {
         let width = 400, height = 300
         let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
                             space: CGColorSpace(name: CGColorSpace.sRGB)!,
@@ -104,7 +104,7 @@ struct ConverterGoldenTests {
     }
 
     /// SHA-256 of the preview pixels (as RGBA8) and of each native file.
-    static func fingerprint(_ result: ConversionResult) throws -> String {
+    nonisolated static func fingerprint(_ result: ConversionResult) throws -> String {
         var hasher = SHA256()
         var rect = CGRect(origin: .zero, size: result.previewImage.size)
         let cg = try #require(result.previewImage.cgImage(forProposedRect: &rect, context: nil, hints: nil))

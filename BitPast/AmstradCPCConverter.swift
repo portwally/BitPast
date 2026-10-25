@@ -1,6 +1,6 @@
 import Cocoa
 
-class AmstradCPCConverter: RetroMachine {
+nonisolated class AmstradCPCConverter: RetroMachine {
     var name: String = "Amstrad CPC"
 
     var options: [ConversionOption] = [

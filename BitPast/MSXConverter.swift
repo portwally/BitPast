@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-class MSXConverter: RetroMachine {
+nonisolated class MSXConverter: RetroMachine {
     var name: String = "MSX"
 
     // MSX Graphics modes:

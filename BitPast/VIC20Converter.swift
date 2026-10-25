@@ -1,6 +1,6 @@
 import Cocoa
 
-class VIC20Converter: RetroMachine {
+nonisolated class VIC20Converter: RetroMachine {
     var name: String = "VIC-20"
 
     var options: [ConversionOption] = [

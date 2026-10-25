@@ -1,6 +1,6 @@
 import Cocoa
 
-class Plus4Converter: RetroMachine {
+nonisolated class Plus4Converter: RetroMachine {
     var name: String = "Plus/4"
 
     var options: [ConversionOption] = [

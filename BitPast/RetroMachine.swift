@@ -1,14 +1,14 @@
 import Cocoa
 
 // RGB color for palette editing
-struct PaletteRGB {
+nonisolated struct PaletteRGB {
     var r: Double
     var g: Double
     var b: Double
 }
 
 // Ergebnis-Container (Bild + Dateien)
-struct ConversionResult {
+nonisolated struct ConversionResult {
     let previewImage: NSImage
     let fileAssets: [URL]
     var palettes: [[PaletteRGB]]  // For Apple IIgs palette editing
@@ -26,12 +26,12 @@ struct ConversionResult {
     }
 }
 
-enum OptionType {
+nonisolated enum OptionType {
     case picker
     case slider
 }
 
-struct ConversionOption: Identifiable {
+nonisolated struct ConversionOption: Identifiable {
     let id = UUID()
     let label: String
     let key: String
@@ -73,7 +73,7 @@ struct ConversionOption: Identifiable {
     }
 }
 
-protocol RetroMachine {
+nonisolated protocol RetroMachine {
     var name: String { get }
     var options: [ConversionOption] { get set }
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]?) async throws -> ConversionResult
@@ -81,7 +81,7 @@ protocol RetroMachine {
 
 // MARK: - Input Validation
 
-enum ConversionValidationError: LocalizedError {
+nonisolated enum ConversionValidationError: LocalizedError {
     case emptyImage
     case invalidDimensions(width: Int, height: Int)
 
@@ -96,7 +96,7 @@ enum ConversionValidationError: LocalizedError {
 }
 
 // Extension to provide default parameter value and shared validation
-extension RetroMachine {
+nonisolated extension RetroMachine {
     func convert(sourceImage: NSImage) async throws -> ConversionResult {
         try await convert(sourceImage: sourceImage, withSettings: nil)
     }
@@ -115,7 +115,7 @@ extension RetroMachine {
 }
 
 // Hilfserweiterung für Scaling
-extension NSImage {
+nonisolated extension NSImage {
     func fitToStandardSize(targetWidth: Int, targetHeight: Int) -> NSImage {
         let newSize = NSSize(width: targetWidth, height: targetHeight)
         let img = NSImage(size: newSize)

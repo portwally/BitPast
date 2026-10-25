@@ -1,7 +1,7 @@
 import Foundation
 import AppKit
 
-class Amiga500Converter: RetroMachine {
+nonisolated class Amiga500Converter: RetroMachine {
     var name: String = "Amiga 500"
 
     // Amiga 500 OCS/ECS: 4096 colors (12-bit), 32 colors in STD mode, HAM6 for more
