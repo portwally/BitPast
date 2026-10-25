@@ -19,23 +19,22 @@ class BBCDiskWriter {
 
     func createDiskImage(at url: URL, volumeName: String, format: DiskFormat, size: DiskSize, files: [(url: URL, name: String)]) -> Bool {
         let (tracks, sides) = diskGeometry(for: size, format: format)
-        let totalSectors = tracks * sectorsPerTrack * sides
-        let totalBytes = totalSectors * sectorSize
+        let sectorsPerSide = tracks * sectorsPerTrack
+        let totalBytes = sectorsPerSide * sides * sectorSize
 
         var diskData = Data(count: totalBytes)
 
-        // Initialize catalog on side 0
-        initializeCatalog(in: &diskData, volumeName: volumeName, tracks: tracks)
-
-        // If double-sided, initialize catalog on side 1 as well
-        if format == .dsd && sides == 2 {
-            let side1Offset = tracks * sectorsPerTrack * sectorSize
-            initializeCatalogAtOffset(in: &diskData, offset: side1Offset, volumeName: volumeName, tracks: tracks)
+        // Catalogue for side 0, and for side 1 on a double-sided disk
+        initializeCatalogAtOffset(in: &diskData, offset: imageOffset(sector: 0, side: 0, sides: sides),
+                                  volumeName: volumeName, tracks: tracks)
+        if sides == 2 {
+            initializeCatalogAtOffset(in: &diskData, offset: imageOffset(sector: 0, side: 1, sides: sides),
+                                      volumeName: volumeName, tracks: tracks)
         }
 
-        // Write files
+        // Write files to side 0
         var nextSector = 2  // First data sector (sectors 0-1 are catalog)
-        var fileIndex = 0
+        var entries: [(directory: Character, name: String, length: Int, startSector: Int)] = []
 
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
@@ -43,49 +42,47 @@ class BBCDiskWriter {
                 continue
             }
 
-            if fileIndex >= maxFiles {
+            if entries.count >= maxFiles {
                 print("BBCDiskWriter: Maximum file count reached")
                 break
             }
 
-            // Use provided name
             let (directory, fileName) = splitBBCFileName(file.name)
             let startSector = nextSector
             let sectorCount = (fileData.count + sectorSize - 1) / sectorSize
 
-            // Check if file fits
-            if nextSector + sectorCount > totalSectors {
+            if nextSector + sectorCount > sectorsPerSide {
                 print("BBCDiskWriter: Disk full")
                 break
             }
 
-            // Write file data
-            var offset = startSector * sectorSize
-            for byte in fileData {
-                if offset < totalBytes {
-                    diskData[offset] = byte
-                    offset += 1
-                }
+            // Write sector by sector, so double-sided images get the interleaved layout
+            for s in 0..<sectorCount {
+                let chunk = fileData.dropFirst(s * sectorSize).prefix(sectorSize)
+                let offset = imageOffset(sector: startSector + s, side: 0, sides: sides)
+                diskData.replaceSubrange(offset..<(offset + chunk.count), with: chunk)
             }
 
-            // Add catalog entry
-            addCatalogEntry(
-                in: &diskData,
-                fileIndex: fileIndex,
-                directory: directory,
-                fileName: fileName,
-                loadAddress: 0xFFFF0E00,  // Default load address for screen data
-                execAddress: 0xFFFF0E00,
-                length: fileData.count,
-                startSector: startSector
-            )
-
-            fileIndex += 1
+            entries.append((directory, fileName, fileData.count, startSector))
             nextSector += sectorCount
         }
 
+        // DFS keeps the catalogue sorted by start sector, highest first
+        for (index, entry) in entries.reversed().enumerated() {
+            addCatalogEntry(
+                in: &diskData,
+                fileIndex: index,
+                directory: entry.directory,
+                fileName: entry.name,
+                loadAddress: 0xFFFF0E00,  // Default load address for screen data
+                execAddress: 0xFFFF0E00,
+                length: entry.length,
+                startSector: entry.startSector
+            )
+        }
+
         // Update file count in catalog
-        diskData[catalogSector1 * sectorSize + 5] = UInt8(fileIndex * 8)
+        diskData[catalogSector1 * sectorSize + 5] = UInt8(entries.count * 8)
 
         // Write to file
         do {
@@ -98,11 +95,15 @@ class BBCDiskWriter {
         }
     }
 
-    // MARK: - Catalog Initialization
-
-    private func initializeCatalog(in data: inout Data, volumeName: String, tracks: Int) {
-        initializeCatalogAtOffset(in: &data, offset: 0, volumeName: volumeName, tracks: tracks)
+    /// Byte offset of a logical sector on one side. DSD images interleave the
+    /// sides track by track: side 0 track 0, side 1 track 0, side 0 track 1, ...
+    private func imageOffset(sector: Int, side: Int, sides: Int) -> Int {
+        let track = sector / sectorsPerTrack
+        let physicalTrack = track * sides + side
+        return (physicalTrack * sectorsPerTrack + sector % sectorsPerTrack) * sectorSize
     }
+
+    // MARK: - Catalog Initialization
 
     private func initializeCatalogAtOffset(in data: inout Data, offset: Int, volumeName: String, tracks: Int) {
         // Sector 0: File names (8 bytes each, up to 31 files)
@@ -128,7 +129,7 @@ class BBCDiskWriter {
         data[sector1Offset + 5] = 0x00
 
         // Boot option and sector count high bits
-        data[sector1Offset + 6] = UInt8((tracks * sectorsPerTrack >> 8) & 0x03)
+        data[sector1Offset + 6] = UInt8(((tracks * sectorsPerTrack) >> 8) & 0x03)
 
         // Sector count low byte
         data[sector1Offset + 7] = UInt8((tracks * sectorsPerTrack) & 0xFF)
@@ -168,16 +169,16 @@ class BBCDiskWriter {
         data[attrOffset + 4] = UInt8(length & 0xFF)
         data[attrOffset + 5] = UInt8((length >> 8) & 0xFF)
 
-        // High bits byte format (DFS standard):
-        // Bits 0-1: Exec address bits 16-17
-        // Bits 2-3: Length bits 16-17
-        // Bits 4-5: Load address bits 16-17
-        // Bits 6-7: Start sector bits 8-9
-        let execBits = UInt8((execAddress >> 16) & 0x03)         // bits 0-1
-        let lengthBits = UInt8(((length >> 16) & 0x03) << 2)     // bits 2-3
-        let loadBits = UInt8(((loadAddress >> 16) & 0x03) << 4)  // bits 4-5
-        let startBits = UInt8(((startSector >> 8) & 0x03) << 6)  // bits 6-7
-        data[attrOffset + 6] = execBits | lengthBits | loadBits | startBits
+        // High bits byte format (Acorn DFS):
+        // Bits 0-1: Start sector bits 8-9
+        // Bits 2-3: Load address bits 16-17
+        // Bits 4-5: Length bits 16-17
+        // Bits 6-7: Exec address bits 16-17
+        let startBits = UInt8((startSector >> 8) & 0x03)             // bits 0-1
+        let loadBits = UInt8(((loadAddress >> 16) & 0x03) << 2)      // bits 2-3
+        let lengthBits = UInt8(((length >> 16) & 0x03) << 4)         // bits 4-5
+        let execBits = UInt8(((execAddress >> 16) & 0x03) << 6)      // bits 6-7
+        data[attrOffset + 6] = startBits | loadBits | lengthBits | execBits
 
         // Start sector (low 8 bits)
         data[attrOffset + 7] = UInt8(startSector & 0xFF)
