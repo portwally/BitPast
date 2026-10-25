@@ -317,7 +317,7 @@ class VIC20Converter: RetroMachine {
                             let distFg = colorDistance(r, g, b, fgR, fgG, fgB, colorMatch)
                             let distBg = colorDistance(r, g, b, bgR, bgG, bgB, colorMatch)
 
-                            var useFg = distFg < distBg
+                            let useFg = distFg < distBg
 
                             // Apply error diffusion dithering
                             if useFg {
@@ -463,7 +463,6 @@ class VIC20Converter: RetroMachine {
                                ditherAlg: String, ditherAmount: Double,
                                colorMatch: String, pixelMerge: String) -> ([UInt8], Data) {
         var result = [UInt8](repeating: 0, count: width * height * 3)
-        var workPixels = pixels
 
         // Shrink to 88x184 (double-wide pixels)
         let lowWidth = 88

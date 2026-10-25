@@ -203,7 +203,7 @@ class Amiga500Converter: RetroMachine {
 
     private func convertHAM6(pixels: [[Float]], width: Int, height: Int, palette: [[UInt8]],
                              ditherAlg: String, ditherAmount: Double, colorMatch: String) -> ([UInt8], [[UInt16]]) {
-        var work = pixels
+        let work = pixels
         var result = [UInt8](repeating: 0, count: width * height * 3)
         var bitplanes = [[UInt16]](repeating: [UInt16](repeating: 0, count: 6), count: (width / 16) * height)
 

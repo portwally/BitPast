@@ -653,23 +653,23 @@ class C64Converter: RetroMachine {
         // PRG load address: $0801 (BASIC start)
         prg.append(contentsOf: [0x01, 0x08])
 
-        // BASIC stub: 10 SYS 2064
-        // $0801: 0C 08 - pointer to next line ($080C)
+        // BASIC stub: 10 SYS 2061
+        // $0801: 0B 08 - pointer to next line ($080B)
         // $0803: 0A 00 - line number 10
         // $0805: 9E    - SYS token
-        // $0806: 32 30 36 34 - "2064" in PETSCII
+        // $0806: 32 30 36 31 - "2061" in PETSCII
         // $080A: 00    - end of line
         // $080B: 00 00 - end of BASIC program
         prg.append(contentsOf: [
-            0x0C, 0x08,                   // Next line pointer
+            0x0B, 0x08,                   // Next line pointer
             0x0A, 0x00,                   // Line number 10
             0x9E,                         // SYS token
-            0x32, 0x30, 0x36, 0x34,       // "2064"
+            0x32, 0x30, 0x36, 0x31,       // "2061"
             0x00,                         // End of line
             0x00, 0x00                    // End of BASIC
         ])
 
-        // Machine code starts at $0810 (2064 decimal)
+        // Machine code starts at $080D (2061 decimal), right after the stub
         // Set border and background color
         prg.append(0xA9); prg.append(backgroundColor)  // LDA #bg
         prg.append(0x8D); prg.append(0x20); prg.append(0xD0)  // STA $D020 (border)
@@ -681,7 +681,6 @@ class C64Converter: RetroMachine {
         // Total ML after color set: ~110 bytes + JMP
         // Data starts around $0880
 
-        let mlStartOffset = prg.count  // Current position in prg (after BASIC)
         let dataOffset = 0x0880  // Fixed data start address
         let screenDataAddr = dataOffset
         let colorDataAddr = dataOffset + 1000
@@ -707,14 +706,14 @@ class C64Converter: RetroMachine {
             prg.append(UInt8((page.dst >> 8) & 0xFF))
             // INX
             prg.append(0xE8)
-            // CPX #count (or BNE for 256)
+            // Branch back to LDA (not LDX, or X would reset forever)
             if page.count == 256 {
-                // BNE loop (-11 bytes back)
-                prg.append(0xD0); prg.append(0xF5)
+                // BNE loop: back over LDA(3)+STA(3)+INX(1)+BNE(2) = -9
+                prg.append(0xD0); prg.append(0xF7)
             } else {
-                // CPX #count; BNE loop
+                // CPX #count; BNE loop: back over 9 bytes + CPX(2) = -11
                 prg.append(0xE0); prg.append(UInt8(page.count))
-                prg.append(0xD0); prg.append(0xF3)
+                prg.append(0xD0); prg.append(0xF5)
             }
         }
 
@@ -736,22 +735,23 @@ class C64Converter: RetroMachine {
             prg.append(UInt8((page.dst >> 8) & 0xFF))
             prg.append(0xE8)
             if page.count == 256 {
-                prg.append(0xD0); prg.append(0xF5)
+                prg.append(0xD0); prg.append(0xF7)
             } else {
                 prg.append(0xE0); prg.append(UInt8(page.count))
-                prg.append(0xD0); prg.append(0xF3)
+                prg.append(0xD0); prg.append(0xF5)
             }
         }
 
-        // Infinite loop (wait forever showing the image)
-        let loopAddr = 0x0801 + prg.count - 2  // JMP to itself
+        // Infinite loop (wait forever showing the image): JMP to itself
+        let loopAddr = 0x0801 + prg.count - 2  // -2 for load address
         prg.append(0x4C)  // JMP
-        prg.append(UInt8((0x0801 + prg.count) & 0xFF))
-        prg.append(UInt8(((0x0801 + prg.count) >> 8) & 0xFF))
+        prg.append(UInt8(loopAddr & 0xFF))
+        prg.append(UInt8((loopAddr >> 8) & 0xFF))
 
-        // Pad with zeros until we reach the data offset
+        // Pad with NOPs until we reach the data offset
         let currentAddr = 0x0801 + prg.count - 2  // -2 for load address
-        let paddingNeeded = dataOffset - currentAddr - 2
+        assert(currentAddr <= dataOffset, "PETSCII viewer code overlaps image data")
+        let paddingNeeded = dataOffset - currentAddr
         if paddingNeeded > 0 {
             prg.append(contentsOf: [UInt8](repeating: 0xEA, count: paddingNeeded))  // NOP padding
         }

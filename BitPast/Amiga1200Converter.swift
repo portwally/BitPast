@@ -199,7 +199,7 @@ class Amiga1200Converter: RetroMachine {
 
     private func convertHAM8(pixels: [[Float]], width: Int, height: Int, palette: [[UInt8]],
                              ditherAlg: String, ditherAmount: Double, colorMatch: String) -> ([UInt8], [[UInt16]]) {
-        var work = pixels
+        let work = pixels
         var result = [UInt8](repeating: 0, count: width * height * 3)
         var bitplanes = [[UInt16]](repeating: [UInt16](repeating: 0, count: 8), count: (width / 16) * height)
 
@@ -493,7 +493,13 @@ class Amiga1200Converter: RetroMachine {
                 let endX = min(startX + tileWidth, width), endY = min(startY + tileHeight, height)
                 let tilePixels = (endX - startX) * (endY - startY)
                 var histogram = [Int](repeating: 0, count: 256)
-                for y in startY..<endY { for x in startX..<endX { histogram[Int(max(0, min(255, 0.299 * pixels[y * width + x][0] + 0.587 * pixels[y * width + x][1] + 0.114 * pixels[y * width + x][2])))] += 1 } }
+                for y in startY..<endY {
+                    for x in startX..<endX {
+                        let p = pixels[y * width + x]
+                        let luma: Float = 0.299 * p[0] + 0.587 * p[1] + 0.114 * p[2]
+                        histogram[Int(max(0, min(255, luma)))] += 1
+                    }
+                }
                 let clipThreshold = Int(clipLimit * Float(tilePixels) / 256.0)
                 var excess = 0
                 for i in 0..<256 { if histogram[i] > clipThreshold { excess += histogram[i] - clipThreshold; histogram[i] = clipThreshold } }

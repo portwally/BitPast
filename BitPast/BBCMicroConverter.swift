@@ -275,7 +275,6 @@ class BBCMicroConverter: RetroMachine {
         var fileData = Data()
 
         let useErrorDiffusion = ditherAlg == "Floyd-Steinberg" || ditherAlg == "Atkinson"
-        let numColors = palette.count
 
         // BBC Micro uses interleaved memory: 8 bytes form one character row
         // Each character is 8 scanlines, with line 0 of all chars, then line 1, etc.
@@ -284,7 +283,6 @@ class BBCMicroConverter: RetroMachine {
 
         if mode.contains("Mode 0") || mode.contains("Mode 4") {
             // 1 bit per pixel
-            let pixelsPerByte = 8
             for y in 0..<height {
                 for x in 0..<width {
                     let r = max(0, min(255, work[y * width + x][0]))

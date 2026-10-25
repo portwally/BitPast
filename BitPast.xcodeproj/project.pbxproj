@@ -15,6 +15,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				b2d_stubs.c,
+				Info.plist,
 			);
 			target = 3E4ACE042EF3F66000568170 /* BitPast */;
 		};

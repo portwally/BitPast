@@ -709,12 +709,19 @@ class ConverterViewModel: ObservableObject {
             panel.begin { response in
                 if response == .OK, let targetUrl = panel.url {
                     do {
-                        // Falls Datei schon existiert, löschen
-                        if FileManager.default.fileExists(atPath: targetUrl.path) {
-                            try FileManager.default.removeItem(at: targetUrl)
+                        let fm = FileManager.default
+                        if fm.fileExists(atPath: targetUrl.path) {
+                            // Copy to a temp file first, then swap it in, so the
+                            // existing file is only replaced if the copy succeeded.
+                            // Stage on the same volume as the target when possible.
+                            let stagingDir = (try? fm.url(for: .itemReplacementDirectory, in: .userDomainMask,
+                                                          appropriateFor: targetUrl, create: true)) ?? fm.temporaryDirectory
+                            let tempUrl = stagingDir.appendingPathComponent(UUID().uuidString + "." + originalExt)
+                            try fm.copyItem(at: sourceUrl, to: tempUrl)
+                            _ = try fm.replaceItemAt(targetUrl, withItemAt: tempUrl)
+                        } else {
+                            try fm.copyItem(at: sourceUrl, to: targetUrl)
                         }
-                        // Kopieren
-                        try FileManager.default.copyItem(at: sourceUrl, to: targetUrl)
                     } catch {
                         DispatchQueue.main.async {
                             self.errorMessage = "Export failed: \(error.localizedDescription)"
