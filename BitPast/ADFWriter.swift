@@ -258,10 +258,7 @@ class ADFWriter {
             writeInt32(in: &data, at: offset + i * 4, value: -1)  // 0xFFFFFFFF
         }
 
-        // Mark reserved blocks as used (root, bitmap, boot blocks)
-        // Boot blocks: 0, 1
-        clearBit(in: &data, bitmapOffset: offset, block: 0)
-        clearBit(in: &data, bitmapOffset: offset, block: 1)
+        // Mark root and bitmap blocks as used (boot blocks are not in the bitmap)
         clearBit(in: &data, bitmapOffset: offset, block: rootBlock)
         clearBit(in: &data, bitmapOffset: offset, block: bitmapBlock)
     }
@@ -272,9 +269,12 @@ class ADFWriter {
         clearBit(in: &data, bitmapOffset: offset, block: block)
     }
 
+    /// The bitmap starts at block 2: bit 0 of the first longword is block 2,
+    /// because the two boot blocks are never allocated.
     private func clearBit(in data: inout Data, bitmapOffset: Int, block: Int) {
-        let wordIndex = block / 32
-        let bitIndex = block % 32
+        guard block >= 2 else { return }
+        let wordIndex = (block - 2) / 32
+        let bitIndex = (block - 2) % 32
         let wordOffset = bitmapOffset + 4 + wordIndex * 4  // +4 to skip bitmap checksum at offset 0
 
         // Bounds check: bitmap data is 504 bytes (offset 4..507)
