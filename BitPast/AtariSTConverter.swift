@@ -102,9 +102,11 @@ nonisolated class AtariSTConverter: RetroMachine {
         let saturation = Double(opts.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
         let gamma = Double(opts.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
 
+        try Task.checkCancellation()
         // Scale image to 320×200
         var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         // Apply preprocessing
         if saturation != 1.0 {
             AtariFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation)
@@ -124,9 +126,11 @@ nonisolated class AtariSTConverter: RetroMachine {
             AtariFamilyImageOps.applyOrderedDither(&pixels, width: width, height: height, ditherType: ditherAlg, amount: ditherAmount)
         }
 
+        try Task.checkCancellation()
         // Quantize to optimal colors from the 512-color palette
         let selectedPalette = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: numColors)
 
+        try Task.checkCancellation()
         // Convert with error diffusion if selected
         let (resultPixels, nativeData) = convertToST(pixels: pixels, width: width, height: height,
                                                       palette: selectedPalette,
@@ -137,6 +141,7 @@ nonisolated class AtariSTConverter: RetroMachine {
 
         // Create preview image
         // For low/medium res, double vertically; for high res, use 1:1
+        try Task.checkCancellation()
         let scaleX = width == 320 ? 2 : 1
         let scaleY = height == 200 ? 2 : 1
         let previewWidth = width * scaleX
@@ -229,6 +234,7 @@ nonisolated class AtariSTConverter: RetroMachine {
         var shift = 15
 
         for y in 0..<height {
+            if Task.isCancelled { break }  // stop early if this preview was replaced
             for x in 0..<width {
                 let r = max(0, min(255, work[y * width + x][0]))
                 let g = max(0, min(255, work[y * width + x][1]))

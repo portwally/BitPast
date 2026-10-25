@@ -143,10 +143,12 @@ nonisolated class C64Converter: RetroMachine {
         let width = screenWidth
         let height = screenHeight
 
+        try Task.checkCancellation()
         // Get pixel data using the same approach as AppleIIGSConverter
         var pixels = try getPixelData(from: sourceImage, width: width, height: height,
                                        saturation: saturation, gamma: gamma)
 
+        try Task.checkCancellation()
         // Apply contrast processing
         if contrastMode != "None" {
             applyContrastProcessing(&pixels, width: width, height: height, mode: contrastMode)
@@ -167,6 +169,7 @@ nonisolated class C64Converter: RetroMachine {
         var nativeData: Data
         var fileExtension: String
 
+        try Task.checkCancellation()
         if mode.contains("HiRes") {
             (resultPixels, nativeData) = convertHiRes(pixels: pixels, width: width, height: height,
                                                        ditherAlg: ditherAlg, ditherAmount: ditherAmount,
@@ -184,6 +187,7 @@ nonisolated class C64Converter: RetroMachine {
         }
 
         // Create preview image using CGContext (doubled for better visibility)
+        try Task.checkCancellation()
         let previewWidth = screenWidth * 2
         let previewHeight = screenHeight * 2
 

@@ -152,10 +152,12 @@ nonisolated class Plus4Converter: RetroMachine {
         let screenWidth = 320
         let screenHeight = 200
 
+        try Task.checkCancellation()
         guard var pixels = AtariFamilyImageOps.getPixelData(from: sourceImage, width: screenWidth, height: screenHeight) else {
             throw NSError(domain: "Plus4Converter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get pixel data"])
         }
 
+        try Task.checkCancellation()
         // Apply saturation
         if saturation != 1.0 {
             applySaturation(&pixels, width: screenWidth, height: screenHeight, factor: saturation)
@@ -186,6 +188,7 @@ nonisolated class Plus4Converter: RetroMachine {
         var nativeData: Data
         var fileExtension: String
 
+        try Task.checkCancellation()
         if isMulticolor {
             (resultPixels, nativeData) = convertMulticolor(pixels: pixels, width: screenWidth, height: screenHeight,
                                                             ditherAlg: ditherAlg, ditherAmount: ditherAmount,
@@ -199,6 +202,7 @@ nonisolated class Plus4Converter: RetroMachine {
         }
 
         // Create preview image (doubled for better visibility)
+        try Task.checkCancellation()
         let previewWidth = screenWidth * 2
         let previewHeight = screenHeight * 2
 
@@ -269,6 +273,7 @@ nonisolated class Plus4Converter: RetroMachine {
 
         // Process 8×8 character cells
         for cellY in 0..<25 {
+            if Task.isCancelled { break }  // stop early if this preview was replaced
             for cellX in 0..<40 {
                 // Analyze cell to find best 2 colors
                 var colorCounts = [Int: Int]()
@@ -393,6 +398,7 @@ nonisolated class Plus4Converter: RetroMachine {
         var globalColorCounts = [Int: Int]()
 
         for y in 0..<height {
+            if Task.isCancelled { break }  // stop early if this preview was replaced
             for x in 0..<160 {
                 let x1 = x * 2
                 let x2 = x * 2 + 1
@@ -439,6 +445,7 @@ nonisolated class Plus4Converter: RetroMachine {
 
         // Process 4×8 character cells
         for cellY in 0..<25 {
+            if Task.isCancelled { break }  // stop early if this preview was replaced
             for cellX in 0..<40 {
                 // Count colors in this cell
                 var cellColorCounts = [Int: Int]()

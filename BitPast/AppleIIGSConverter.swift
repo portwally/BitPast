@@ -341,6 +341,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
         let targetW = is640 ? 640 : 320
         let targetH = 200
 
+        try Task.checkCancellation()
         // 1. Resize & Pixel Data
         let resized = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
         guard let cgImage = resized.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
@@ -349,6 +350,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
 
         var rawPixels = getRGBData(from: cgImage, width: targetW, height: targetH)
 
+        try Task.checkCancellation()
         // 2. Preprocessing Filter
         if preprocessFilter != "None" {
             applyPreprocessing(
@@ -367,6 +369,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
         if saturation != 1.0 { applySaturation(&rawPixels, amount: saturation) }
         
         // 3. Setup Dither
+        try Task.checkCancellation()
         let kernel = getDitherKernel(name: ditherName)
         let isOrdered = isOrderedDithering(ditherName)
         let isNone = ditherName == "None"
@@ -492,6 +495,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
             // This reduces banding at scanline boundaries
 
             for y in 0..<targetH {
+                try Task.checkCancellation()  // stop early if this preview was replaced
                 let rowStart = y * targetW
                 let rowEnd = rowStart + targetW
 
@@ -527,6 +531,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
 
             // Quantize and dither for Brooks mode
             for y in 0..<targetH {
+                try Task.checkCancellation()  // stop early if this preview was replaced
                 let currentPalette = finalPalettes[y]
 
                 for x in 0..<targetW {
@@ -570,6 +575,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
                 var uniquePaletteCount = 0
                 
                 for y in 0..<targetH {
+                    try Task.checkCancellation()  // stop early if this preview was replaced
                     let rowStart = y * targetW
                     let rowEnd = rowStart + targetW
                     
@@ -647,6 +653,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
                         slotPalettes.append(linePalettes[midLine])
                         
                         for lineIdx in startLine..<endLine {
+                            try Task.checkCancellation()  // stop early if this preview was replaced
                             paletteSlotMapping[lineIdx] = slot
                         }
                     }
@@ -657,6 +664,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
                 // CRITICAL: Quantize pixels using the actual palettes from palette reuse
                 // Use linePalettes directly, not the mapped slots
                 for y in 0..<targetH {
+                    try Task.checkCancellation()  // stop early if this preview was replaced
                     let currentPalette = linePalettes[y]  // Use the ACTUAL palette for this line
                     
                     for x in 0..<targetW {
@@ -702,6 +710,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
                 // Step 1: Generate optimal palette for each scanline
                 var linePalettes = [[RGB]]()
                 for y in 0..<targetH {
+                    try Task.checkCancellation()  // stop early if this preview was replaced
                 let rowStart = y * targetW
                 let rowEnd = rowStart + targetW
                 
@@ -731,6 +740,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
                 // Collect all unique colors from these lines
                 var slotColors: [RGB] = []
                 for lineIdx in startLine..<endLine {
+                    try Task.checkCancellation()  // stop early if this preview was replaced
                     slotColors.append(contentsOf: linePalettes[lineIdx])
                 }
                 
@@ -743,6 +753,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
                 
                 // Map these lines to this slot
                 for lineIdx in startLine..<endLine {
+                    try Task.checkCancellation()  // stop early if this preview was replaced
                     paletteSlotMapping[lineIdx] = slot
                 }
             }
@@ -751,6 +762,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
             
             // Step 3: Quantize pixels using assigned palette slots
             for y in 0..<targetH {
+                try Task.checkCancellation()  // stop early if this preview was replaced
                 let paletteSlot = paletteSlotMapping[y]
                 let currentPalette = finalPalettes[paletteSlot]
                 
@@ -802,6 +814,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
         if !is3200Brooks && !is256Color {
             let currentPalette = finalPalettes[0]  // Single palette for all scanlines
             for y in 0..<targetH {
+                try Task.checkCancellation()  // stop early if this preview was replaced
                 for x in 0..<targetW {
                     let idx = y * targetW + x
                     var p = rawPixels[idx]

@@ -145,11 +145,13 @@ nonisolated class AmstradCPCConverter: RetroMachine {
         let screenWidth = 320
         let screenHeight = 200
 
+        try Task.checkCancellation()
         // Get pixel data at screen resolution
         guard var pixels = AtariFamilyImageOps.getPixelData(from: sourceImage, width: screenWidth, height: screenHeight) else {
             throw NSError(domain: "AmstradCPCConverter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get pixel data"])
         }
 
+        try Task.checkCancellation()
         // Apply saturation
         if saturation != 1.0 {
             applySaturation(&pixels, width: screenWidth, height: screenHeight, factor: saturation)
@@ -177,12 +179,14 @@ nonisolated class AmstradCPCConverter: RetroMachine {
 
         // Select optimal palette colors from hardware palette
         let numColors = isMode0 ? 16 : 4
+        try Task.checkCancellation()
         let selectedPalette = selectOptimalPalette(from: pixels, width: screenWidth, height: screenHeight, numColors: numColors)
 
         // Convert based on mode
         var resultPixels: [UInt8]
         var nativeData: Data
 
+        try Task.checkCancellation()
         if isMode0 {
             (resultPixels, nativeData) = convertMode0(pixels: pixels, width: screenWidth, height: screenHeight,
                                                        palette: selectedPalette, pixelMerge: pixelMerge,
@@ -194,6 +198,7 @@ nonisolated class AmstradCPCConverter: RetroMachine {
         }
 
         // Create preview image
+        try Task.checkCancellation()
         let previewImage = createPreviewImage(from: resultPixels, width: screenWidth, height: screenHeight)
 
         guard let preview = previewImage else {

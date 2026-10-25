@@ -100,6 +100,7 @@ nonisolated class MSXConverter: RetroMachine {
         let saturation = Double(opts.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
         let gamma = Double(opts.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
 
+        try Task.checkCancellation()
         switch mode {
         case "Screen 2 (MSX1)":
             return try await convertScreen2(cgImage: cgImage, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
@@ -124,8 +125,10 @@ nonisolated class MSXConverter: RetroMachine {
 
     private func convertScreen2(cgImage: CGImage, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 256, height = 192
+        try Task.checkCancellation()
         var pixels = scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         if saturation != 1.0 { applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { applyGamma(&pixels, width: width, height: height, gamma: gamma) }
         if contrast != "None" { applyContrast(&pixels, width: width, height: height, method: contrast) }
@@ -135,6 +138,7 @@ nonisolated class MSXConverter: RetroMachine {
         // Screen 2: 2 colors per 8×1 horizontal line segment
         // Pattern table: 6144 bytes (256×192 / 8 = 6144)
         // Color table: 6144 bytes (one byte per 8×1 line: high nibble = fg, low nibble = bg)
+        try Task.checkCancellation()
         var patternTable = Data(count: 6144)
         var colorTable = Data(count: 6144)
         var resultPixels = [UInt8](repeating: 0, count: width * height * 3)
@@ -205,18 +209,23 @@ nonisolated class MSXConverter: RetroMachine {
 
     private func convertScreen5(cgImage: CGImage, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 256, height = 212
+        try Task.checkCancellation()
         var pixels = scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         if saturation != 1.0 { applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { applyGamma(&pixels, width: width, height: height, gamma: gamma) }
         if contrast != "None" { applyContrast(&pixels, width: width, height: height, method: contrast) }
         if filter != "None" { applyImageFilter(&pixels, width: width, height: height, filter: filter) }
         if ditherAlg.contains("Bayer") { applyOrderedDither(&pixels, width: width, height: height, ditherType: ditherAlg, amount: ditherAmount) }
 
+        try Task.checkCancellation()
         // Select optimal 16 colors from 512-color palette
         let selectedPalette = selectOptimalPalette(pixels: pixels, palette: Self.v9938Palette, numColors: 16)
 
+        try Task.checkCancellation()
         let (resultPixels, rawData) = convertToFixedPalette(pixels: pixels, width: width, height: height, palette: selectedPalette, ditherAlg: ditherAlg, ditherAmount: ditherAmount, colorMatch: colorMatch, bitsPerPixel: 4)
+        try Task.checkCancellation()
 
         let previewImage = createPreviewImage(resultPixels: resultPixels, width: width, height: height, scaleY: 1.0)
 
@@ -234,13 +243,16 @@ nonisolated class MSXConverter: RetroMachine {
 
     private func convertScreen8(cgImage: CGImage, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 256, height = 212
+        try Task.checkCancellation()
         var pixels = scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         if saturation != 1.0 { applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { applyGamma(&pixels, width: width, height: height, gamma: gamma) }
         if contrast != "None" { applyContrast(&pixels, width: width, height: height, method: contrast) }
         if filter != "None" { applyImageFilter(&pixels, width: width, height: height, filter: filter) }
         if ditherAlg.contains("Bayer") { applyOrderedDither(&pixels, width: width, height: height, ditherType: ditherAlg, amount: ditherAmount) }
+        try Task.checkCancellation()
 
         var resultPixels = [UInt8](repeating: 0, count: width * height * 3)
         var rawData = Data(count: width * height)
@@ -248,6 +260,7 @@ nonisolated class MSXConverter: RetroMachine {
         let useErrorDiffusion = ditherAlg == "Floyd-Steinberg" || ditherAlg == "Atkinson"
 
         for y in 0..<height {
+            try Task.checkCancellation()  // stop early if this preview was replaced
             for x in 0..<width {
                 let idx = y * width + x
                 let r = max(0, min(255, pixels[idx][0]))
@@ -359,7 +372,8 @@ nonisolated class MSXConverter: RetroMachine {
     private func selectOptimalPalette(pixels: [[Float]], palette: [[UInt8]], numColors: Int) -> [[UInt8]] {
         // Count color usage
         var colorCounts = [Int](repeating: 0, count: palette.count)
-        for pixel in pixels {
+        for (n, pixel) in pixels.enumerated() {
+            if n % 1024 == 0 && Task.isCancelled { break }  // stop early if this preview was replaced
             var bestIdx = 0
             var bestDist = Float.greatestFiniteMagnitude
             for (i, c) in palette.enumerated() {
@@ -398,6 +412,7 @@ nonisolated class MSXConverter: RetroMachine {
         let useErrorDiffusion = ditherAlg == "Floyd-Steinberg" || ditherAlg == "Atkinson"
 
         for y in 0..<height {
+            if Task.isCancelled { break }  // stop early if this preview was replaced
             var rowData = Data()
             for x in 0..<width {
                 let r = max(0, min(255, work[y * width + x][0]))

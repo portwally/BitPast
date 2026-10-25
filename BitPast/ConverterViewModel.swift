@@ -610,7 +610,8 @@ class ConverterViewModel: ObservableObject {
         previewTask?.cancel()
         conversionGeneration += 1
         let expectedGeneration = conversionGeneration
-        Task { await performConversion(generation: expectedGeneration) }
+        // Tracked like live previews, so a newer conversion cancels this one
+        previewTask = Task { await performConversion(generation: expectedGeneration) }
     }
     
     private func performConversion(generation: Int? = nil) async {

@@ -245,20 +245,26 @@ nonisolated class AppleIIConverter: RetroMachine {
             cArgs.append(strdup(arg))
         }
         cArgs.append(nil) // argv must end with NULL
+        defer {
+            for ptr in cArgs where ptr != nil { free(ptr) }
+        }
 
         // b2d works on relative paths in the temp folder and keeps its state in
         // C globals, so the directory change and the call happen under one lock.
         // The current directory is process-wide.
-        let exitCode = Self.b2dLock.withLock {
-            let originalDir = fileManager.currentDirectoryPath
-            fileManager.changeCurrentDirectoryPath(tempDir.path)
-            defer { fileManager.changeCurrentDirectoryPath(originalDir) }
-            return b2d_main_wrapper(Int32(cArgs.count - 1), &cArgs)
-        }
-        
-        // Cleanup
-        for ptr in cArgs where ptr != nil {
-            free(ptr)
+        let exitCode: Int32
+        do {
+            exitCode = try Self.b2dLock.withLock {
+                // A replaced preview that waited for the lock can stop here
+                try Task.checkCancellation()
+                let originalDir = fileManager.currentDirectoryPath
+                fileManager.changeCurrentDirectoryPath(tempDir.path)
+                defer { fileManager.changeCurrentDirectoryPath(originalDir) }
+                return b2d_main_wrapper(Int32(cArgs.count - 1), &cArgs)
+            }
+        } catch {
+            try? fileManager.removeItem(at: inputUrl)
+            throw error
         }
         
         guard exitCode == 0 else {

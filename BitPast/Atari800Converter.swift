@@ -115,9 +115,11 @@ nonisolated class Atari800Converter: RetroMachine {
         let saturation = Double(opts.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
         let gamma = Double(opts.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
 
+        try Task.checkCancellation()
         // Scale image
         var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         // Apply preprocessing
         if saturation != 1.0 {
             AtariFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation)
@@ -140,6 +142,7 @@ nonisolated class Atari800Converter: RetroMachine {
         // Select palette based on mode
         let selectedPalette: [[UInt8]]
         var atariRegisters: [UInt8] = []
+        try Task.checkCancellation()
         if mode.contains("Graphics 9") {
             // Graphics 9: 16 shades of one hue - find dominant hue
             selectedPalette = selectGrayscalePalette()
@@ -165,6 +168,7 @@ nonisolated class Atari800Converter: RetroMachine {
             (selectedPalette, atariRegisters) = selectGraphics8Palette(pixels: pixels)
         }
 
+        try Task.checkCancellation()
         // Convert with error diffusion if selected
         let (resultPixels, nativeData) = convertToAtari800(pixels: pixels, width: width, height: height,
                                                             palette: selectedPalette, mode: mode,
@@ -172,6 +176,7 @@ nonisolated class Atari800Converter: RetroMachine {
                                                             colorMatch: colorMatch)
 
         // Create preview image (scaled for visibility)
+        try Task.checkCancellation()
         let scaleX = (mode.contains("Graphics 9") || mode.contains("Graphics 10") || mode.contains("Graphics 11")) ? 4 : (mode.contains("Graphics 8") ? 2 : 2)
         let scaleY = 2
         let previewWidth = width * scaleX

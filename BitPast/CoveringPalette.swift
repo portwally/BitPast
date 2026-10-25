@@ -25,6 +25,7 @@ nonisolated enum CoveringPalette {
         var chosen = snap(centers, weights: weights, to: targets)
         if n <= refineLimit {
             for _ in 0..<6 {
+                if Task.isCancelled { break }  // the caller checks again and throws
                 let (updated, counts) = kMeansStep(points, toward: chosen.map { targets[$0] }, fallback: centers)
                 weights = counts
                 if updated == centers { break }
@@ -44,6 +45,7 @@ nonisolated enum CoveringPalette {
         var (centers, weights) = medianCut(points, into: count)
         if count <= refineLimit {
             for _ in 0..<6 {
+                if Task.isCancelled { break }  // the caller checks again and throws
                 let snapped = centers.map { SIMD3<Float>(quantize($0).map(Float.init)) }
                 let (updated, counts) = kMeansStep(points, toward: snapped, fallback: centers)
                 weights = counts
@@ -100,7 +102,8 @@ nonisolated enum CoveringPalette {
                                    fallback: [SIMD3<Float>]) -> ([SIMD3<Float>], [Int]) {
         var sums = [SIMD3<Float>](repeating: .zero, count: targets.count)
         var counts = [Int](repeating: 0, count: targets.count)
-        for p in points {
+        for (n, p) in points.enumerated() {
+            if n % 4096 == 0 && Task.isCancelled { break }  // the caller checks again and throws
             var bestIdx = 0, bestDist = Float.greatestFiniteMagnitude
             for (i, t) in targets.enumerated() {
                 let d = p - t, dist = (d * d).sum()

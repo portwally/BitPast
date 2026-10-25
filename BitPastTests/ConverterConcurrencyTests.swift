@@ -49,4 +49,15 @@ struct ConverterConcurrencyTests {
         #expect(prints.count == 4)
         #expect(prints.allSatisfy { $0 == expected })
     }
+
+    /// Replaced previews are cancelled; every converter must notice and stop.
+    @Test("A cancelled conversion stops with CancellationError", arguments: ConverterGoldenTests.machineNames)
+    func cancelledConversionStops(machineName: String) async throws {
+        let machine = ConverterGoldenTests.makeMachine(machineName)
+        let settings = machine.options
+        let picture = ConverterGoldenTests.testPicture()
+        let task = Task { try await ConverterViewModel.convertInBackground(machine, image: picture, settings: settings) }
+        task.cancel()
+        await #expect(throws: CancellationError.self) { try await task.value }
+    }
 }

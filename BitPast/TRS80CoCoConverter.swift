@@ -134,9 +134,11 @@ nonisolated class TRS80CoCoConverter: RetroMachine {
         let saturation = Double(opts.first(where: { $0.key == "saturation" })?.selectedValue ?? "1.0") ?? 1.0
         let gamma = Double(opts.first(where: { $0.key == "gamma" })?.selectedValue ?? "1.0") ?? 1.0
 
+        try Task.checkCancellation()
         // Scale image
         var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         // Apply preprocessing
         if saturation != 1.0 {
             AtariFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation)
@@ -178,6 +180,7 @@ nonisolated class TRS80CoCoConverter: RetroMachine {
             }
         }
 
+        try Task.checkCancellation()
         // Convert with dithering
         let (resultPixels, nativeData) = convertToCoCo(pixels: pixels, width: width, height: height,
                                                         palette: selectedPalette, mode: mode,
@@ -185,6 +188,7 @@ nonisolated class TRS80CoCoConverter: RetroMachine {
                                                         colorMatch: colorMatch)
 
         // Create preview image (scaled for visibility)
+        try Task.checkCancellation()
         let scaleX: Int
         let scaleY: Int
         if mode.contains("640×200") {

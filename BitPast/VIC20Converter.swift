@@ -129,10 +129,12 @@ nonisolated class VIC20Converter: RetroMachine {
         let screenWidth = 176
         let screenHeight = 184
 
+        try Task.checkCancellation()
         // Get pixel data
         var pixels = try getPixelData(from: sourceImage, width: screenWidth, height: screenHeight,
                                        saturation: saturation, gamma: gamma)
 
+        try Task.checkCancellation()
         // Apply contrast processing
         if contrastMode != "None" {
             applyContrastProcessing(&pixels, width: screenWidth, height: screenHeight, mode: contrastMode)
@@ -152,6 +154,7 @@ nonisolated class VIC20Converter: RetroMachine {
         var resultPixels: [UInt8]
         var nativeData: Data
 
+        try Task.checkCancellation()
         if mode.contains("HiRes") {
             (resultPixels, nativeData) = convertHiRes(pixels: pixels, width: screenWidth, height: screenHeight,
                                                        ditherAlg: ditherAlg, ditherAmount: ditherAmount,
@@ -163,6 +166,7 @@ nonisolated class VIC20Converter: RetroMachine {
         }
 
         // Create preview image (doubled for better visibility)
+        try Task.checkCancellation()
         let previewWidth = screenWidth * 2
         let previewHeight = screenHeight * 2
 

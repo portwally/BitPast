@@ -212,6 +212,7 @@ nonisolated class PCConverter: RetroMachine {
             throw NSError(domain: "PCConverter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get CGImage"])
         }
 
+        try Task.checkCancellation()
         switch mode {
         case "CGA (4 colors)":
             return try await convertCGA(cgImage: cgImage, paletteChoice: cgaPaletteChoice, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
@@ -234,8 +235,10 @@ nonisolated class PCConverter: RetroMachine {
 
     private func convertCGA(cgImage: CGImage, paletteChoice: String, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 320, height = 200
+        try Task.checkCancellation()
         var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         // Preprocessing
         if saturation != 1.0 { AmigaFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { AmigaFamilyImageOps.applyGamma(&pixels, width: width, height: height, gamma: gamma) }
@@ -253,7 +256,9 @@ nonisolated class PCConverter: RetroMachine {
         default: palette = Self.cgaPalette1High
         }
 
+        try Task.checkCancellation()
         let (resultPixels, _) = convertToFixedPalette(pixels: pixels, width: width, height: height, palette: palette, ditherAlg: ditherAlg, ditherAmount: ditherAmount, colorMatch: colorMatch, bitsPerPixel: 2)
+        try Task.checkCancellation()
 
         let previewImage = createPreviewImage(resultPixels: resultPixels, width: width, height: height, scaleY: 2.4)
 
@@ -271,8 +276,10 @@ nonisolated class PCConverter: RetroMachine {
 
     private func convertEGA(cgImage: CGImage, useFixedPalette: Bool, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 320, height = 200
+        try Task.checkCancellation()
         var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         if saturation != 1.0 { AmigaFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { AmigaFamilyImageOps.applyGamma(&pixels, width: width, height: height, gamma: gamma) }
         if contrast != "None" { applyContrast(&pixels, width: width, height: height, method: contrast) }
@@ -281,13 +288,16 @@ nonisolated class PCConverter: RetroMachine {
 
         // Use either fixed 16-color EGA palette or select 16 from 64-color EGA palette
         let selectedPalette: [[UInt8]]
+        try Task.checkCancellation()
         if useFixedPalette {
             selectedPalette = Self.cgaPalette
         } else {
             selectedPalette = selectOptimalPalette(pixels: pixels, palette: Self.egaPalette, numColors: 16)
         }
 
+        try Task.checkCancellation()
         let (resultPixels, _) = convertToFixedPalette(pixels: pixels, width: width, height: height, palette: selectedPalette, ditherAlg: ditherAlg, ditherAmount: ditherAmount, colorMatch: colorMatch, bitsPerPixel: 4)
+        try Task.checkCancellation()
 
         let previewImage = createPreviewImage(resultPixels: resultPixels, width: width, height: height, scaleY: 2.4)
 
@@ -305,22 +315,27 @@ nonisolated class PCConverter: RetroMachine {
 
     private func convertVGA(cgImage: CGImage, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 320, height = 200
+        try Task.checkCancellation()
         var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         if saturation != 1.0 { AmigaFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { AmigaFamilyImageOps.applyGamma(&pixels, width: width, height: height, gamma: gamma) }
         if contrast != "None" { applyContrast(&pixels, width: width, height: height, method: contrast) }
         if filter != "None" { applyImageFilter(&pixels, width: width, height: height, filter: filter) }
         if ditherAlg.contains("Bayer") { AmigaFamilyImageOps.applyOrderedDither(&pixels, width: width, height: height, ditherType: ditherAlg, amount: ditherAmount) }
 
+        try Task.checkCancellation()
         // Generate adaptive 256-color palette using median cut
         let adaptivePalette = generateAdaptivePalette(pixels: pixels, numColors: 256)
 
         // Build k-d tree for fast color lookup (O(log n) instead of O(n))
         let kdTree = buildKDTree(palette: adaptivePalette, indices: Array(0..<adaptivePalette.count), depth: 0)
 
+        try Task.checkCancellation()
         // Use k-d tree accelerated conversion
         let resultPixels = convertWithKDTree(pixels: &pixels, width: width, height: height, palette: adaptivePalette, kdTree: kdTree, ditherAlg: ditherAlg, ditherAmount: ditherAmount)
+        try Task.checkCancellation()
 
         let previewImage = createPreviewImage(resultPixels: resultPixels, width: width, height: height, scaleY: 2.4)
 
@@ -377,12 +392,15 @@ nonisolated class PCConverter: RetroMachine {
         let width = cols * charWidth
         let height = rows * charHeight
 
+        try Task.checkCancellation()
         var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         if saturation != 1.0 { AmigaFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { AmigaFamilyImageOps.applyGamma(&pixels, width: width, height: height, gamma: gamma) }
         if contrast != "None" { applyContrast(&pixels, width: width, height: height, method: contrast) }
         if filter != "None" { applyImageFilter(&pixels, width: width, height: height, filter: filter) }
+        try Task.checkCancellation()
 
         var result = [UInt8](repeating: 0, count: width * height * 3)
         var screenData = Data(count: cols * rows * 2)  // Character + attribute bytes

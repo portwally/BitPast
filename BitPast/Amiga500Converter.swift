@@ -72,8 +72,10 @@ nonisolated class Amiga500Converter: RetroMachine {
             throw NSError(domain: "Amiga500Converter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get CGImage"])
         }
 
+        try Task.checkCancellation()
         var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         // Apply preprocessing
         if saturation != 1.0 { AmigaFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { AmigaFamilyImageOps.applyGamma(&pixels, width: width, height: height, gamma: gamma) }
@@ -89,9 +91,11 @@ nonisolated class Amiga500Converter: RetroMachine {
         let numColors = isHAM ? 16 : 32
         let numPlanes = isHAM ? 6 : 5
 
+        try Task.checkCancellation()
         // Select optimal palette
         let selectedPalette = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: numColors)
 
+        try Task.checkCancellation()
         // Convert
         let (resultPixels, bitplanes) = isHAM ?
             convertHAM6(pixels: pixels, width: width, height: height, palette: selectedPalette,
@@ -100,6 +104,7 @@ nonisolated class Amiga500Converter: RetroMachine {
                            ditherAlg: ditherAlg, ditherAmount: ditherAmount, colorMatch: colorMatch, numPlanes: numPlanes)
 
         // Create preview image
+        try Task.checkCancellation()
         let previewImage = createPreviewImage(resultPixels: resultPixels, width: width, height: height)
 
         // Create IFF file
@@ -137,6 +142,7 @@ nonisolated class Amiga500Converter: RetroMachine {
         var shift = 15
 
         for y in 0..<height {
+            if Task.isCancelled { break }  // stop early if this preview was replaced
             for x in 0..<width {
                 let r = max(0, min(255, work[y * width + x][0]))
                 let g = max(0, min(255, work[y * width + x][1]))
@@ -181,6 +187,7 @@ nonisolated class Amiga500Converter: RetroMachine {
         var shift = 15
 
         for y in 0..<height {
+            if Task.isCancelled { break }  // stop early if this preview was replaced
             var prevR: UInt8 = 0, prevG: UInt8 = 0, prevB: UInt8 = 0
 
             for x in 0..<width {

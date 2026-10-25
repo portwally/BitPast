@@ -112,9 +112,11 @@ nonisolated class ZXSpectrumConverter: RetroMachine {
         let screenWidth = 256
         let screenHeight = 192
 
+        try Task.checkCancellation()
         var pixels = try getPixelData(from: sourceImage, width: screenWidth, height: screenHeight,
                                        saturation: saturation, gamma: gamma)
 
+        try Task.checkCancellation()
         // Apply contrast processing
         if contrastMode != "None" {
             applyContrastProcessing(&pixels, width: screenWidth, height: screenHeight, mode: contrastMode)
@@ -130,12 +132,14 @@ nonisolated class ZXSpectrumConverter: RetroMachine {
             CommodoreFamilyImageOps.applyOrderedDither(&pixels, width: screenWidth, height: screenHeight, ditherType: ditherAlg, amount: ditherAmount)
         }
 
+        try Task.checkCancellation()
         // Convert to ZX Spectrum format
         let (resultPixels, nativeData) = convertHiRes(pixels: pixels, width: screenWidth, height: screenHeight,
                                                        ditherAlg: ditherAlg, ditherAmount: ditherAmount,
                                                        colorMatch: colorMatch)
 
         // Create preview image (doubled for better visibility)
+        try Task.checkCancellation()
         let previewWidth = screenWidth * 2
         let previewHeight = screenHeight * 2
 

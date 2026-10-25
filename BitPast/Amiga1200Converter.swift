@@ -61,8 +61,10 @@ nonisolated class Amiga1200Converter: RetroMachine {
             throw NSError(domain: "Amiga1200Converter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get CGImage"])
         }
 
+        try Task.checkCancellation()
         var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
 
+        try Task.checkCancellation()
         // Apply preprocessing
         if saturation != 1.0 { AmigaFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation) }
         if gamma != 1.0 { AmigaFamilyImageOps.applyGamma(&pixels, width: width, height: height, gamma: gamma) }
@@ -77,9 +79,11 @@ nonisolated class Amiga1200Converter: RetroMachine {
         let numColors = isHAM ? 64 : 256
         let numPlanes = 8
 
+        try Task.checkCancellation()
         // Select optimal palette (256 colors for STD, 64 for HAM8 base palette)
         let selectedPalette = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: numColors)
 
+        try Task.checkCancellation()
         // Convert
         let (resultPixels, bitplanes) = isHAM ?
             convertHAM8(pixels: pixels, width: width, height: height, palette: selectedPalette,
@@ -88,6 +92,7 @@ nonisolated class Amiga1200Converter: RetroMachine {
                               ditherAlg: ditherAlg, ditherAmount: ditherAmount, colorMatch: colorMatch)
 
         // Create preview
+        try Task.checkCancellation()
         let previewImage = createPreviewImage(resultPixels: resultPixels, width: width, height: height)
 
         // Video mode flags
