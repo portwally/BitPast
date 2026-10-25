@@ -9,9 +9,16 @@ struct CoCoDiskTests {
 
     nonisolated struct Disk {
         let image: Data
+        /// Double-sided images have a 2-byte JVC header and interleave the sides
+        /// track by track. Each side is its own RS-DOS volume.
+        var sides = 1
+        var side = 0
+        var headerSize: Int { sides == 2 ? 2 : 0 }
 
         /// Sectors are numbered from 1 on each track.
-        func sector(track: Int, sector: Int) -> Data { image.slice((track * 18 + sector - 1) * 256, 256) }
+        func sector(track: Int, sector: Int) -> Data {
+            image.slice(headerSize + ((track * sides + side) * 18 + sector - 1) * 256, 256)
+        }
 
         /// Granules 0-33 are tracks 0-16, granules 34-67 are tracks 18-34
         /// (track 17 holds the directory). Each track has two 9-sector granules.
@@ -63,7 +70,7 @@ struct CoCoDiskTests {
         })
     }
 
-    @Test("Image size", arguments: [(DiskSize.kb180, 161_280), (DiskSize.kb360, 322_560)])
+    @Test("Image size", arguments: [(DiskSize.kb180, 161_280), (DiskSize.kb360, 322_562)])
     func imageSize(size: DiskSize, expectedBytes: Int) throws {
         #expect(try Self.write(size: size, files: TestDisk.standardFiles(ext: "bin")).image.count == expectedBytes)
     }
@@ -87,5 +94,18 @@ struct CoCoDiskTests {
         for g in 0..<68 {
             #expect((disk.gat.u8(g) != 0xFF) == used.contains(g), "GAT granule \(g)")
         }
+    }
+
+    /// 360 KB disks are double-sided: files fill side 0, then go to side 1.
+    @Test("Double-sided disk spills onto side 1")
+    func doubleSided() throws {
+        let samples = (1...3).map { SampleFile(name: "BIG\($0)", ext: "bin", data: TestDisk.bytes(60_000, seed: UInt32(10 + $0))) }
+        let image = try Self.write(size: .kb360, files: samples).image
+        #expect(image.prefix(2) == Data([18, 2]), "JVC header: 18 sectors, 2 sides")
+        let side0 = Disk(image: image, sides: 2, side: 0).files().files
+        let side1 = Disk(image: image, sides: 2, side: 1).files().files
+        #expect(side0.map(\.name) == ["BIG1.BIN", "BIG2.BIN"])
+        #expect(side1.map(\.name) == ["BIG3.BIN"])
+        #expect((side0 + side1).map(\.data) == samples.map(\.data))
     }
 }
