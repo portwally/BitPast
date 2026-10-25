@@ -69,19 +69,27 @@ nonisolated enum CoveringPalette {
     /// Splits the box with the widest color range at its median until there are
     /// `count` boxes (or no box can be split). Returns box averages and sizes.
     private static func medianCut(_ points: [SIMD3<Float>], into count: Int) -> ([SIMD3<Float>], [Int]) {
+        // Widest axis and its range for a box, computed once when the box is created
+        func widest(_ box: [SIMD3<Float>]) -> (axis: Int, range: Float) {
+            var lo = box[0], hi = box[0]
+            for p in box { lo = pointwiseMin(lo, p); hi = pointwiseMax(hi, p) }
+            let size = hi - lo
+            let axis = size.x >= size.y && size.x >= size.z ? 0 : (size.y >= size.z ? 1 : 2)
+            return (axis, size[axis])
+        }
         var boxes: [[SIMD3<Float>]] = [points]
+        var spans = [widest(points)]
         while boxes.count < count {
             var best: (box: Int, axis: Int, range: Float)?
             for (i, box) in boxes.enumerated() where box.count > 1 {
-                let lo = box.reduce(box[0], pointwiseMin), hi = box.reduce(box[0], pointwiseMax)
-                let size = hi - lo
-                let axis = size.x >= size.y && size.x >= size.z ? 0 : (size.y >= size.z ? 1 : 2)
-                if size[axis] > (best?.range ?? 0) { best = (i, axis, size[axis]) }
+                if spans[i].range > (best?.range ?? 0) { best = (i, spans[i].axis, spans[i].range) }
             }
             guard let split = best else { break }  // fewer distinct colors than requested
             let sorted = boxes[split.box].sorted { $0[split.axis] < $1[split.axis] }
             boxes[split.box] = Array(sorted[..<(sorted.count / 2)])
             boxes.append(Array(sorted[(sorted.count / 2)...]))
+            spans[split.box] = widest(boxes[split.box])
+            spans.append(widest(boxes[boxes.count - 1]))
         }
         return (boxes.map { $0.reduce(SIMD3<Float>(), +) / Float($0.count) }, boxes.map(\.count))
     }

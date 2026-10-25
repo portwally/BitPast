@@ -561,7 +561,19 @@ class PCConverter: RetroMachine {
 
     private func generateAdaptivePalette(pixels: [[Float]], numColors: Int) -> [[UInt8]] {
         // Simple median-cut algorithm
-        var boxes: [[(r: Float, g: Float, b: Float)]] = [pixels.map { (r: $0[0], g: $0[1], b: $0[2]) }]
+        typealias Color = (r: Float, g: Float, b: Float)
+        // Channel ranges of a box, computed once when the box is created
+        func ranges(_ box: [Color]) -> (r: Float, g: Float, b: Float) {
+            guard var lo = box.first else { return (0, 0, 0) }
+            var hi = lo
+            for c in box {
+                lo = (min(lo.r, c.r), min(lo.g, c.g), min(lo.b, c.b))
+                hi = (max(hi.r, c.r), max(hi.g, c.g), max(hi.b, c.b))
+            }
+            return (hi.r - lo.r, hi.g - lo.g, hi.b - lo.b)
+        }
+        var boxes: [[Color]] = [pixels.map { (r: $0[0], g: $0[1], b: $0[2]) }]
+        var boxRanges = [ranges(boxes[0])]
 
         while boxes.count < numColors {
             // Find box with largest range
@@ -570,10 +582,7 @@ class PCConverter: RetroMachine {
 
             for (i, box) in boxes.enumerated() {
                 guard !box.isEmpty else { continue }
-                let rRange = box.map { $0.r }.max()! - box.map { $0.r }.min()!
-                let gRange = box.map { $0.g }.max()! - box.map { $0.g }.min()!
-                let bRange = box.map { $0.b }.max()! - box.map { $0.b }.min()!
-                let range = max(rRange, gRange, bRange)
+                let range = max(boxRanges[i].r, boxRanges[i].g, boxRanges[i].b)
                 if range > maxRange {
                     maxRange = range
                     maxRangeIdx = i
@@ -584,9 +593,7 @@ class PCConverter: RetroMachine {
             guard box.count > 1 else { break }
 
             // Split on axis with largest range
-            let rRange = box.map { $0.r }.max()! - box.map { $0.r }.min()!
-            let gRange = box.map { $0.g }.max()! - box.map { $0.g }.min()!
-            let bRange = box.map { $0.b }.max()! - box.map { $0.b }.min()!
+            let (rRange, gRange, bRange) = boxRanges[maxRangeIdx]
 
             var sorted: [(r: Float, g: Float, b: Float)]
             if rRange >= gRange && rRange >= bRange {
@@ -600,6 +607,8 @@ class PCConverter: RetroMachine {
             let mid = sorted.count / 2
             boxes[maxRangeIdx] = Array(sorted[0..<mid])
             boxes.append(Array(sorted[mid...]))
+            boxRanges[maxRangeIdx] = ranges(boxes[maxRangeIdx])
+            boxRanges.append(ranges(boxes[boxes.count - 1]))
         }
 
         // Extract palette from box averages
