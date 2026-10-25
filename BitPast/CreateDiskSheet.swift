@@ -53,6 +53,11 @@ struct CreateDiskSheet: View {
         }
         .frame(width: 900, height: 520)
         .background(Color(NSColor.windowBackgroundColor))
+        .onAppear {
+            // The sheet can keep format/size from a previous opening for another
+            // system; make sure they are valid for the system shown now.
+            updateForSystem(selectedSystem)
+        }
         .onChange(of: selectedSystemIndex) { _, newValue in
             updateForSystem(DiskSystem(rawValue: newValue) ?? .appleII)
         }
