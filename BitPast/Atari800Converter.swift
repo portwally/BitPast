@@ -161,8 +161,8 @@ nonisolated class Atari800Converter: RetroMachine {
             // Graphics 15: 4 freely chosen colors
             (selectedPalette, atariRegisters) = selectCoveringPalette(pixels: pixels, numColors: numColors)
         } else {
-            // Graphics 8: most frequent colors from the 128-color palette
-            (selectedPalette, atariRegisters) = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: numColors)
+            // Graphics 8: two shades of one hue, as the hardware shows them
+            (selectedPalette, atariRegisters) = selectGraphics8Palette(pixels: pixels)
         }
 
         // Convert with error diffusion if selected
@@ -282,6 +282,57 @@ nonisolated class Atari800Converter: RetroMachine {
         return palette
     }
 
+    /// Graphics 8 shows two shades of one hue: the background is COLPF2 (hue and
+    /// luminance), and set pixels use COLPF2's hue with COLPF1's luminance.
+    /// Tries every hue and luminance pair and keeps the one with the least squared
+    /// error. The color more pixels are closest to becomes the background.
+    /// Returns the palette (background, foreground) and registers (COLPF2, COLPF1).
+    private func selectGraphics8Palette(pixels: [[Float]]) -> ([[UInt8]], [UInt8]) {
+        // Histogram of the picture on a 4-bit-per-channel grid, with each bin's average color
+        var weights = [Float](repeating: 0, count: 4096)
+        var sums = [SIMD3<Float>](repeating: .zero, count: 4096)
+        for p in pixels {
+            let c = SIMD3<Float>(max(0, min(255, p[0])), max(0, min(255, p[1])), max(0, min(255, p[2])))
+            let bin = ((Int(c.x) >> 4) << 8) | ((Int(c.y) >> 4) << 4) | (Int(c.z) >> 4)
+            weights[bin] += 1
+            sums[bin] += c
+        }
+        let used = weights.indices.filter { weights[$0] > 0 }
+        let palette = Self.atari800Palette.map { SIMD3<Float>($0.map(Float.init)) }
+
+        // Squared distance from every used bin to every palette color
+        var dist = [Float](repeating: 0, count: used.count * palette.count)
+        for (k, bin) in used.enumerated() {
+            let center = sums[bin] / weights[bin]
+            for (j, color) in palette.enumerated() {
+                let d = center - color
+                dist[k * palette.count + j] = (d * d).sum()
+            }
+        }
+
+        var best = (cost: Float.greatestFiniteMagnitude, a: 0, b: 7)
+        for hue in 0..<16 {
+            for lumA in 0..<8 {
+                for lumB in (lumA + 1)..<8 {
+                    let a = hue * 8 + lumA, b = hue * 8 + lumB
+                    var cost: Float = 0
+                    for k in used.indices {
+                        cost += weights[used[k]] * min(dist[k * palette.count + a], dist[k * palette.count + b])
+                    }
+                    if cost < best.cost { best = (cost, a, b) }
+                }
+            }
+        }
+
+        var countA: Float = 0, countB: Float = 0
+        for k in used.indices {
+            if dist[k * palette.count + best.a] <= dist[k * palette.count + best.b] { countA += weights[used[k]] } else { countB += weights[used[k]] }
+        }
+        let (background, foreground) = countA >= countB ? (best.a, best.b) : (best.b, best.a)
+        return ([Self.atari800Palette[background], Self.atari800Palette[foreground]],
+                [atariRegister(forPaletteIndex: background), atariRegister(forPaletteIndex: foreground)])
+    }
+
     /// Picks colors that cover the whole picture (see `CoveringPalette`).
     private func selectCoveringPalette(pixels: [[Float]], numColors: Int) -> ([[UInt8]], [UInt8]) {
         let chosen = CoveringPalette.pick(numColors, from: Self.atari800Palette, pixels: pixels)
@@ -297,58 +348,6 @@ nonisolated class Atari800Converter: RetroMachine {
     /// Color register value (HHHHLLL0) for an index into the 128-color palette (hue * 8 + luminance).
     private func atariRegister(forPaletteIndex idx: Int) -> UInt8 {
         UInt8(((idx / 8) << 4) | ((idx % 8) << 1))
-    }
-
-    private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int, numColors: Int) -> ([[UInt8]], [UInt8]) {
-        // Use median cut to select optimal colors from 128-color palette
-        // Returns (RGB palette, Atari color register values)
-        var colorCounts: [Int: Int] = [:]
-
-        // Count colors mapped to Atari palette
-        for pixel in pixels {
-            let r = Int(max(0, min(255, pixel[0])))
-            let g = Int(max(0, min(255, pixel[1])))
-            let b = Int(max(0, min(255, pixel[2])))
-
-            // Find nearest palette color
-            var bestIdx = 0
-            var bestDist = Int.max
-            for (i, color) in Self.atari800Palette.enumerated() {
-                let dr = r - Int(color[0])
-                let dg = g - Int(color[1])
-                let db = b - Int(color[2])
-                let dist = dr * dr + dg * dg + db * db
-                if dist < bestDist {
-                    bestDist = dist
-                    bestIdx = i
-                }
-            }
-            colorCounts[bestIdx, default: 0] += 1
-        }
-
-        // Sort by frequency and take top colors
-        let sorted = colorCounts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }  // ties by key, so output is repeatable
-        var palette: [[UInt8]] = []
-        var atariRegisters: [UInt8] = []
-
-        for (idx, _) in sorted.prefix(numColors) {
-            palette.append(Self.atari800Palette[idx])
-            // Convert palette index to Atari color register value
-            // Index format: hue * 8 + luminance (0-127)
-            // Register format: HHHHLLLL where H=hue(4 bits), L=luminance*2(4 bits)
-            let hue = idx / 8
-            let lum = idx % 8
-            let register = UInt8((hue << 4) | (lum << 1))
-            atariRegisters.append(register)
-        }
-
-        // Pad to required colors if needed
-        while palette.count < numColors {
-            palette.append([0, 0, 0])
-            atariRegisters.append(0)
-        }
-
-        return (palette, atariRegisters)
     }
 
     private func convertToAtari800(pixels: [[Float]], width: Int, height: Int,
