@@ -95,4 +95,29 @@ struct AtariDiskTests {
         }
         #expect(vtoc.le16(3) == free, "free sector count")
     }
+
+    /// DOS 2.5 enhanced density adds VTOC2 at sector 1024: bytes 0-83 mirror
+    /// the main bitmap for sectors 48-719, bytes 84-121 cover sectors 720-1023,
+    /// and bytes 122-123 count the free sectors above 719.
+    @Test("130 KB disks get a DOS 2.5 VTOC2")
+    func vtoc2() throws {
+        let samples = TestDisk.standardFiles(ext: "mic") + [SampleFile(name: "BIG", ext: "mic", data: TestDisk.bytes(95_000, seed: 8))]
+        let disk = try Self.write(size: .kb130, files: samples)
+        let (files, used) = disk.files()
+        #expect(files.map(\.data) == samples.map(\.data))
+        #expect(used.contains { $0 > 720 }, "test file reaches past sector 720")
+        #expect(!used.contains(720) && used.allSatisfy { $0 < 1024 }, "sector 720 and 1024+ are not used")
+
+        let vtoc = disk.sector(360), vtoc2 = disk.sector(1024)
+        #expect(vtoc.le16(1) == 1010, "total usable sectors")
+        #expect(vtoc2.slice(0, 84) == vtoc.slice(16, 84), "VTOC2 mirrors the main bitmap")
+        var free = 0
+        for s in 720..<1024 {
+            let i = s - 720
+            let isFree = vtoc2.u8(84 + i / 8) >> (7 - i % 8) & 1 == 1
+            if isFree { free += 1 }
+            #expect(isFree == (s != 720 && !used.contains(s)), "VTOC2 sector \(s)")
+        }
+        #expect(vtoc2.le16(122) == free, "VTOC2 free count")
+    }
 }

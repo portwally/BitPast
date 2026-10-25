@@ -12,6 +12,7 @@ class ATRWriter {
     private let sectorSize = 128  // Standard density (can be 256 for double density)
     private let atrHeaderSize = 16
     private let vtocBitmapSectors = 720  // DOS 2 VTOC tracks sectors 0-719
+    private let vtoc2Sector = 1024       // DOS 2.5 second VTOC (enhanced density)
 
     // Disk sizes
     private let sectors90KB = 720    // 90KB: 720 sectors
@@ -48,14 +49,13 @@ class ATRWriter {
         // Initialize Atari DOS 2.0S compatible structure
         initializeAtariDOS(in: &diskData, volumeName: volumeName, sectorCount: sectorCount, bytesPerSector: bytesPerSector)
 
-        // Write files
-        // Start after boot sectors, skip VTOC (360) and directory (361-368)
+        // Write files. DOS 2 links hold 10-bit sector numbers, so nothing at or
+        // above 1024 is usable; sector 720 is never used either.
+        let enhanced = isEnhancedDensity(sectorCount: sectorCount, bytesPerSector: bytesPerSector)
+        let sectorLimit = min(sectorCount, 1024)
+        let dataSize = bytesPerSector - 3  // 3 bytes for link
         var nextSector = 4  // First user data sector (1-3 are boot)
         var dirEntryIndex = 0
-
-        // Reserved sectors: VTOC at 360, directory at 361-368
-        let reservedStart = 360
-        let reservedEnd = 368
 
         for file in files {
             guard let fileData = try? Data(contentsOf: file.url) else {
@@ -67,61 +67,37 @@ class ATRWriter {
             let fileName = cleanAtariFileName(file.name)
             let fileExt = file.url.pathExtension.uppercased().prefix(3)
 
-            // Skip reserved sectors if we're about to write into them
-            if nextSector >= reservedStart && nextSector <= reservedEnd {
-                nextSector = reservedEnd + 1
-            }
-
-            let startSector = nextSector
-
-            // Write file data
-            var remaining = fileData
-            var currentSector = startSector
+            // Pick all sectors first, so a file that does not fit is skipped cleanly
+            let sectorsNeeded = max(1, (fileData.count + dataSize - 1) / dataSize)
             var sectorList: [Int] = []
+            var candidate = nextSector
+            while sectorList.count < sectorsNeeded && candidate < sectorLimit {
+                if !isReserved(candidate) { sectorList.append(candidate) }
+                candidate += 1
+            }
+            guard sectorList.count == sectorsNeeded else {
+                Log.error("ATRWriter: Disk full, cannot add \(file.name)")
+                break
+            }
+            let startSector = sectorList[0]
 
-            while !remaining.isEmpty && currentSector < sectorCount {
-                // Skip reserved sectors
-                if currentSector >= reservedStart && currentSector <= reservedEnd {
-                    currentSector = reservedEnd + 1
-                }
+            for (i, sector) in sectorList.enumerated() {
+                let chunk = fileData.dropFirst(i * dataSize).prefix(dataSize)
+                let offset = sectorOffset(sector: sector, bytesPerSector: bytesPerSector)
+                diskData.replaceSubrange(offset..<(offset + chunk.count), with: chunk)
 
-                let dataSize = bytesPerSector - 3  // 3 bytes for link
-                let chunk = remaining.prefix(dataSize)
-                remaining = remaining.dropFirst(dataSize)
-
-                let offset = sectorOffset(sector: currentSector, bytesPerSector: bytesPerSector)
-
-                // Write data
-                for (i, byte) in chunk.enumerated() {
-                    diskData[offset + i] = byte
-                }
-
-                sectorList.append(currentSector)
-
-                // Link to next sector (or end marker)
-                var nextS = 0
-                if !remaining.isEmpty {
-                    nextS = currentSector + 1
-                    // Skip reserved sectors in link
-                    if nextS >= reservedStart && nextS <= reservedEnd {
-                        nextS = reservedEnd + 1
-                    }
-                }
-                let bytesInSector = remaining.isEmpty ? chunk.count : dataSize
-
-                // Atari DOS 2.0S sector link format (last 3 bytes):
+                // Atari DOS 2 sector link (last 3 bytes):
                 // Byte 0: bits 7-2 = file number (0-63), bits 1-0 = high 2 bits of next sector
                 // Byte 1: low 8 bits of next sector
-                // Byte 2: number of data bytes in sector (excluding link bytes)
+                // Byte 2: number of data bytes in this sector
+                let nextS = i + 1 < sectorList.count ? sectorList[i + 1] : 0
                 let linkOffset = offset + bytesPerSector - 3
                 let fileNum = UInt8(truncatingIfNeeded: dirEntryIndex & 0x3F)
-                let nextHi = UInt8((nextS >> 8) & 0x03)
-                diskData[linkOffset] = (fileNum << 2) | nextHi
+                diskData[linkOffset] = (fileNum << 2) | UInt8((nextS >> 8) & 0x03)
                 diskData[linkOffset + 1] = UInt8(nextS & 0xFF)
-                diskData[linkOffset + 2] = UInt8(bytesInSector)
-
-                currentSector += 1
+                diskData[linkOffset + 2] = UInt8(chunk.count)
             }
+            nextSector = candidate
 
             // Add directory entry
             addDirectoryEntry(
@@ -135,11 +111,10 @@ class ATRWriter {
             )
 
             dirEntryIndex += 1
-            nextSector = currentSector
 
             // Mark sectors as used in VTOC
             for sector in sectorList {
-                markSectorUsed(in: &diskData, sector: sector, bytesPerSector: bytesPerSector)
+                markSectorUsed(in: &diskData, sector: sector, bytesPerSector: bytesPerSector, enhanced: enhanced)
             }
         }
 
@@ -179,11 +154,19 @@ class ATRWriter {
             freeSectors += 1
         }
 
-        // Total usable and free sectors (707 on a standard 90 KB disk)
-        data[vtocOffset + 1] = UInt8(freeSectors & 0xFF)
-        data[vtocOffset + 2] = UInt8((freeSectors >> 8) & 0xFF)
+        // Free sectors below 720 (707 on a freshly formatted disk)
         data[vtocOffset + 3] = UInt8(freeSectors & 0xFF)
         data[vtocOffset + 4] = UInt8((freeSectors >> 8) & 0xFF)
+
+        // Enhanced density (DOS 2.5) adds VTOC2 for sectors 720-1023
+        var totalSectors = freeSectors
+        if isEnhancedDensity(sectorCount: sectorCount, bytesPerSector: bytesPerSector) {
+            totalSectors += initializeVTOC2(in: &data, mainVTOCOffset: vtocOffset, bytesPerSector: bytesPerSector)
+        }
+
+        // Total usable sectors (707 for 90 KB, 1010 for 130 KB)
+        data[vtocOffset + 1] = UInt8(totalSectors & 0xFF)
+        data[vtocOffset + 2] = UInt8((totalSectors >> 8) & 0xFF)
 
         // Initialize all 8 directory sectors (361-368)
         for dirSectorNum in 361...368 {
@@ -229,19 +212,70 @@ class ATRWriter {
         }
     }
 
-    private func markSectorUsed(in data: inout Data, sector: Int, bytesPerSector: Int) {
+    private func markSectorUsed(in data: inout Data, sector: Int, bytesPerSector: Int, enhanced: Bool) {
         let vtocOffset = sectorOffset(sector: 360, bytesPerSector: bytesPerSector)
-        guard sector < vtocBitmapSectors else { return }
-        let byteOffset = vtocOffset + 10 + sector / 8
-        let mask = UInt8(0x80 >> (sector % 8))  // bit 7 = lowest sector in the byte
-        guard data[byteOffset] & mask != 0 else { return }  // already used
-        data[byteOffset] &= ~mask
+        let vtoc2Offset = sectorOffset(sector: vtoc2Sector, bytesPerSector: bytesPerSector)
 
-        // Decrement free sector count
-        let freeCount = Int(data[vtocOffset + 3]) | (Int(data[vtocOffset + 4]) << 8)
-        let newCount = max(0, freeCount - 1)
-        data[vtocOffset + 3] = UInt8(newCount & 0xFF)
-        data[vtocOffset + 4] = UInt8((newCount >> 8) & 0xFF)
+        if sector < vtocBitmapSectors {
+            if clearBit(in: &data, at: vtocOffset + 10, sector: sector) {
+                adjustCount(in: &data, at: vtocOffset + 3, by: -1)
+            }
+            // VTOC2 mirrors the main bitmap for sectors 48-719
+            if enhanced && sector >= 48 {
+                _ = clearBit(in: &data, at: vtoc2Offset - 6, sector: sector)
+            }
+        } else if enhanced && sector < vtoc2Sector {
+            if clearBit(in: &data, at: vtoc2Offset + 84 - 90, sector: sector) {
+                adjustCount(in: &data, at: vtoc2Offset + 122, by: -1)
+            }
+        }
+    }
+
+    /// Clears the "free" bit for a sector in a bitmap whose bit 7 of byte 0 is
+    /// sector 0. Returns false if the sector was already marked used.
+    private func clearBit(in data: inout Data, at bitmapOffset: Int, sector: Int) -> Bool {
+        let byteOffset = bitmapOffset + sector / 8
+        let mask = UInt8(0x80 >> (sector % 8))
+        guard data[byteOffset] & mask != 0 else { return false }
+        data[byteOffset] &= ~mask
+        return true
+    }
+
+    private func adjustCount(in data: inout Data, at offset: Int, by delta: Int) {
+        let count = max(0, (Int(data[offset]) | Int(data[offset + 1]) << 8) + delta)
+        data[offset] = UInt8(count & 0xFF)
+        data[offset + 1] = UInt8((count >> 8) & 0xFF)
+    }
+
+    // MARK: - Enhanced Density (DOS 2.5)
+
+    private func isEnhancedDensity(sectorCount: Int, bytesPerSector: Int) -> Bool {
+        sectorCount == 1040 && bytesPerSector == 128
+    }
+
+    /// VTOC2 (sector 1024): bytes 0-83 mirror the main bitmap for sectors 48-719,
+    /// bytes 84-121 cover sectors 720-1023, and bytes 122-123 count the free
+    /// sectors above 719. Sector 720 stays used, as DOS 2.5 formats it.
+    /// Returns the number of free sectors above 719.
+    private func initializeVTOC2(in data: inout Data, mainVTOCOffset: Int, bytesPerSector: Int) -> Int {
+        let vtoc2Offset = sectorOffset(sector: vtoc2Sector, bytesPerSector: bytesPerSector)
+        for i in 0..<84 {
+            data[vtoc2Offset + i] = data[mainVTOCOffset + 10 + 6 + i]
+        }
+        var free = 0
+        for sector in 721..<vtoc2Sector {
+            let index = sector - 720
+            data[vtoc2Offset + 84 + index / 8] |= UInt8(0x80 >> (index % 8))
+            free += 1
+        }
+        data[vtoc2Offset + 122] = UInt8(free & 0xFF)
+        data[vtoc2Offset + 123] = UInt8((free >> 8) & 0xFF)
+        return free
+    }
+
+    /// Sectors DOS never gives to files.
+    private func isReserved(_ sector: Int) -> Bool {
+        sector <= 3 || (360...368).contains(sector) || sector == 720 || sector >= vtoc2Sector
     }
 
     // MARK: - Helpers
