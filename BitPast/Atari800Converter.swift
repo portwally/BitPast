@@ -148,8 +148,8 @@ class Atari800Converter: RetroMachine {
                 atariRegisters.append(UInt8((lum / 2) << 1))  // Even luminance values
             }
         } else if mode.contains("Graphics 10") {
-            // Graphics 10: 9 colors - use optimal palette selection
-            (selectedPalette, atariRegisters) = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: 9)
+            // Graphics 10: 9 freely chosen colors
+            (selectedPalette, atariRegisters) = selectCoveringPalette(pixels: pixels, numColors: 9)
         } else if mode.contains("Graphics 11") {
             // Graphics 11: 16 different hues at one luminance
             selectedPalette = select16HuePalette()
@@ -157,8 +157,11 @@ class Atari800Converter: RetroMachine {
             for hue in 0..<16 {
                 atariRegisters.append(UInt8((hue << 4) | 8))  // Lum 4 = 8 in register
             }
+        } else if mode.contains("Graphics 15") {
+            // Graphics 15: 4 freely chosen colors
+            (selectedPalette, atariRegisters) = selectCoveringPalette(pixels: pixels, numColors: numColors)
         } else {
-            // Graphics 8/15: Select optimal colors from 128-color palette
+            // Graphics 8: most frequent colors from the 128-color palette
             (selectedPalette, atariRegisters) = selectOptimalPalette(pixels: pixels, width: width, height: height, numColors: numColors)
         }
 
@@ -277,6 +280,87 @@ class Atari800Converter: RetroMachine {
             }
         }
         return palette
+    }
+
+    /// Picks colors that cover the whole picture rather than the most frequent ones,
+    /// so small but distinct areas (e.g. a red region on a mostly grey image) get a color.
+    /// Median cut splits the pixels into `numColors` groups, a few k-means passes refine
+    /// them, and each group gets its own nearest Atari color (larger groups choose first).
+    private func selectCoveringPalette(pixels: [[Float]], numColors: Int) -> ([[UInt8]], [UInt8]) {
+        let points = pixels.map { SIMD3<Float>(max(0, min(255, $0[0])), max(0, min(255, $0[1])), max(0, min(255, $0[2]))) }
+        guard !points.isEmpty else { return selectOptimalPalette(pixels: pixels, width: 0, height: 0, numColors: numColors) }
+
+        // Median cut: split the box with the widest color range at its median
+        var boxes: [[SIMD3<Float>]] = [points]
+        while boxes.count < numColors {
+            var best: (box: Int, axis: Int, range: Float)?
+            for (i, box) in boxes.enumerated() where box.count > 1 {
+                let lo = box.reduce(box[0], pointwiseMin), hi = box.reduce(box[0], pointwiseMax)
+                let size = hi - lo
+                let axis = size.x >= size.y && size.x >= size.z ? 0 : (size.y >= size.z ? 1 : 2)
+                if size[axis] > (best?.range ?? 0) { best = (i, axis, size[axis]) }
+            }
+            guard let split = best else { break }  // fewer distinct colors than requested
+            let sorted = boxes[split.box].sorted { $0[split.axis] < $1[split.axis] }
+            boxes[split.box] = Array(sorted[..<(sorted.count / 2)])
+            boxes.append(Array(sorted[(sorted.count / 2)...]))
+        }
+        var centers = boxes.map { box in box.reduce(SIMD3<Float>(), +) / Float(box.count) }
+        var weights = boxes.map(\.count)
+
+        // Refine with k-means, snapping to distinct Atari colors each round
+        var chosen: [Int] = []
+        for _ in 0..<6 {
+            chosen = snapToAtariColors(centers, weights: weights)
+            let targets = chosen.map { idx in SIMD3<Float>(Self.atari800Palette[idx].map(Float.init)) }
+            var sums = [SIMD3<Float>](repeating: .zero, count: targets.count)
+            var counts = [Int](repeating: 0, count: targets.count)
+            for p in points {
+                var bestIdx = 0, bestDist = Float.greatestFiniteMagnitude
+                for (i, t) in targets.enumerated() {
+                    let d = p - t, dist = (d * d).sum()
+                    if dist < bestDist { bestDist = dist; bestIdx = i }
+                }
+                sums[bestIdx] += p
+                counts[bestIdx] += 1
+            }
+            let updated = zip(sums, counts).enumerated().map { i, sc in sc.1 > 0 ? sc.0 / Float(sc.1) : centers[i] }
+            weights = counts
+            if updated == centers { break }
+            centers = updated
+        }
+        chosen = snapToAtariColors(centers, weights: weights)
+
+        var palette = chosen.map { Self.atari800Palette[$0] }
+        var registers = chosen.map { atariRegister(forPaletteIndex: $0) }
+        while palette.count < numColors {
+            palette.append([0, 0, 0])
+            registers.append(0)
+        }
+        return (palette, registers)
+    }
+
+    /// Nearest Atari palette index for each center, never using an index twice.
+    /// Centers with more pixels choose first.
+    private func snapToAtariColors(_ centers: [SIMD3<Float>], weights: [Int]) -> [Int] {
+        var result = [Int](repeating: 0, count: centers.count)
+        var used = Set<Int>()
+        let order = centers.indices.sorted { weights[$0] != weights[$1] ? weights[$0] > weights[$1] : $0 < $1 }
+        for i in order {
+            var bestIdx = 0, bestDist = Float.greatestFiniteMagnitude
+            for (idx, color) in Self.atari800Palette.enumerated() where !used.contains(idx) {
+                let d = centers[i] - SIMD3<Float>(color.map(Float.init)), dist = (d * d).sum()
+                if dist < bestDist { bestDist = dist; bestIdx = idx }
+            }
+            used.insert(bestIdx)
+            result[i] = bestIdx
+        }
+        return result
+    }
+
+    /// Color register value (HHHHLLL0) for an index into the 128-color palette (hue * 8 + luminance).
+    private func atariRegister(forPaletteIndex idx: Int) -> UInt8 {
+        UInt8(((idx / 8) << 4) | ((idx % 8) << 1))
     }
 
     private func selectOptimalPalette(pixels: [[Float]], width: Int, height: Int, numColors: Int) -> ([[UInt8]], [UInt8]) {
