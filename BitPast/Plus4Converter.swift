@@ -152,7 +152,7 @@ class Plus4Converter: RetroMachine {
         let screenWidth = 320
         let screenHeight = 200
 
-        guard var pixels = getPixelData(from: sourceImage, width: screenWidth, height: screenHeight) else {
+        guard var pixels = AtariFamilyImageOps.getPixelData(from: sourceImage, width: screenWidth, height: screenHeight) else {
             throw NSError(domain: "Plus4Converter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get pixel data"])
         }
 
@@ -163,7 +163,7 @@ class Plus4Converter: RetroMachine {
 
         // Apply gamma
         if gamma != 1.0 {
-            applyGamma(&pixels, width: screenWidth, height: screenHeight, gamma: gamma)
+            AtariFamilyImageOps.applyGamma(&pixels, width: screenWidth, height: screenHeight, gamma: gamma)
         }
 
         // Apply contrast enhancement
@@ -616,32 +616,6 @@ class Plus4Converter: RetroMachine {
 
     // MARK: - Image Processing Helpers
 
-    private func getPixelData(from image: NSImage, width: Int, height: Int) -> [[Float]]? {
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        var pixelData = [UInt8](repeating: 0, count: width * height * 4)
-
-        guard let context = CGContext(data: &pixelData,
-                                       width: width,
-                                       height: height,
-                                       bitsPerComponent: 8,
-                                       bytesPerRow: width * 4,
-                                       space: colorSpace,
-                                       bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
-            return nil
-        }
-
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-
-        var result = [[Float]](repeating: [0, 0, 0], count: width * height)
-        for i in 0..<(width * height) {
-            result[i] = [Float(pixelData[i * 4]), Float(pixelData[i * 4 + 1]), Float(pixelData[i * 4 + 2])]
-        }
-
-        return result
-    }
-
     private func applySaturation(_ pixels: inout [[Float]], width: Int, height: Int, factor: Double) {
         for i in 0..<pixels.count {
             let r = pixels[i][0]
@@ -651,15 +625,6 @@ class Plus4Converter: RetroMachine {
             pixels[i][0] = max(0, min(255, gray + Float(factor) * (r - gray)))
             pixels[i][1] = max(0, min(255, gray + Float(factor) * (g - gray)))
             pixels[i][2] = max(0, min(255, gray + Float(factor) * (b - gray)))
-        }
-    }
-
-    private func applyGamma(_ pixels: inout [[Float]], width: Int, height: Int, gamma: Double) {
-        let invGamma = 1.0 / gamma
-        for i in 0..<pixels.count {
-            pixels[i][0] = Float(pow(Double(pixels[i][0]) / 255.0, invGamma) * 255.0)
-            pixels[i][1] = Float(pow(Double(pixels[i][1]) / 255.0, invGamma) * 255.0)
-            pixels[i][2] = Float(pow(Double(pixels[i][2]) / 255.0, invGamma) * 255.0)
         }
     }
 

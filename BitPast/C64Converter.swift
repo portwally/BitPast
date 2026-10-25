@@ -159,7 +159,7 @@ class C64Converter: RetroMachine {
 
         // Apply ordered dithering before color reduction (Bayer, Blue noise, or random noise)
         if ditherAlg.contains("Bayer") || ditherAlg.contains("Blue") || ditherAlg == "Noise" {
-            applyOrderedDither(&pixels, width: width, height: height, ditherType: ditherAlg, amount: ditherAmount)
+            CommodoreFamilyImageOps.applyOrderedDither(&pixels, width: width, height: height, ditherType: ditherAlg, amount: ditherAmount)
         }
 
         // Convert based on mode
@@ -319,7 +319,7 @@ class C64Converter: RetroMachine {
                             let errG = (pixel[1] - Float(chosenPalette[1]) / 255.0) * Float(ditherAmount)
                             let errB = (pixel[2] - Float(chosenPalette[2]) / 255.0) * Float(ditherAmount)
 
-                            diffuseError(&workPixels, x: x, y: y, width: width, height: height,
+                            CommodoreFamilyImageOps.diffuseError(&workPixels, x: x, y: y, width: width, height: height,
                                         errR: errR, errG: errG, errB: errB, algorithm: ditherAlg)
                         }
                     }
@@ -866,196 +866,10 @@ class C64Converter: RetroMachine {
 
     // MARK: - Dithering
 
-    private func applyOrderedDither(_ pixels: inout [[Float]], width: Int, height: Int, ditherType: String, amount: Double) {
-        let matrix: [[Float]]
-        let size: Int
-
-        switch ditherType {
-        case "Bayer 2x2":
-            size = 2
-            matrix = [
-                [0.0, 2.0],
-                [3.0, 1.0]
-            ]
-        case "Bayer 4x4":
-            size = 4
-            matrix = [
-                [0.0, 8.0, 2.0, 10.0],
-                [12.0, 4.0, 14.0, 6.0],
-                [3.0, 11.0, 1.0, 9.0],
-                [15.0, 7.0, 13.0, 5.0]
-            ]
-        case "Bayer 16x16":
-            size = 16
-            matrix = generateBayer16x16()
-        case "Blue 8x8":
-            size = 8
-            matrix = generateBlueNoise8x8()
-        case "Blue 16x16":
-            size = 16
-            matrix = generateBlueNoise16x16()
-        case "Noise":
-            // Random noise dithering - handled separately
-            applyNoiseDither(&pixels, width: width, height: height, amount: amount)
-            return
-        default: // Bayer 8x8
-            size = 8
-            matrix = [
-                [0.0, 32.0, 8.0, 40.0, 2.0, 34.0, 10.0, 42.0],
-                [48.0, 16.0, 56.0, 24.0, 50.0, 18.0, 58.0, 26.0],
-                [12.0, 44.0, 4.0, 36.0, 14.0, 46.0, 6.0, 38.0],
-                [60.0, 28.0, 52.0, 20.0, 62.0, 30.0, 54.0, 22.0],
-                [3.0, 35.0, 11.0, 43.0, 1.0, 33.0, 9.0, 41.0],
-                [51.0, 19.0, 59.0, 27.0, 49.0, 17.0, 57.0, 25.0],
-                [15.0, 47.0, 7.0, 39.0, 13.0, 45.0, 5.0, 37.0],
-                [63.0, 31.0, 55.0, 23.0, 61.0, 29.0, 53.0, 21.0]
-            ]
-        }
-
-        let maxVal = Float(size * size)
-        let strength = Float(amount) * 0.15
-
-        for y in 0..<height {
-            for x in 0..<width {
-                let threshold = (matrix[y % size][x % size] / maxVal - 0.5) * strength
-                let idx = y * width + x
-                pixels[idx][0] = min(1, max(0, pixels[idx][0] + threshold))
-                pixels[idx][1] = min(1, max(0, pixels[idx][1] + threshold))
-                pixels[idx][2] = min(1, max(0, pixels[idx][2] + threshold))
-            }
-        }
-    }
-
-    private func generateBayer16x16() -> [[Float]] {
-        // Generate 16x16 Bayer matrix recursively from 8x8
-        let bayer8: [[Float]] = [
-            [0, 32, 8, 40, 2, 34, 10, 42],
-            [48, 16, 56, 24, 50, 18, 58, 26],
-            [12, 44, 4, 36, 14, 46, 6, 38],
-            [60, 28, 52, 20, 62, 30, 54, 22],
-            [3, 35, 11, 43, 1, 33, 9, 41],
-            [51, 19, 59, 27, 49, 17, 57, 25],
-            [15, 47, 7, 39, 13, 45, 5, 37],
-            [63, 31, 55, 23, 61, 29, 53, 21]
-        ]
-        var result = [[Float]](repeating: [Float](repeating: 0, count: 16), count: 16)
-        for y in 0..<16 {
-            for x in 0..<16 {
-                let baseVal = bayer8[y % 8][x % 8]
-                let quadrant = (y / 8) * 2 + (x / 8)
-                let offset: Float = [0, 128, 192, 64][quadrant]
-                result[y][x] = baseVal * 4 + offset
-            }
-        }
-        return result
-    }
-
-    private func generateBlueNoise8x8() -> [[Float]] {
-        // Blue noise pattern - more visually pleasing than Bayer
-        return [
-            [34, 29, 17, 21, 30, 35, 12, 6],
-            [10, 47, 38, 8, 43, 2, 40, 23],
-            [44, 3, 24, 52, 15, 56, 19, 51],
-            [18, 59, 14, 32, 46, 26, 37, 7],
-            [55, 27, 49, 4, 60, 11, 57, 42],
-            [1, 36, 20, 41, 22, 50, 28, 16],
-            [63, 9, 54, 31, 53, 5, 45, 61],
-            [25, 48, 13, 58, 0, 39, 33, 62]
-        ]
-    }
-
-    private func generateBlueNoise16x16() -> [[Float]] {
-        // Extended blue noise pattern
-        let blue8 = generateBlueNoise8x8()
-        var result = [[Float]](repeating: [Float](repeating: 0, count: 16), count: 16)
-        for y in 0..<16 {
-            for x in 0..<16 {
-                let baseVal = blue8[y % 8][x % 8]
-                let quadrant = (y / 8) * 2 + (x / 8)
-                let offset: Float = [0, 64, 192, 128][quadrant]
-                result[y][x] = baseVal * 4 + offset
-            }
-        }
-        return result
-    }
-
-    private func applyNoiseDither(_ pixels: inout [[Float]], width: Int, height: Int, amount: Double) {
-        let strength = Float(amount) * 0.1
-        for i in 0..<(width * height) {
-            let noise = (Float.random(in: 0...1) - 0.5) * strength
-            pixels[i][0] = min(1, max(0, pixels[i][0] + noise))
-            pixels[i][1] = min(1, max(0, pixels[i][1] + noise))
-            pixels[i][2] = min(1, max(0, pixels[i][2] + noise))
-        }
-    }
-
-    private func diffuseError(_ pixels: inout [[Float]], x: Int, y: Int, width: Int, height: Int,
-                              errR: Float, errG: Float, errB: Float, algorithm: String) {
-        if algorithm == "Floyd-Steinberg" {
-            // Right: 7/16
-            if x + 1 < width {
-                pixels[y * width + x + 1][0] += errR * 7.0 / 16.0
-                pixels[y * width + x + 1][1] += errG * 7.0 / 16.0
-                pixels[y * width + x + 1][2] += errB * 7.0 / 16.0
-            }
-            if y + 1 < height {
-                // Bottom-left: 3/16
-                if x > 0 {
-                    pixels[(y + 1) * width + x - 1][0] += errR * 3.0 / 16.0
-                    pixels[(y + 1) * width + x - 1][1] += errG * 3.0 / 16.0
-                    pixels[(y + 1) * width + x - 1][2] += errB * 3.0 / 16.0
-                }
-                // Bottom: 5/16
-                pixels[(y + 1) * width + x][0] += errR * 5.0 / 16.0
-                pixels[(y + 1) * width + x][1] += errG * 5.0 / 16.0
-                pixels[(y + 1) * width + x][2] += errB * 5.0 / 16.0
-                // Bottom-right: 1/16
-                if x + 1 < width {
-                    pixels[(y + 1) * width + x + 1][0] += errR * 1.0 / 16.0
-                    pixels[(y + 1) * width + x + 1][1] += errG * 1.0 / 16.0
-                    pixels[(y + 1) * width + x + 1][2] += errB * 1.0 / 16.0
-                }
-            }
-        } else if algorithm == "Atkinson" {
-            let factor: Float = 1.0 / 8.0
-            // Right
-            if x + 1 < width {
-                pixels[y * width + x + 1][0] += errR * factor
-                pixels[y * width + x + 1][1] += errG * factor
-                pixels[y * width + x + 1][2] += errB * factor
-            }
-            if x + 2 < width {
-                pixels[y * width + x + 2][0] += errR * factor
-                pixels[y * width + x + 2][1] += errG * factor
-                pixels[y * width + x + 2][2] += errB * factor
-            }
-            if y + 1 < height {
-                if x > 0 {
-                    pixels[(y + 1) * width + x - 1][0] += errR * factor
-                    pixels[(y + 1) * width + x - 1][1] += errG * factor
-                    pixels[(y + 1) * width + x - 1][2] += errB * factor
-                }
-                pixels[(y + 1) * width + x][0] += errR * factor
-                pixels[(y + 1) * width + x][1] += errG * factor
-                pixels[(y + 1) * width + x][2] += errB * factor
-                if x + 1 < width {
-                    pixels[(y + 1) * width + x + 1][0] += errR * factor
-                    pixels[(y + 1) * width + x + 1][1] += errG * factor
-                    pixels[(y + 1) * width + x + 1][2] += errB * factor
-                }
-            }
-            if y + 2 < height {
-                pixels[(y + 2) * width + x][0] += errR * factor
-                pixels[(y + 2) * width + x][1] += errG * factor
-                pixels[(y + 2) * width + x][2] += errB * factor
-            }
-        }
-    }
-
     private func diffuseErrorMC(_ pixels: inout [[Float]], x: Int, y: Int, width: Int, height: Int,
                                 errR: Float, errG: Float, errB: Float, algorithm: String) {
         // Same as diffuseError but for multicolor (160 wide)
-        diffuseError(&pixels, x: x, y: y, width: width, height: height,
+        CommodoreFamilyImageOps.diffuseError(&pixels, x: x, y: y, width: width, height: height,
                     errR: errR, errG: errG, errB: errB, algorithm: algorithm)
     }
 
@@ -1404,7 +1218,7 @@ class C64Converter: RetroMachine {
     private func getPixelData(from sourceImage: NSImage, width: Int, height: Int,
                                saturation: Double, gamma: Double) throws -> [[Float]] {
         // Try to get CGImage from source and draw it directly
-        guard let cgImage = getCGImage(from: sourceImage) else {
+        guard let cgImage = CommodoreFamilyImageOps.getCGImage(from: sourceImage) else {
             throw NSError(domain: "C64Converter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get CGImage from source"])
         }
 
@@ -1468,37 +1282,5 @@ class C64Converter: RetroMachine {
     }
 
     // Helper to get CGImage from NSImage
-    private func getCGImage(from image: NSImage) -> CGImage? {
-        // Try direct cgImage access first
-        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            return cgImage
-        }
 
-        // Fallback: draw to bitmap and get cgImage
-        let size = image.size
-        guard size.width > 0 && size.height > 0 else { return nil }
-
-        guard let bitmap = NSBitmapImageRep(
-            bitmapDataPlanes: nil,
-            pixelsWide: Int(size.width),
-            pixelsHigh: Int(size.height),
-            bitsPerSample: 8,
-            samplesPerPixel: 4,
-            hasAlpha: true,
-            isPlanar: false,
-            colorSpaceName: .deviceRGB,
-            bytesPerRow: Int(size.width) * 4,
-            bitsPerPixel: 32
-        ) else { return nil }
-
-        NSGraphicsContext.saveGraphicsState()
-        NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: bitmap)
-        image.draw(in: NSRect(origin: .zero, size: size),
-                   from: NSRect(origin: .zero, size: size),
-                   operation: .copy,
-                   fraction: 1.0)
-        NSGraphicsContext.restoreGraphicsState()
-
-        return bitmap.cgImage
-    }
 }

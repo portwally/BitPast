@@ -177,7 +177,7 @@ class MSXConverter: RetroMachine {
                             let errR = (r - Float(color[0])) * Float(ditherAmount)
                             let errG = (g - Float(color[1])) * Float(ditherAmount)
                             let errB = (b - Float(color[2])) * Float(ditherAmount)
-                            distributeError(&pixels, width: width, height: height, x: px, y: y, rErr: errR, gErr: errG, bErr: errB, alg: ditherAlg)
+                            AmigaFamilyImageOps.distributeError(&pixels, width: width, height: height, x: px, y: y, rErr: errR, gErr: errG, bErr: errB, alg: ditherAlg)
                         }
                     }
 
@@ -276,7 +276,7 @@ class MSXConverter: RetroMachine {
                     let errR = (r - Float(actualR)) * Float(ditherAmount)
                     let errG = (g - Float(actualG)) * Float(ditherAmount)
                     let errB = (b - Float(actualB)) * Float(ditherAmount)
-                    distributeError(&pixels, width: width, height: height, x: x, y: y, rErr: errR, gErr: errG, bErr: errB, alg: ditherAlg)
+                    AmigaFamilyImageOps.distributeError(&pixels, width: width, height: height, x: x, y: y, rErr: errR, gErr: errG, bErr: errB, alg: ditherAlg)
                 }
             }
         }
@@ -344,8 +344,8 @@ class MSXConverter: RetroMachine {
             let lumaDist = abs(luma1 - luma2) * 0.2
             return chromaDist + lumaDist
         case "Hue":
-            let (h1, s1, l1) = rgbToHsl(r1, g1, b1)
-            let (h2, s2, l2) = rgbToHsl(r2, g2, b2)
+            let (h1, s1, l1) = AmigaFamilyImageOps.rgbToHsl(r1, g1, b1)
+            let (h2, s2, l2) = AmigaFamilyImageOps.rgbToHsl(r2, g2, b2)
             var hueDiff = abs(h1 - h2)
             if hueDiff > 180 { hueDiff = 360 - hueDiff }
             let minSat = min(s1, s2)
@@ -353,57 +353,6 @@ class MSXConverter: RetroMachine {
             return (hueDiff / 180.0) * 255.0 * hueWeight + abs(s1 - s2) * 255.0 + abs(l1 - l2) * 255.0 * 0.5
         default:
             return sqrt(dr * dr + dg * dg + db * db)
-        }
-    }
-
-    private func rgbToHsl(_ r: Float, _ g: Float, _ b: Float) -> (h: Float, s: Float, l: Float) {
-        let rn = r / 255.0, gn = g / 255.0, bn = b / 255.0
-        let maxC = max(rn, gn, bn)
-        let minC = min(rn, gn, bn)
-        let l = (maxC + minC) / 2.0
-        if maxC == minC { return (0, 0, l) }
-        let d = maxC - minC
-        let s = l > 0.5 ? d / (2.0 - maxC - minC) : d / (maxC + minC)
-        var h: Float
-        if maxC == rn { h = (gn - bn) / d + (gn < bn ? 6 : 0) }
-        else if maxC == gn { h = (bn - rn) / d + 2 }
-        else { h = (rn - gn) / d + 4 }
-        h *= 60
-        return (h, s, l)
-    }
-
-    private func distributeError(_ work: inout [[Float]], width: Int, height: Int, x: Int, y: Int, rErr: Float, gErr: Float, bErr: Float, alg: String) {
-        if alg == "Floyd-Steinberg" {
-            if x < width - 1 {
-                work[y * width + x + 1][0] += rErr * 7 / 16
-                work[y * width + x + 1][1] += gErr * 7 / 16
-                work[y * width + x + 1][2] += bErr * 7 / 16
-            }
-            if y < height - 1 {
-                if x > 0 {
-                    work[(y + 1) * width + x - 1][0] += rErr * 3 / 16
-                    work[(y + 1) * width + x - 1][1] += gErr * 3 / 16
-                    work[(y + 1) * width + x - 1][2] += bErr * 3 / 16
-                }
-                work[(y + 1) * width + x][0] += rErr * 5 / 16
-                work[(y + 1) * width + x][1] += gErr * 5 / 16
-                work[(y + 1) * width + x][2] += bErr * 5 / 16
-                if x < width - 1 {
-                    work[(y + 1) * width + x + 1][0] += rErr / 16
-                    work[(y + 1) * width + x + 1][1] += gErr / 16
-                    work[(y + 1) * width + x + 1][2] += bErr / 16
-                }
-            }
-        } else if alg == "Atkinson" {
-            let d = rErr / 8, dg = gErr / 8, db = bErr / 8
-            if x < width - 1 { work[y * width + x + 1][0] += d; work[y * width + x + 1][1] += dg; work[y * width + x + 1][2] += db }
-            if x < width - 2 { work[y * width + x + 2][0] += d; work[y * width + x + 2][1] += dg; work[y * width + x + 2][2] += db }
-            if y < height - 1 {
-                if x > 0 { work[(y+1)*width+x-1][0] += d; work[(y+1)*width+x-1][1] += dg; work[(y+1)*width+x-1][2] += db }
-                work[(y+1)*width+x][0] += d; work[(y+1)*width+x][1] += dg; work[(y+1)*width+x][2] += db
-                if x < width-1 { work[(y+1)*width+x+1][0] += d; work[(y+1)*width+x+1][1] += dg; work[(y+1)*width+x+1][2] += db }
-            }
-            if y < height - 2 { work[(y+2)*width+x][0] += d; work[(y+2)*width+x][1] += dg; work[(y+2)*width+x][2] += db }
         }
     }
 
@@ -474,7 +423,7 @@ class MSXConverter: RetroMachine {
                     let rErr = (r - Float(color[0])) * Float(ditherAmount)
                     let gErr = (g - Float(color[1])) * Float(ditherAmount)
                     let bErr = (b - Float(color[2])) * Float(ditherAmount)
-                    distributeError(&work, width: width, height: height, x: x, y: y, rErr: rErr, gErr: gErr, bErr: bErr, alg: ditherAlg)
+                    AmigaFamilyImageOps.distributeError(&work, width: width, height: height, x: x, y: y, rErr: rErr, gErr: gErr, bErr: bErr, alg: ditherAlg)
                 }
             }
             rawData.append(rowData)

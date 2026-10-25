@@ -147,7 +147,7 @@ class AmstradCPCConverter: RetroMachine {
         let screenHeight = 200
 
         // Get pixel data at screen resolution
-        guard var pixels = getPixelData(from: sourceImage, width: screenWidth, height: screenHeight) else {
+        guard var pixels = AtariFamilyImageOps.getPixelData(from: sourceImage, width: screenWidth, height: screenHeight) else {
             throw NSError(domain: "AmstradCPCConverter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get pixel data"])
         }
 
@@ -158,7 +158,7 @@ class AmstradCPCConverter: RetroMachine {
 
         // Apply gamma
         if gamma != 1.0 {
-            applyGamma(&pixels, width: screenWidth, height: screenHeight, gamma: gamma)
+            AtariFamilyImageOps.applyGamma(&pixels, width: screenWidth, height: screenHeight, gamma: gamma)
         }
 
         // Apply contrast enhancement
@@ -168,7 +168,7 @@ class AmstradCPCConverter: RetroMachine {
 
         // Apply filter
         if filterMode != "None" {
-            applyFilter(&pixels, width: screenWidth, height: screenHeight, filter: filterMode)
+            AtariFamilyImageOps.applyFilter(&pixels, width: screenWidth, height: screenHeight, filter: filterMode)
         }
 
         // Apply ordered dithering before color quantization
@@ -644,32 +644,6 @@ class AmstradCPCConverter: RetroMachine {
 
     // MARK: - Image Processing Helpers
 
-    private func getPixelData(from image: NSImage, width: Int, height: Int) -> [[Float]]? {
-        guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
-
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        var pixelData = [UInt8](repeating: 0, count: width * height * 4)
-
-        guard let context = CGContext(data: &pixelData,
-                                       width: width,
-                                       height: height,
-                                       bitsPerComponent: 8,
-                                       bytesPerRow: width * 4,
-                                       space: colorSpace,
-                                       bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
-            return nil
-        }
-
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
-
-        var result = [[Float]](repeating: [0, 0, 0], count: width * height)
-        for i in 0..<(width * height) {
-            result[i] = [Float(pixelData[i * 4]), Float(pixelData[i * 4 + 1]), Float(pixelData[i * 4 + 2])]
-        }
-
-        return result
-    }
-
     private func applySaturation(_ pixels: inout [[Float]], width: Int, height: Int, factor: Double) {
         for i in 0..<pixels.count {
             let r = pixels[i][0]
@@ -680,15 +654,6 @@ class AmstradCPCConverter: RetroMachine {
             pixels[i][0] = max(0, min(255, gray + Float(factor) * (r - gray)))
             pixels[i][1] = max(0, min(255, gray + Float(factor) * (g - gray)))
             pixels[i][2] = max(0, min(255, gray + Float(factor) * (b - gray)))
-        }
-    }
-
-    private func applyGamma(_ pixels: inout [[Float]], width: Int, height: Int, gamma: Double) {
-        let invGamma = 1.0 / gamma
-        for i in 0..<pixels.count {
-            pixels[i][0] = Float(pow(Double(pixels[i][0]) / 255.0, invGamma) * 255.0)
-            pixels[i][1] = Float(pow(Double(pixels[i][1]) / 255.0, invGamma) * 255.0)
-            pixels[i][2] = Float(pow(Double(pixels[i][2]) / 255.0, invGamma) * 255.0)
         }
     }
 
@@ -795,121 +760,6 @@ class AmstradCPCConverter: RetroMachine {
                 result[y * width + x][0] = max(0, min(255, pixels[y * width + x][0] * ratio))
                 result[y * width + x][1] = max(0, min(255, pixels[y * width + x][1] * ratio))
                 result[y * width + x][2] = max(0, min(255, pixels[y * width + x][2] * ratio))
-            }
-        }
-
-        pixels = result
-    }
-
-    private func applyFilter(_ pixels: inout [[Float]], width: Int, height: Int, filter: String) {
-        let lowpassKernel: [[Float]] = [
-            [1.0/9.0, 1.0/9.0, 1.0/9.0],
-            [1.0/9.0, 1.0/9.0, 1.0/9.0],
-            [1.0/9.0, 1.0/9.0, 1.0/9.0]
-        ]
-        let sharpenKernel: [[Float]] = [
-            [0.0, -1.0, 0.0],
-            [-1.0, 5.0, -1.0],
-            [0.0, -1.0, 0.0]
-        ]
-        let embossKernel: [[Float]] = [
-            [-2.0, -1.0, 0.0],
-            [-1.0, 1.0, 1.0],
-            [0.0, 1.0, 2.0]
-        ]
-
-        switch filter {
-        case "Lowpass":
-            applyConvolution(&pixels, width: width, height: height, kernel: lowpassKernel)
-        case "Sharpen":
-            applyConvolution(&pixels, width: width, height: height, kernel: sharpenKernel)
-        case "Emboss":
-            applyConvolution(&pixels, width: width, height: height, kernel: embossKernel)
-        case "Edge":
-            applyEdgeFilter(&pixels, width: width, height: height)
-        default:
-            break
-        }
-    }
-
-    private func applyConvolution(_ pixels: inout [[Float]], width: Int, height: Int, kernel: [[Float]]) {
-        let kSize = kernel.count
-        let kHalf = kSize / 2
-        var result = pixels
-
-        for y in kHalf..<(height - kHalf) {
-            for x in kHalf..<(width - kHalf) {
-                var sumR: Float = 0
-                var sumG: Float = 0
-                var sumB: Float = 0
-
-                for ky in 0..<kSize {
-                    for kx in 0..<kSize {
-                        let px = x + kx - kHalf
-                        let py = y + ky - kHalf
-                        let idx = py * width + px
-                        let weight = kernel[ky][kx]
-
-                        sumR += pixels[idx][0] * weight
-                        sumG += pixels[idx][1] * weight
-                        sumB += pixels[idx][2] * weight
-                    }
-                }
-
-                let idx = y * width + x
-                result[idx][0] = max(0, min(255, sumR))
-                result[idx][1] = max(0, min(255, sumG))
-                result[idx][2] = max(0, min(255, sumB))
-            }
-        }
-
-        pixels = result
-    }
-
-    private func applyEdgeFilter(_ pixels: inout [[Float]], width: Int, height: Int) {
-        let sobelX: [[Float]] = [
-            [-1, 0, 1],
-            [-2, 0, 2],
-            [-1, 0, 1]
-        ]
-        let sobelY: [[Float]] = [
-            [-1, -2, -1],
-            [0, 0, 0],
-            [1, 2, 1]
-        ]
-
-        var result = pixels
-
-        for y in 1..<(height - 1) {
-            for x in 1..<(width - 1) {
-                var gxR: Float = 0, gxG: Float = 0, gxB: Float = 0
-                var gyR: Float = 0, gyG: Float = 0, gyB: Float = 0
-
-                for ky in 0..<3 {
-                    for kx in 0..<3 {
-                        let px = x + kx - 1
-                        let py = y + ky - 1
-                        let idx = py * width + px
-
-                        gxR += pixels[idx][0] * sobelX[ky][kx]
-                        gxG += pixels[idx][1] * sobelX[ky][kx]
-                        gxB += pixels[idx][2] * sobelX[ky][kx]
-
-                        gyR += pixels[idx][0] * sobelY[ky][kx]
-                        gyG += pixels[idx][1] * sobelY[ky][kx]
-                        gyB += pixels[idx][2] * sobelY[ky][kx]
-                    }
-                }
-
-                let edgeR = sqrt(gxR * gxR + gyR * gyR)
-                let edgeG = sqrt(gxG * gxG + gyG * gyG)
-                let edgeB = sqrt(gxB * gxB + gyB * gyB)
-
-                let idx = y * width + x
-                // Blend edge with original (50/50)
-                result[idx][0] = max(0, min(255, (pixels[idx][0] + edgeR) * 0.5))
-                result[idx][1] = max(0, min(255, (pixels[idx][1] + edgeG) * 0.5))
-                result[idx][2] = max(0, min(255, (pixels[idx][2] + edgeB) * 0.5))
             }
         }
 
