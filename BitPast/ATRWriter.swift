@@ -11,6 +11,7 @@ class ATRWriter {
 
     private let sectorSize = 128  // Standard density (can be 256 for double density)
     private let atrHeaderSize = 16
+    private let vtocBitmapSectors = 720  // DOS 2 VTOC tracks sectors 0-719
 
     // Disk sizes
     private let sectors90KB = 720    // 90KB: 720 sectors
@@ -167,40 +168,22 @@ class ATRWriter {
         // DOS code type: 0x02 for DOS 2.0S (720 sectors), DOS 2.5 uses same for ED disks
         data[vtocOffset] = 0x02
 
-        // Total sectors (for DOS 2.0S compatibility, report up to 720 in main VTOC)
-        // Enhanced density (1040 sectors) is tracked separately in extended VTOC
-        let reportedSectors = min(sectorCount, 720)
-        data[vtocOffset + 1] = UInt8(reportedSectors & 0xFF)
-        data[vtocOffset + 2] = UInt8((reportedSectors >> 8) & 0xFF)
+        // VTOC bitmap: one bit per sector for sectors 0-719, starting at byte 10.
+        // Bit 7 of byte 10 is sector 0, bit 6 is sector 1, ...; a set bit means free.
+        // Sector 0 does not exist; sectors 1-3 (boot), 360 (VTOC) and 361-368
+        // (directory) are reserved.
+        var freeSectors = 0
+        for sector in 1..<min(sectorCount, vtocBitmapSectors) {
+            if sector <= 3 || (360...368).contains(sector) { continue }
+            data[vtocOffset + 10 + sector / 8] |= UInt8(0x80 >> (sector % 8))
+            freeSectors += 1
+        }
 
-        // Free sectors (minus boot, VTOC, directory)
-        // Reserved: sectors 1-3 (boot), 360 (VTOC), 361-368 (directory) = 12 sectors
-        let reservedSectors = 12
-        let freeSectors = sectorCount - reservedSectors
+        // Total usable and free sectors (707 on a standard 90 KB disk)
+        data[vtocOffset + 1] = UInt8(freeSectors & 0xFF)
+        data[vtocOffset + 2] = UInt8((freeSectors >> 8) & 0xFF)
         data[vtocOffset + 3] = UInt8(freeSectors & 0xFF)
         data[vtocOffset + 4] = UInt8((freeSectors >> 8) & 0xFF)
-
-        // VTOC bitmap - bytes to cover all sectors (1 bit per sector)
-        // 90 bytes covers 720 sectors, 130 bytes covers 1040 sectors
-        let bitmapBytes = (sectorCount + 7) / 8
-        let safeBitmapBytes = min(bitmapBytes, 118)  // Leave room in 128-byte sector
-
-        // Initialize bitmap: all sectors free (1 = free)
-        for i in 0..<safeBitmapBytes {
-            data[vtocOffset + 10 + i] = 0xFF
-        }
-
-        // Mark boot sectors (1-3) as used
-        data[vtocOffset + 10] = 0xF8  // Sectors 1-3 used (bits 0-2 clear)
-
-        // Mark VTOC and directory sectors (360-368) as used
-        for sector in 360...368 {
-            let byteIndex = sector / 8
-            let bitIndex = sector % 8
-            if byteIndex < safeBitmapBytes {
-                data[vtocOffset + 10 + byteIndex] &= ~UInt8(1 << bitIndex)
-            }
-        }
 
         // Initialize all 8 directory sectors (361-368)
         for dirSectorNum in 361...368 {
@@ -248,20 +231,17 @@ class ATRWriter {
 
     private func markSectorUsed(in data: inout Data, sector: Int, bytesPerSector: Int) {
         let vtocOffset = sectorOffset(sector: 360, bytesPerSector: bytesPerSector)
-        let byteIndex = sector / 8
-        let bitIndex = sector % 8
+        guard sector < vtocBitmapSectors else { return }
+        let byteOffset = vtocOffset + 10 + sector / 8
+        let mask = UInt8(0x80 >> (sector % 8))  // bit 7 = lowest sector in the byte
+        guard data[byteOffset] & mask != 0 else { return }  // already used
+        data[byteOffset] &= ~mask
 
-        // Support up to 1040 sectors (130KB enhanced density)
-        // 118 bytes for bitmap leaves room in 128-byte sector
-        if byteIndex < 118 {
-            data[vtocOffset + 10 + byteIndex] &= ~UInt8(1 << bitIndex)
-
-            // Decrement free sector count
-            let freeCount = Int(data[vtocOffset + 3]) | (Int(data[vtocOffset + 4]) << 8)
-            let newCount = max(0, freeCount - 1)
-            data[vtocOffset + 3] = UInt8(newCount & 0xFF)
-            data[vtocOffset + 4] = UInt8((newCount >> 8) & 0xFF)
-        }
+        // Decrement free sector count
+        let freeCount = Int(data[vtocOffset + 3]) | (Int(data[vtocOffset + 4]) << 8)
+        let newCount = max(0, freeCount - 1)
+        data[vtocOffset + 3] = UInt8(newCount & 0xFF)
+        data[vtocOffset + 4] = UInt8((newCount >> 8) & 0xFF)
     }
 
     // MARK: - Helpers
