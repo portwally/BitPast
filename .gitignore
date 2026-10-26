@@ -22,3 +22,6 @@ xcshareddata/
 # Apple II Tooling (Falls b2d temporäre Dateien erzeugt)
 *.tmp
 *.temp
+
+# App Store screenshots (kept locally)
+AppStoreAssets/
