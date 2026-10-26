@@ -300,7 +300,7 @@ nonisolated class AppleIIConverter: RetroMachine {
         
         if let outputUrl = previewFile, let img = NSImage(contentsOf: outputUrl) {
             try? fileManager.removeItem(at: inputUrl)
-            return ConversionResult(previewImage: img, fileAssets: assets)
+            return ConversionResult(previewImage: img, fileAssets: assets, imageWidth: targetW, imageHeight: targetH)
         }
         
         throw NSError(domain: "BitPast", code: 500, userInfo: [NSLocalizedDescriptionKey: "Conversion failed. No preview. Exit code: \(exitCode)"])
