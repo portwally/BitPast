@@ -124,53 +124,7 @@ extension ContentView {
 
     // MARK: - Image Flip Functions
 
-    func flipImageHorizontally() {
-        guard let currentImage = viewModel.convertedImage else { return }
-        let flipped = flipImage(currentImage, horizontal: true)
-        updatePreviewWithFlippedImage(flipped)
-    }
-
-    func flipImageVertically() {
-        guard let currentImage = viewModel.convertedImage else { return }
-        let flipped = flipImage(currentImage, horizontal: false)
-        updatePreviewWithFlippedImage(flipped)
-    }
-
-    func flipImage(_ image: NSImage, horizontal: Bool) -> NSImage {
-        let size = image.size
-        let flippedImage = NSImage(size: size)
-
-        flippedImage.lockFocus()
-
-        let transform = NSAffineTransform()
-        if horizontal {
-            transform.translateX(by: size.width, yBy: 0)
-            transform.scaleX(by: -1, yBy: 1)
-        } else {
-            transform.translateX(by: 0, yBy: size.height)
-            transform.scaleX(by: 1, yBy: -1)
-        }
-        transform.concat()
-
-        image.draw(at: .zero, from: NSRect(origin: .zero, size: size), operation: .copy, fraction: 1.0)
-
-        flippedImage.unlockFocus()
-
-        return flippedImage
-    }
-
-    func updatePreviewWithFlippedImage(_ flipped: NSImage) {
-        guard let result = viewModel.currentResult else { return }
-
-        viewModel.currentResult = ConversionResult(
-            previewImage: flipped,
-            fileAssets: result.fileAssets,
-            palettes: result.palettes,
-            pixelIndices: result.pixelIndices,
-            imageWidth: result.imageWidth,
-            imageHeight: result.imageHeight,
-            paletteLines: result.paletteLines,
-            editedPalettes: result.editedPalettes
-        )
-    }
+    // Flips mirror the picture before converting, so saved files and disks are flipped too
+    func flipImageHorizontally() { viewModel.toggleFlip(horizontal: true) }
+    func flipImageVertically() { viewModel.toggleFlip(horizontal: false) }
 }

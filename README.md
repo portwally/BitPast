@@ -37,9 +37,10 @@ Powered by `b2d`, supporting the full range of classic graphics modes:
 #### 🌈 Apple IIgs (16-Bit)
 Powered by a **native Swift engine** featuring advanced color quantization:
 - **3200 Mode (Brooks Format):** Up to 3200 unique colors using per-scanline palettes.
-- **256 Colors (16 Palettes):** Standard SHR format with intelligent palette grouping.
+- **256 Colors (16 Palettes):** Standard SHR format with 16 palettes. **SCB Mode** chooses which palette each line uses: Banded (16 even bands), Palette Reuse, or Per-Line, where any line can use any palette, so similar lines share one even when they're far apart.
 - **320x200 (16 Colors):** Classic Super Hi-Res with single palette.
 - **640x200 Modes:** 4-color, Enhanced, and Desktop variants.
+- **Palette Editor:** Edit every palette line by line. Changes are saved in the `.SHR` / `.3200` file and used for batch export and disk images.
 - **Output:** `.SHR` and `.3200` files.
 
 #### 📺 BBC Micro
@@ -145,6 +146,10 @@ MC6847 VDG and GIME chip graphics:
 - **Output:** `.bin` (CoCo 1/2 raw), `.cm3` (CoCo 3 format).
 
 ### 🎛️ Fine-Tuning Control
+
+**Picture Framing (all systems):**
+- **Fit:** Stretch (fill the screen, the default), Contain (whole picture with black bars), Cover (fill the screen and crop), or None (no scaling).
+- **Aspect:** Correct takes each machine's non-square pixels into account, so circles stay round; Ignore treats pixels as square.
 
 **Processing Options:**
 - **Dithering Algorithms:** None, Floyd-Steinberg, Atkinson, Noise, Bayer (2×2 to 16×16), Blue Noise.

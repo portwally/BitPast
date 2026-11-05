@@ -41,6 +41,15 @@ struct InputImage: Identifiable, Hashable {
         lockedSettings != nil
     }
 
+    // Mirroring applied before converting, so previews, saved files and disks all match
+    var flipHorizontal = false
+    var flipVertical = false
+
+    /// The picture to convert: the original, mirrored when flipped.
+    var imageToConvert: NSImage {
+        flipHorizontal || flipVertical ? image.flipped(horizontal: flipHorizontal, vertical: flipVertical) : image
+    }
+
     func hash(into hasher: inout Hasher) { hasher.combine(id) }
     static func == (lhs: InputImage, rhs: InputImage) -> Bool { lhs.id == rhs.id }
 
@@ -101,8 +110,18 @@ class ConverterViewModel: ObservableObject {
 
     var convertedImage: NSImage? { currentResult?.previewImage }
     var currentOriginalImage: NSImage? {
-        guard let id = selectedImageId, let item = inputImages.first(where: { $0.id == id }) else { return nil }
-        return item.image
+        selectedImage?.imageToConvert
+    }
+    var selectedImage: InputImage? {
+        guard let id = selectedImageId else { return nil }
+        return inputImages.first { $0.id == id }
+    }
+
+    /// Mirrors the selected picture and converts it again.
+    func toggleFlip(horizontal: Bool) {
+        guard let id = selectedImageId, let index = inputImages.firstIndex(where: { $0.id == id }) else { return }
+        if horizontal { inputImages[index].flipHorizontal.toggle() } else { inputImages[index].flipVertical.toggle() }
+        convertImmediately()
     }
     var currentMachine: RetroMachine {
         get { machines[selectedMachineIndex] }
@@ -603,7 +622,7 @@ class ConverterViewModel: ObservableObject {
            item.id == paletteEditsImageId, selectedMachineIndex == paletteEditsMachineIndex {
             return current
         }
-        return try await convert(item.image, with: currentMachine, settings: settings)
+        return try await convert(item.imageToConvert, with: currentMachine, settings: settings)
     }
 
     // MARK: - Conversion

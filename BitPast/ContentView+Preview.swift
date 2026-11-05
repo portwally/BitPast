@@ -34,7 +34,8 @@ extension ContentView {
                         isRetro: isRetro,
                         isAppleII: isAppleII,
                         isC64: isC64,
-                        disabled: viewModel.convertedImage == nil
+                        disabled: viewModel.convertedImage == nil,
+                        isActive: viewModel.selectedImage?.flipHorizontal == true
                     ) {
                         flipImageHorizontally()
                     }
@@ -46,7 +47,8 @@ extension ContentView {
                         isRetro: isRetro,
                         isAppleII: isAppleII,
                         isC64: isC64,
-                        disabled: viewModel.convertedImage == nil
+                        disabled: viewModel.convertedImage == nil,
+                        isActive: viewModel.selectedImage?.flipVertical == true
                     ) {
                         flipImageVertically()
                     }

@@ -123,6 +123,19 @@ nonisolated extension RetroMachine {
 
 // Hilfserweiterung für Scaling
 nonisolated extension NSImage {
+    /// A mirrored copy, pixel for pixel, keeping the size in points.
+    func flipped(horizontal: Bool, vertical: Bool) -> NSImage {
+        guard let cg = cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let ctx = CGContext(data: nil, width: cg.width, height: cg.height, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return self }
+        ctx.translateBy(x: horizontal ? CGFloat(cg.width) : 0, y: vertical ? CGFloat(cg.height) : 0)
+        ctx.scaleBy(x: horizontal ? -1 : 1, y: vertical ? -1 : 1)
+        ctx.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.height))
+        guard let mirrored = ctx.makeImage() else { return self }
+        return NSImage(cgImage: mirrored, size: size)
+    }
+
     func fitToStandardSize(targetWidth: Int, targetHeight: Int, framing: ImageFraming = .stretch) -> NSImage {
         let newSize = NSSize(width: targetWidth, height: targetHeight)
         let img = NSImage(size: newSize)
