@@ -17,6 +17,8 @@ struct ContentView: View {
 
     // Image Tools State
     @State var showHistogram = false
+    // How far the preview is being dragged to move the picture (see Fit)
+    @State var pictureDrag: CGSize = .zero
 
     let columns = [GridItem(.adaptive(minimum: 110), spacing: 10)]
 

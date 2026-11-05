@@ -134,15 +134,36 @@ extension ContentView {
                             geometry.size.height / displayHeight
                         )
                         let effectiveZoom = zoomLevel == 1.0 ? fitScale : zoomLevel
+                        let displayedSize = CGSize(width: img.size.width * effectiveZoom, height: displayHeight * effectiveZoom)
+                        let canMove = viewModel.canMovePicture
 
                         ScrollView([.horizontal, .vertical], showsIndicators: true) {
                             Image(nsImage: img)
                                 .resizable()
                                 .interpolation(.none)
-                                .frame(
-                                    width: img.size.width * effectiveZoom,
-                                    height: displayHeight * effectiveZoom
+                                .frame(width: displayedSize.width, height: displayedSize.height)
+                                // With Fit other than Stretch, drag to choose which part shows;
+                                // the picture follows the mouse and converts again on release
+                                .offset(pictureDrag)
+                                .clipped()
+                                .contentShape(Rectangle())
+                                .gesture(
+                                    DragGesture(minimumDistance: 2)
+                                        .onChanged { pictureDrag = $0.translation }
+                                        .onEnded { drag in
+                                            let moved = viewModel.movePicture(byDrag: CGSize(
+                                                width: drag.translation.width / max(1, displayedSize.width),
+                                                height: drag.translation.height / max(1, displayedSize.height)))
+                                            // Otherwise the offset is dropped when the new picture arrives
+                                            if !moved { pictureDrag = .zero }
+                                        },
+                                    including: canMove ? .all : .subviews
                                 )
+                                .onTapGesture(count: 2) { if canMove { viewModel.centerPicture() } }
+                                .onHover { inside in
+                                    if inside && canMove { NSCursor.openHand.set() } else { NSCursor.arrow.set() }
+                                }
+                                .help(canMove ? "Drag to choose which part of the picture shows. Double-click to center." : "")
                                 .shadow(color: .black.opacity(0.3), radius: 10)
                                 .frame(
                                     minWidth: geometry.size.width,
@@ -196,6 +217,8 @@ extension ContentView {
                     }
                 }
             }.frame(maxWidth: .infinity, maxHeight: .infinity)
+            // The moved picture arrived (or the conversion failed): drop the drag offset
+            .onChange(of: viewModel.isConverting) { _, converting in if !converting { pictureDrag = .zero } }
         }.frame(minWidth: 350)
     }
 

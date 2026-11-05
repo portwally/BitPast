@@ -1753,7 +1753,8 @@ struct GeneralOptionsHelpContent: View {
                     "Stretch: Fills the screen and ignores the picture's shape (default)",
                     "Contain: Shows the whole picture, with black bars where it doesn't fill the screen",
                     "Cover: Fills the screen and crops what sticks out",
-                    "None: No scaling; one picture pixel per screen line, centered and cropped"
+                    "None: No scaling; one picture pixel per screen line, centered and cropped",
+                    "With Contain, Cover or None, drag the preview to choose which part of the picture shows; double-click it to center again. Each picture keeps its own position"
                 ]
             )
 

@@ -44,6 +44,8 @@ struct InputImage: Identifiable, Hashable {
     // Mirroring applied before converting, so previews, saved files and disks all match
     var flipHorizontal = false
     var flipVertical = false
+    /// Which part shows when Fit crops or doesn't fill the screen; set by dragging the preview
+    var fitOffset: CGPoint = .zero
 
     /// The picture to convert: the original, mirrored when flipped.
     var imageToConvert: NSImage {
@@ -115,6 +117,40 @@ class ConverterViewModel: ObservableObject {
     var selectedImage: InputImage? {
         guard let id = selectedImageId else { return nil }
         return inputImages.first { $0.id == id }
+    }
+
+    /// The settings the selected picture converts with: its locked ones, or the machine's.
+    var effectiveSettings: [ConversionOption] {
+        if let image = selectedImage, let locked = image.lockedSettings, image.lockedMachineIndex == selectedMachineIndex {
+            return locked
+        }
+        return currentMachine.options
+    }
+
+    /// Whether the preview can be dragged to choose which part of the picture shows.
+    var canMovePicture: Bool {
+        ImageFraming(effectiveSettings).fit != .stretch && currentResult?.framedScale != nil
+    }
+
+    /// Moves the selected picture after dragging the preview by `fraction` of its displayed size.
+    /// Returns whether it moved (and is being converted again).
+    @discardableResult
+    func movePicture(byDrag fraction: CGSize) -> Bool {
+        guard let scale = currentResult?.framedScale, let id = selectedImageId,
+              let index = inputImages.firstIndex(where: { $0.id == id }) else { return false }
+        let moved = ImageFraming.offset(inputImages[index].fitOffset, afterDrag: fraction, scale: scale)
+        guard moved != inputImages[index].fitOffset else { return false }
+        inputImages[index].fitOffset = moved
+        convertImmediately()
+        return true
+    }
+
+    /// Centers the selected picture again.
+    func centerPicture() {
+        guard let id = selectedImageId, let index = inputImages.firstIndex(where: { $0.id == id }),
+              inputImages[index].fitOffset != .zero else { return }
+        inputImages[index].fitOffset = .zero
+        convertImmediately()
     }
 
     /// Mirrors the selected picture and converts it again.
@@ -603,12 +639,20 @@ class ConverterViewModel: ObservableObject {
     @concurrent
     nonisolated static func convertInBackground(_ machine: RetroMachine, image: NSImage,
                                                 settings: [ConversionOption]) async throws -> ConversionResult {
-        try await machine.convert(sourceImage: image, withSettings: settings)
+        let report = FramingReport()
+        var result = try await FramingReport.$current.withValue(report) {
+            try await machine.convert(sourceImage: image, withSettings: settings)
+        }
+        result.framedScale = report.scale
+        return result
     }
 
-    /// Converts with the image's locked settings, or a snapshot of the machine's current ones.
-    func convert(_ image: NSImage, with machine: RetroMachine, settings: [ConversionOption]?) async throws -> ConversionResult {
-        try await Self.convertInBackground(machine, image: image, settings: settings ?? machine.options)
+    /// Converts with the image's locked settings, or a snapshot of the machine's current ones,
+    /// placing the picture at `fitOffset` (see `ImageFraming.offset`).
+    func convert(_ image: NSImage, with machine: RetroMachine, settings: [ConversionOption]?,
+                 fitOffset: CGPoint = .zero) async throws -> ConversionResult {
+        let snapshot = ImageFraming.settings(settings ?? machine.options, offset: fitOffset)
+        return try await Self.convertInBackground(machine, image: image, settings: snapshot)
     }
 
     /// The image and machine the current result's palettes were edited for (see `editedPalettes`).
@@ -622,7 +666,7 @@ class ConverterViewModel: ObservableObject {
            item.id == paletteEditsImageId, selectedMachineIndex == paletteEditsMachineIndex {
             return current
         }
-        return try await convert(item.imageToConvert, with: currentMachine, settings: settings)
+        return try await convert(item.imageToConvert, with: currentMachine, settings: settings, fitOffset: item.fitOffset)
     }
 
     // MARK: - Conversion
@@ -675,7 +719,8 @@ class ConverterViewModel: ObservableObject {
         }
 
         do {
-            let result = try await convert(input, with: machine, settings: settingsToUse)
+            let result = try await convert(input, with: machine, settings: settingsToUse,
+                                           fitOffset: selectedImage?.fitOffset ?? .zero)
             if !Task.isCancelled && gen == conversionGeneration {
                 self.currentResult = result
             }

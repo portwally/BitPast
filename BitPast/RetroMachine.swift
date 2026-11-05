@@ -19,6 +19,8 @@ nonisolated struct ConversionResult {
     var paletteLines: [Int]
     /// The palettes were changed in the palette editor after converting
     var editedPalettes: Bool
+    /// How large the picture was drawn relative to the screen (Fit other than Stretch)
+    var framedScale: CGSize? = nil
 
     init(previewImage: NSImage, fileAssets: [URL], palettes: [[PaletteRGB]] = [], pixelIndices: [Int] = [], imageWidth: Int = 0, imageHeight: Int = 0,
          paletteLines: [Int] = [], editedPalettes: Bool = false) {

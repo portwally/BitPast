@@ -16,6 +16,9 @@ nonisolated struct ImageFraming: Equatable {
     var fit: Fit = .stretch
     /// Treat the target's pixels as they look on a real screen (true) or as square (false).
     var correctAspect = true
+    /// Which part of the picture shows when it doesn't fit exactly, per axis from -1 to 1:
+    /// x -1 shows the left edge, 1 the right edge; y -1 shows the top, 1 the bottom; 0 centers.
+    var offset: CGPoint = .zero
 
     static let stretch = ImageFraming()
 
@@ -25,6 +28,8 @@ nonisolated struct ImageFraming: Equatable {
 
     static let fitKey = "fit"
     static let aspectKey = "aspect"
+    /// Set per picture by dragging the preview; not shown as a control.
+    static let offsetKey = "fit_offset"
 
     /// The Fit and Aspect controls every converter shows.
     static var options: [ConversionOption] {
@@ -36,9 +41,10 @@ nonisolated struct ImageFraming: Equatable {
         ]
     }
 
-    init(fit: Fit = .stretch, correctAspect: Bool = true) {
+    init(fit: Fit = .stretch, correctAspect: Bool = true, offset: CGPoint = .zero) {
         self.fit = fit
         self.correctAspect = correctAspect
+        self.offset = offset
     }
 
     /// Reads Fit and Aspect from a converter's settings. Settings without them (for example
@@ -46,7 +52,34 @@ nonisolated struct ImageFraming: Equatable {
     init(_ settings: [ConversionOption]) {
         fit = settings.first { $0.key == Self.fitKey }.flatMap { Fit(rawValue: $0.selectedValue) } ?? .stretch
         correctAspect = settings.first { $0.key == Self.aspectKey }?.selectedValue != "Ignore"
+        if let value = settings.first(where: { $0.key == Self.offsetKey })?.selectedValue {
+            let parts = value.split(separator: ",").compactMap { Double($0) }
+            if parts.count == 2 { offset = CGPoint(x: Self.clamp(parts[0]), y: Self.clamp(parts[1])) }
+        }
     }
+
+    /// `settings` with a picture's position added, replacing any earlier one.
+    static func settings(_ settings: [ConversionOption], offset: CGPoint) -> [ConversionOption] {
+        var result = settings.filter { $0.key != offsetKey }
+        if offset != .zero {
+            let value = "\(offset.x),\(offset.y)"
+            result.append(ConversionOption(label: "Position", key: offsetKey, values: [value], selectedValue: value))
+        }
+        return result
+    }
+
+    /// The position after dragging the preview by `fraction` of its displayed size (positive is
+    /// right and down). `scale` is the picture's drawn size relative to the screen, as reported by
+    /// the conversion; the picture then follows the mouse. Axes where the picture fits exactly
+    /// can't move.
+    static func offset(_ current: CGPoint, afterDrag fraction: CGSize, scale: CGSize) -> CGPoint {
+        func move(_ value: CGFloat, _ drag: CGFloat, _ k: CGFloat) -> CGFloat {
+            abs(1 - k) < 0.001 ? value : clamp(value + 2 * drag / (1 - k))
+        }
+        return CGPoint(x: move(current.x, fraction.width, scale.width), y: move(current.y, fraction.height, scale.height))
+    }
+
+    static func clamp(_ value: CGFloat) -> CGFloat { min(1, max(-1, value)) }
 
     /// Where a `sourceWidth`×`sourceHeight` picture goes in a `width`×`height` target.
     /// The rect may extend past the target (Cover, None); drawing clips it.
@@ -75,7 +108,10 @@ nonisolated struct ImageFraming: Equatable {
         case .none:
             size = CGSize(width: CGFloat(sourceWidth) / pixelAspect, height: CGFloat(sourceHeight))
         }
-        return CGRect(x: (w - size.width) / 2, y: (h - size.height) / 2, width: size.width, height: size.height)
+        FramingReport.current?.record(CGSize(width: size.width / w, height: size.height / h))
+        // Drawing origin is bottom-left, so y -1 (top) puts the picture's top at the screen's top
+        return CGRect(x: (w - size.width) / 2 * (1 + offset.x), y: (h - size.height) / 2 * (1 - offset.y),
+                      width: size.width, height: size.height)
     }
 
     /// Draws `image` into a `width`×`height` context. Stretch is the plain draw converters
@@ -90,5 +126,24 @@ nonisolated struct ImageFraming: Equatable {
         context.fill(full)
         context.draw(image, in: destination(sourceWidth: image.width, sourceHeight: image.height,
                                             width: width, height: height))
+    }
+}
+
+/// Collects how large a conversion drew its picture relative to the screen, so dragging the
+/// preview can move the picture exactly with the mouse. Set for a conversion with `$current`.
+nonisolated final class FramingReport: @unchecked Sendable {
+    @TaskLocal static var current: FramingReport?
+
+    private let lock = NSLock()
+    private var recorded: CGSize?
+
+    func record(_ scale: CGSize) {
+        lock.lock(); defer { lock.unlock() }
+        recorded = scale
+    }
+
+    var scale: CGSize? {
+        lock.lock(); defer { lock.unlock() }
+        return recorded
     }
 }
