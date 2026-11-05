@@ -1,0 +1,812 @@
+[
+  {
+    "assets" : [
+      {
+        "bytes" : 16384,
+        "ext" : "A2FC",
+        "name" : "BP_1F47FC51.A2FC"
+      }
+    ],
+    "file" : "m-AppleII-0",
+    "h" : 192,
+    "index" : 0,
+    "machine" : "AppleII",
+    "mode" : "DHGR",
+    "w" : 280
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 8192,
+        "ext" : "BIN",
+        "name" : "BP_2C67A87FC.BIN"
+      }
+    ],
+    "file" : "m-AppleII-1",
+    "h" : 192,
+    "index" : 1,
+    "machine" : "AppleII",
+    "mode" : "HGR",
+    "w" : 280
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 962,
+        "ext" : "SLO",
+        "name" : "BP_7EAC1A3C.SLO"
+      }
+    ],
+    "file" : "m-AppleII-2",
+    "h" : 48,
+    "index" : 2,
+    "machine" : "AppleII",
+    "mode" : "LGR",
+    "w" : 80
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 1922,
+        "ext" : "DLO",
+        "name" : "BP_DFD1464E.DLO"
+      }
+    ],
+    "file" : "m-AppleII-3",
+    "h" : 48,
+    "index" : 3,
+    "machine" : "AppleII",
+    "mode" : "DLGR",
+    "w" : 80
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 16384,
+        "ext" : "A2FM",
+        "name" : "BP_1EBC038E.A2FM"
+      }
+    ],
+    "file" : "m-AppleII-4",
+    "h" : 384,
+    "index" : 4,
+    "machine" : "AppleII",
+    "mode" : "Mono",
+    "w" : 560
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 8192,
+        "ext" : "BIN",
+        "name" : "BP_0168A55EM.BIN"
+      }
+    ],
+    "file" : "m-AppleII-5",
+    "h" : 192,
+    "index" : 5,
+    "machine" : "AppleII",
+    "mode" : "Mono (280×192)",
+    "w" : 280
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 38400,
+        "ext" : "3200",
+        "name" : "iigs_F8180B62.3200"
+      }
+    ],
+    "file" : "m-AppleIIGS-0",
+    "h" : 200,
+    "index" : 0,
+    "machine" : "AppleIIGS",
+    "mode" : "3200 Colors (Brooks)",
+    "w" : 320
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32768,
+        "ext" : "shr",
+        "name" : "iigs_2824E301.shr"
+      }
+    ],
+    "file" : "m-AppleIIGS-1",
+    "h" : 200,
+    "index" : 1,
+    "machine" : "AppleIIGS",
+    "mode" : "256 Colors (16 Palettes)",
+    "w" : 320
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32768,
+        "ext" : "shr",
+        "name" : "iigs_8B21717A.shr"
+      }
+    ],
+    "file" : "m-AppleIIGS-2",
+    "h" : 200,
+    "index" : 2,
+    "machine" : "AppleIIGS",
+    "mode" : "320x200 (16 Colors)",
+    "w" : 320
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32768,
+        "ext" : "shr",
+        "name" : "iigs_660525A0.shr"
+      }
+    ],
+    "file" : "m-AppleIIGS-3",
+    "h" : 200,
+    "index" : 3,
+    "machine" : "AppleIIGS",
+    "mode" : "640x200 (4 Colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32768,
+        "ext" : "shr",
+        "name" : "iigs_B2EE0570.shr"
+      }
+    ],
+    "file" : "m-AppleIIGS-4",
+    "h" : 200,
+    "index" : 4,
+    "machine" : "AppleIIGS",
+    "mode" : "640x200 Enhanced (16 Colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32768,
+        "ext" : "shr",
+        "name" : "iigs_9CA59ACC.shr"
+      }
+    ],
+    "file" : "m-AppleIIGS-5",
+    "h" : 200,
+    "index" : 5,
+    "machine" : "AppleIIGS",
+    "mode" : "640x200 Desktop (16 Colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 51364,
+        "ext" : "iff",
+        "name" : "amiga500_15492C1C.iff"
+      }
+    ],
+    "file" : "m-Amiga500-0",
+    "h" : 512,
+    "index" : 0,
+    "machine" : "Amiga500",
+    "mode" : "Standard (32 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 61556,
+        "ext" : "iff",
+        "name" : "amiga500_400F1BA4.iff"
+      }
+    ],
+    "file" : "m-Amiga500-1",
+    "h" : 512,
+    "index" : 1,
+    "machine" : "Amiga500",
+    "mode" : "HAM6 (4096 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 82756,
+        "ext" : "iff",
+        "name" : "amiga1200_A4395D21.iff"
+      }
+    ],
+    "file" : "m-Amiga1200-0",
+    "h" : 512,
+    "index" : 0,
+    "machine" : "Amiga1200",
+    "mode" : "Standard (256 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 82180,
+        "ext" : "iff",
+        "name" : "amiga1200_2E5B59BF.iff"
+      }
+    ],
+    "file" : "m-Amiga1200-1",
+    "h" : 512,
+    "index" : 1,
+    "machine" : "Amiga1200",
+    "mode" : "HAM8 (262144 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 16512,
+        "ext" : "scr",
+        "name" : "cpc_FAF7057F.scr"
+      }
+    ],
+    "file" : "m-AmstradCPC-0",
+    "h" : 200,
+    "index" : 0,
+    "machine" : "AmstradCPC",
+    "mode" : "Mode 1 (320×200, 4 colors)",
+    "w" : 320
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 16512,
+        "ext" : "scr",
+        "name" : "cpc_43DDB7F5.scr"
+      }
+    ],
+    "file" : "m-AmstradCPC-1",
+    "h" : 200,
+    "index" : 1,
+    "machine" : "AmstradCPC",
+    "mode" : "Mode 0 (160×200, 16 colors)",
+    "w" : 320
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 7682,
+        "ext" : "gr8",
+        "name" : "atari800_4BDD1373.gr8"
+      }
+    ],
+    "file" : "m-Atari800-0",
+    "h" : 384,
+    "index" : 0,
+    "machine" : "Atari800",
+    "mode" : "Graphics 8 (320×192, 2 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 7684,
+        "ext" : "gr15",
+        "name" : "atari800_DDDF1EEC.gr15"
+      }
+    ],
+    "file" : "m-Atari800-1",
+    "h" : 384,
+    "index" : 1,
+    "machine" : "Atari800",
+    "mode" : "Graphics 15 (160×192, 4 colors)",
+    "w" : 320
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 7696,
+        "ext" : "gr9",
+        "name" : "atari800_8650A092.gr9"
+      }
+    ],
+    "file" : "m-Atari800-2",
+    "h" : 384,
+    "index" : 2,
+    "machine" : "Atari800",
+    "mode" : "Graphics 9 (80×192, 16 shades)",
+    "w" : 320
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 7689,
+        "ext" : "gr10",
+        "name" : "atari800_28E42959.gr10"
+      }
+    ],
+    "file" : "m-Atari800-3",
+    "h" : 384,
+    "index" : 3,
+    "machine" : "Atari800",
+    "mode" : "Graphics 10 (80×192, 9 colors)",
+    "w" : 320
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 7696,
+        "ext" : "gr11",
+        "name" : "atari800_D6E28026.gr11"
+      }
+    ],
+    "file" : "m-Atari800-4",
+    "h" : 384,
+    "index" : 4,
+    "machine" : "Atari800",
+    "mode" : "Graphics 11 (80×192, 16 hues)",
+    "w" : 320
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32034,
+        "ext" : "pi1",
+        "name" : "atari_CC4BF2A2.pi1"
+      }
+    ],
+    "file" : "m-AtariST-0",
+    "h" : 400,
+    "index" : 0,
+    "machine" : "AtariST",
+    "mode" : "Low Res (320×200)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32034,
+        "ext" : "pi2",
+        "name" : "atari_417DA23A.pi2"
+      }
+    ],
+    "file" : "m-AtariST-1",
+    "h" : 400,
+    "index" : 1,
+    "machine" : "AtariST",
+    "mode" : "Medium Res (640×200)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32034,
+        "ext" : "pi3",
+        "name" : "atari_DCC5A5D5.pi3"
+      }
+    ],
+    "file" : "m-AtariST-2",
+    "h" : 400,
+    "index" : 2,
+    "machine" : "AtariST",
+    "mode" : "High Res (640×400)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 20483,
+        "ext" : "bbc",
+        "name" : "bbcmicro_mode0_00B1FAFA.bbc"
+      }
+    ],
+    "file" : "m-BBCMicro-0",
+    "h" : 512,
+    "index" : 0,
+    "machine" : "BBCMicro",
+    "mode" : "Mode 0 (640×256, 2 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 20485,
+        "ext" : "bbc",
+        "name" : "bbcmicro_mode1_467695F0.bbc"
+      }
+    ],
+    "file" : "m-BBCMicro-1",
+    "h" : 512,
+    "index" : 1,
+    "machine" : "BBCMicro",
+    "mode" : "Mode 1 (320×256, 4 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 20489,
+        "ext" : "bbc",
+        "name" : "bbcmicro_mode2_5F48F98A.bbc"
+      }
+    ],
+    "file" : "m-BBCMicro-2",
+    "h" : 512,
+    "index" : 2,
+    "machine" : "BBCMicro",
+    "mode" : "Mode 2 (160×256, 8 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 10243,
+        "ext" : "bbc",
+        "name" : "bbcmicro_mode4_310249F5.bbc"
+      }
+    ],
+    "file" : "m-BBCMicro-3",
+    "h" : 512,
+    "index" : 3,
+    "machine" : "BBCMicro",
+    "mode" : "Mode 4 (320×256, 2 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 10245,
+        "ext" : "bbc",
+        "name" : "bbcmicro_mode5_03B759AE.bbc"
+      }
+    ],
+    "file" : "m-BBCMicro-4",
+    "h" : 512,
+    "index" : 4,
+    "machine" : "BBCMicro",
+    "mode" : "Mode 5 (160×256, 4 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 9002,
+        "ext" : "art",
+        "name" : "c64_C40D5B53.art"
+      }
+    ],
+    "file" : "m-C64-0",
+    "h" : 400,
+    "index" : 0,
+    "machine" : "C64",
+    "mode" : "HiRes (320×200)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 10003,
+        "ext" : "kla",
+        "name" : "c64_F9C18F9D.kla"
+      }
+    ],
+    "file" : "m-C64-1",
+    "h" : 400,
+    "index" : 1,
+    "machine" : "C64",
+    "mode" : "Multicolor (160×200)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 2129,
+        "ext" : "prg",
+        "name" : "c64_F46D93DF.prg"
+      }
+    ],
+    "file" : "m-C64-2",
+    "h" : 400,
+    "index" : 2,
+    "machine" : "C64",
+    "mode" : "PETSCII (40×25)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 13063,
+        "ext" : "sc2",
+        "name" : "msx_sc2_F9A36854.sc2"
+      }
+    ],
+    "file" : "m-MSX-0",
+    "h" : 192,
+    "index" : 0,
+    "machine" : "MSX",
+    "mode" : "Screen 2 (MSX1)",
+    "w" : 512
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 27175,
+        "ext" : "sc5",
+        "name" : "msx_sc5_A266F81E.sc5"
+      }
+    ],
+    "file" : "m-MSX-1",
+    "h" : 212,
+    "index" : 1,
+    "machine" : "MSX",
+    "mode" : "Screen 5 (MSX2)",
+    "w" : 512
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 54279,
+        "ext" : "sc8",
+        "name" : "msx_sc8_FDAFA51C.sc8"
+      }
+    ],
+    "file" : "m-MSX-2",
+    "h" : 212,
+    "index" : 2,
+    "machine" : "MSX",
+    "mode" : "Screen 8 (MSX2)",
+    "w" : 512
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 8043,
+        "ext" : "pcx",
+        "name" : "pc_cga_442E85F4.pcx"
+      }
+    ],
+    "file" : "m-PC-0",
+    "h" : 400,
+    "index" : 0,
+    "machine" : "PC",
+    "mode" : "CGA (4 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 16002,
+        "ext" : "pcx",
+        "name" : "pc_ega_BCA71D43.pcx"
+      }
+    ],
+    "file" : "m-PC-1",
+    "h" : 400,
+    "index" : 1,
+    "machine" : "PC",
+    "mode" : "EGA (16 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 28825,
+        "ext" : "pcx",
+        "name" : "pc_ega_A495F283.pcx"
+      }
+    ],
+    "file" : "m-PC-2",
+    "h" : 400,
+    "index" : 2,
+    "machine" : "PC",
+    "mode" : "EGA 64 (16 from 64)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 43144,
+        "ext" : "pcx",
+        "name" : "pc_vga_E0E6FAED.pcx"
+      }
+    ],
+    "file" : "m-PC-3",
+    "h" : 400,
+    "index" : 3,
+    "machine" : "PC",
+    "mode" : "VGA (256 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 5815,
+        "ext" : "ans",
+        "name" : "pc_cga_text_8AEB2832.ans"
+      }
+    ],
+    "file" : "m-PC-4",
+    "h" : 800,
+    "index" : 4,
+    "machine" : "PC",
+    "mode" : "CGA 80×25 Text",
+    "w" : 1280
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 16689,
+        "ext" : "ans",
+        "name" : "pc_vesa_text_C7F506E2.ans"
+      }
+    ],
+    "file" : "m-PC-5",
+    "h" : 1600,
+    "index" : 5,
+    "machine" : "PC",
+    "mode" : "VESA 132×50 Text",
+    "w" : 2112
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 10000,
+        "ext" : "prg",
+        "name" : "plus4_B16E778B.prg"
+      }
+    ],
+    "file" : "m-Plus4-0",
+    "h" : 400,
+    "index" : 0,
+    "machine" : "Plus4",
+    "mode" : "HiRes (320×200)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 10002,
+        "ext" : "prg",
+        "name" : "plus4_E19DCA23.prg"
+      }
+    ],
+    "file" : "m-Plus4-1",
+    "h" : 400,
+    "index" : 1,
+    "machine" : "Plus4",
+    "mode" : "Multicolor (160×200)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 6144,
+        "ext" : "bin",
+        "name" : "coco_E243382B.bin"
+      }
+    ],
+    "file" : "m-TRS80CoCo-0",
+    "h" : 384,
+    "index" : 0,
+    "machine" : "TRS80CoCo",
+    "mode" : "PMODE 3 (128×192, 4 colors)",
+    "w" : 512
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 6144,
+        "ext" : "bin",
+        "name" : "coco_07E7AEC6.bin"
+      }
+    ],
+    "file" : "m-TRS80CoCo-1",
+    "h" : 384,
+    "index" : 1,
+    "machine" : "TRS80CoCo",
+    "mode" : "PMODE 4 (256×192, 2 colors)",
+    "w" : 512
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 3072,
+        "ext" : "bin",
+        "name" : "coco_B8C6CE52.bin"
+      }
+    ],
+    "file" : "m-TRS80CoCo-2",
+    "h" : 384,
+    "index" : 2,
+    "machine" : "TRS80CoCo",
+    "mode" : "PMODE 1 (128×96, 4 colors)",
+    "w" : 512
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 3072,
+        "ext" : "bin",
+        "name" : "coco_1459ACD7.bin"
+      }
+    ],
+    "file" : "m-TRS80CoCo-3",
+    "h" : 384,
+    "index" : 3,
+    "machine" : "TRS80CoCo",
+    "mode" : "PMODE 2 (128×192, 2 colors)",
+    "w" : 512
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32000,
+        "ext" : "cm3",
+        "name" : "coco_D41C6927.cm3"
+      }
+    ],
+    "file" : "m-TRS80CoCo-4",
+    "h" : 400,
+    "index" : 4,
+    "machine" : "TRS80CoCo",
+    "mode" : "CoCo 3 (320×200, 16 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 32000,
+        "ext" : "cm3",
+        "name" : "coco_A8498215.cm3"
+      }
+    ],
+    "file" : "m-TRS80CoCo-5",
+    "h" : 400,
+    "index" : 5,
+    "machine" : "TRS80CoCo",
+    "mode" : "CoCo 3 (640×200, 4 colors)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 3116,
+        "ext" : "prg",
+        "name" : "vic20_9F2CB73A.prg"
+      }
+    ],
+    "file" : "m-VIC20-0",
+    "h" : 368,
+    "index" : 0,
+    "machine" : "VIC20",
+    "mode" : "HiRes (176×184)",
+    "w" : 352
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 3121,
+        "ext" : "prg",
+        "name" : "vic20_0C6F5DBD.prg"
+      }
+    ],
+    "file" : "m-VIC20-1",
+    "h" : 368,
+    "index" : 1,
+    "machine" : "VIC20",
+    "mode" : "LowRes (88×184)",
+    "w" : 352
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 6912,
+        "ext" : "scr",
+        "name" : "zx_BD3EB621.scr"
+      }
+    ],
+    "file" : "m-ZXSpectrum-0",
+    "h" : 384,
+    "index" : 0,
+    "machine" : "ZXSpectrum",
+    "mode" : "Standard (256×192)",
+    "w" : 512
+  }
+]

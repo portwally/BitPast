@@ -1,0 +1,1999 @@
+[
+  {
+    "id" : "AppleII",
+    "name" : "Apple II",
+    "options" : [
+      {
+        "default" : "DHGR",
+        "key" : "mode",
+        "label" : "Target Format",
+        "type" : "picker",
+        "values" : [
+          "DHGR",
+          "HGR",
+          "LGR",
+          "DLGR",
+          "Mono"
+        ]
+      },
+      {
+        "default" : "560x384",
+        "key" : "resolution",
+        "label" : "Output Resolution",
+        "type" : "picker",
+        "values" : [
+          "140x192",
+          "280x192",
+          "320x200",
+          "560x384",
+          "640x400",
+          "640x480"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "dither",
+        "label" : "Dither Algo",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Jarvis",
+          "Stucki",
+          "Atkinson",
+          "Burkes",
+          "Sierra",
+          "Sierra Two",
+          "Sierra Lite",
+          "Buckels"
+        ]
+      },
+      {
+        "default" : "tohgr NTSC (Default)",
+        "key" : "palette",
+        "label" : "Palette",
+        "type" : "picker",
+        "values" : [
+          "Kegs32 RGB",
+          "CiderPress RGB",
+          "AppleWin Old NTSC",
+          "AppleWin New NTSC",
+          "Wikipedia NTSC",
+          "tohgr NTSC (Default)",
+          "Super Convert RGB",
+          "Jace NTSC",
+          "Cybernesto NTSC",
+          "tohgr NTSC HGR"
+        ]
+      },
+      {
+        "default" : "0",
+        "key" : "crosshatch",
+        "label" : "Cross-hatch Pattern",
+        "range" : [
+          0,
+          10
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "0",
+        "key" : "z_threshold",
+        "label" : "Cross-hatch Threshold",
+        "range" : [
+          0,
+          40
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "error_matrix",
+        "label" : "Error Matrix Index",
+        "range" : [
+          0,
+          10
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "AppleIIGS",
+    "name" : "Apple IIgs",
+    "options" : [
+      {
+        "default" : "3200 Colors (Brooks)",
+        "key" : "mode",
+        "label" : "Display Mode",
+        "type" : "picker",
+        "values" : [
+          "3200 Colors (Brooks)",
+          "256 Colors (16 Palettes)",
+          "320x200 (16 Colors)",
+          "640x200 (4 Colors)",
+          "640x200 Enhanced (16 Colors)",
+          "640x200 Desktop (16 Colors)"
+        ]
+      },
+      {
+        "default" : "Floyd-Steinberg",
+        "key" : "dither",
+        "label" : "Dithering Algo",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Jarvis-Judice-Ninke",
+          "Stucki",
+          "Burkes",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue 8x8",
+          "Blue 16x16"
+        ]
+      },
+      {
+        "default" : "Per-Scanline",
+        "key" : "quantization_method",
+        "label" : "3200 Quantization",
+        "type" : "picker",
+        "values" : [
+          "Per-Scanline",
+          "Palette Reuse"
+        ]
+      },
+      {
+        "default" : "Banded",
+        "key" : "scb_mode",
+        "label" : "SCB Mode",
+        "type" : "picker",
+        "values" : [
+          "Banded",
+          "Palette Reuse",
+          "Per-Line"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "dither_amount",
+        "label" : "Dither Strength",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "10",
+        "key" : "threshold",
+        "label" : "Palette Merge Tolerance",
+        "range" : [
+          0,
+          50
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1.10",
+        "key" : "saturation",
+        "label" : "Saturation Boost",
+        "range" : [
+          0,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "preprocess",
+        "label" : "Preprocessing",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Median",
+          "Sharpen",
+          "Sigma",
+          "Solarize",
+          "Emboss",
+          "Find Edges"
+        ]
+      },
+      {
+        "default" : "3x3",
+        "key" : "median_size",
+        "label" : "Kernel Size",
+        "type" : "picker",
+        "values" : [
+          "3x3",
+          "5x5",
+          "7x7"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "sharpen_strength",
+        "label" : "Sharpen Amount",
+        "range" : [
+          0.20000000000000001,
+          2.5
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "20",
+        "key" : "sigma_range",
+        "label" : "Sigma Range",
+        "range" : [
+          5,
+          50
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "128",
+        "key" : "solarize_threshold",
+        "label" : "Threshold",
+        "range" : [
+          32,
+          224
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "emboss_depth",
+        "label" : "Emboss Depth",
+        "range" : [
+          0.29999999999999999,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "50",
+        "key" : "edge_threshold",
+        "label" : "Edge Sensitivity",
+        "range" : [
+          10,
+          100
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "Amiga500",
+    "name" : "Amiga 500",
+    "options" : [
+      {
+        "default" : "Standard (32 colors)",
+        "key" : "mode",
+        "label" : "Mode",
+        "type" : "picker",
+        "values" : [
+          "Standard (32 colors)",
+          "HAM6 (4096 colors)"
+        ]
+      },
+      {
+        "default" : "320×256",
+        "key" : "resolution",
+        "label" : "Resolution",
+        "type" : "picker",
+        "values" : [
+          "320×256",
+          "320×512"
+        ]
+      },
+      {
+        "default" : "Floyd-Steinberg",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "Amiga1200",
+    "name" : "Amiga 1200",
+    "options" : [
+      {
+        "default" : "Standard (256 colors)",
+        "key" : "mode",
+        "label" : "Mode",
+        "type" : "picker",
+        "values" : [
+          "Standard (256 colors)",
+          "HAM8 (262144 colors)"
+        ]
+      },
+      {
+        "default" : "320×256",
+        "key" : "resolution",
+        "label" : "Resolution",
+        "type" : "picker",
+        "values" : [
+          "320×256",
+          "320×512",
+          "640×512"
+        ]
+      },
+      {
+        "default" : "Floyd-Steinberg",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "AmstradCPC",
+    "name" : "Amstrad CPC",
+    "options" : [
+      {
+        "default" : "Mode 1 (320×200, 4 colors)",
+        "key" : "mode",
+        "label" : "Graphics Mode",
+        "type" : "picker",
+        "values" : [
+          "Mode 1 (320×200, 4 colors)",
+          "Mode 0 (160×200, 16 colors)"
+        ]
+      },
+      {
+        "default" : "Bayer 2x2",
+        "key" : "dither",
+        "label" : "Dithering",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue 8x8",
+          "Blue 16x16"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Average",
+        "key" : "pixel_merge",
+        "label" : "Pixel Merge",
+        "type" : "picker",
+        "values" : [
+          "Average",
+          "Brightest"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Mahalanobis"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "Atari800",
+    "name" : "Atari 800",
+    "options" : [
+      {
+        "default" : "Graphics 15 (160×192, 4 colors)",
+        "key" : "mode",
+        "label" : "Mode",
+        "type" : "picker",
+        "values" : [
+          "Graphics 8 (320×192, 2 colors)",
+          "Graphics 15 (160×192, 4 colors)",
+          "Graphics 9 (80×192, 16 shades)",
+          "Graphics 10 (80×192, 9 colors)",
+          "Graphics 11 (80×192, 16 hues)"
+        ]
+      },
+      {
+        "default" : "Bayer 4x4",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue Noise 8x8",
+          "Blue Noise 16x16"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Hue"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "AtariST",
+    "name" : "Atari ST",
+    "options" : [
+      {
+        "default" : "Low Res (320×200)",
+        "key" : "mode",
+        "label" : "Mode",
+        "type" : "picker",
+        "values" : [
+          "Low Res (320×200)",
+          "Medium Res (640×200)",
+          "High Res (640×400)"
+        ]
+      },
+      {
+        "default" : "Bayer 4x4",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue Noise 8x8",
+          "Blue Noise 16x16"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Mahalanobis"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "BBCMicro",
+    "name" : "BBC Micro",
+    "options" : [
+      {
+        "default" : "Mode 2 (160×256, 8 colors)",
+        "key" : "mode",
+        "label" : "Mode",
+        "type" : "picker",
+        "values" : [
+          "Mode 0 (640×256, 2 colors)",
+          "Mode 1 (320×256, 4 colors)",
+          "Mode 2 (160×256, 8 colors)",
+          "Mode 4 (320×256, 2 colors)",
+          "Mode 5 (160×256, 4 colors)"
+        ]
+      },
+      {
+        "default" : "Bayer 4x4",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue Noise 8x8",
+          "Blue Noise 16x16"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Hue"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "C64",
+    "name" : "C64",
+    "options" : [
+      {
+        "default" : "Multicolor (160×200)",
+        "key" : "mode",
+        "label" : "Graphics Mode",
+        "type" : "picker",
+        "values" : [
+          "HiRes (320×200)",
+          "Multicolor (160×200)",
+          "PETSCII (40×25)"
+        ]
+      },
+      {
+        "default" : "Atkinson",
+        "key" : "dither",
+        "label" : "Dithering",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue 8x8",
+          "Blue 16x16"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Average",
+        "key" : "pixel_merge",
+        "label" : "Pixel Merge",
+        "type" : "picker",
+        "values" : [
+          "Average",
+          "Brightest"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Mahalanobis"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2.5
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "MSX",
+    "name" : "MSX",
+    "options" : [
+      {
+        "default" : "Screen 5 (MSX2)",
+        "key" : "mode",
+        "label" : "Mode",
+        "type" : "picker",
+        "values" : [
+          "Screen 2 (MSX1)",
+          "Screen 5 (MSX2)",
+          "Screen 8 (MSX2)"
+        ]
+      },
+      {
+        "default" : "Floyd-Steinberg",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Hue"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "PC",
+    "name" : "PC",
+    "options" : [
+      {
+        "default" : "VGA (256 colors)",
+        "key" : "mode",
+        "label" : "Mode",
+        "type" : "picker",
+        "values" : [
+          "CGA (4 colors)",
+          "EGA (16 colors)",
+          "EGA 64 (16 from 64)",
+          "VGA (256 colors)",
+          "CGA 80×25 Text",
+          "VESA 132×50 Text"
+        ]
+      },
+      {
+        "default" : "Cyan\/Magenta\/White",
+        "key" : "cga_palette",
+        "label" : "CGA Palette",
+        "type" : "picker",
+        "values" : [
+          "Cyan\/Magenta\/White",
+          "Cyan\/Magenta\/Gray",
+          "Green\/Red\/Yellow",
+          "Green\/Red\/Brown"
+        ]
+      },
+      {
+        "default" : "Floyd-Steinberg",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Hue"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "Plus4",
+    "name" : "Plus\/4",
+    "options" : [
+      {
+        "default" : "HiRes (320×200)",
+        "key" : "mode",
+        "label" : "Graphics Mode",
+        "type" : "picker",
+        "values" : [
+          "HiRes (320×200)",
+          "Multicolor (160×200)"
+        ]
+      },
+      {
+        "default" : "Bayer 2x2",
+        "key" : "dither",
+        "label" : "Dithering",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue 8x8",
+          "Blue 16x16"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Average",
+        "key" : "pixel_merge",
+        "label" : "Pixel Merge",
+        "type" : "picker",
+        "values" : [
+          "Average",
+          "Brightest"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Mahalanobis"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "TRS80CoCo",
+    "name" : "TRS-80 CoCo",
+    "options" : [
+      {
+        "default" : "PMODE 3 (128×192, 4 colors)",
+        "key" : "mode",
+        "label" : "Mode",
+        "type" : "picker",
+        "values" : [
+          "PMODE 3 (128×192, 4 colors)",
+          "PMODE 4 (256×192, 2 colors)",
+          "PMODE 1 (128×96, 4 colors)",
+          "PMODE 2 (128×192, 2 colors)",
+          "CoCo 3 (320×200, 16 colors)",
+          "CoCo 3 (640×200, 4 colors)"
+        ]
+      },
+      {
+        "default" : "Set 0 (Green\/Yellow\/Blue\/Red)",
+        "key" : "colorset",
+        "label" : "Color Set",
+        "type" : "picker",
+        "values" : [
+          "Set 0 (Green\/Yellow\/Blue\/Red)",
+          "Set 1 (Buff\/Cyan\/Magenta\/Orange)",
+          "Artifact (NTSC)"
+        ]
+      },
+      {
+        "default" : "Bayer 4x4",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue Noise 8x8",
+          "Blue Noise 16x16"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Hue"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "VIC20",
+    "name" : "VIC-20",
+    "options" : [
+      {
+        "default" : "HiRes (176×184)",
+        "key" : "mode",
+        "label" : "Graphics Mode",
+        "type" : "picker",
+        "values" : [
+          "HiRes (176×184)",
+          "LowRes (88×184)"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "dither",
+        "label" : "Dithering",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue 8x8",
+          "Blue 16x16"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "Sharpen",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Average",
+        "key" : "pixel_merge",
+        "label" : "Pixel Merge",
+        "type" : "picker",
+        "values" : [
+          "Average",
+          "Brightest"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Mahalanobis"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "ZXSpectrum",
+    "name" : "ZX Spectrum",
+    "options" : [
+      {
+        "default" : "Bayer 2x2",
+        "key" : "dither",
+        "label" : "Dithering",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Noise",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8",
+          "Bayer 16x16",
+          "Blue 8x8",
+          "Blue 16x16"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Mahalanobis"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  }
+]

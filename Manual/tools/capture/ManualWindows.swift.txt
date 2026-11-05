@@ -1,0 +1,130 @@
+import AppKit
+import SwiftUI
+import Testing
+@testable import BitPast
+
+// Temporary: window screenshots for the manual. Not for commit.
+@Suite("zz manual windows", .serialized, .enabled(if: ProcessInfo.processInfo.environment["BITPAST_MANUAL"] == "1"))
+@MainActor
+struct ZZManualWindows {
+
+    static let photoNames = ["copenhagen", "balloon", "bird", "toucan", "carnival", "pencils", "popsicles", "flowers", "rainbow"]
+
+    func items() -> [InputImage] {
+        Self.photoNames.map { name in
+            let image = ZZManual.photo(name)
+            return InputImage(name: name + ".jpg", image: image, details: "", fileURL: nil, fileSize: 240_000,
+                              format: "JPEG", bitsPerPixel: 24, colorSpace: "sRGB", dpi: 72, hasAlpha: false)
+        }
+    }
+
+    func waitForConversion() async throws {
+        let vm = ConverterViewModel.shared
+        try await Task.sleep(for: .milliseconds(400))
+        while vm.isConverting { try await Task.sleep(for: .milliseconds(100)) }
+        try await Task.sleep(for: .milliseconds(700))
+    }
+
+    func capture(_ window: NSWindow, as name: String) async throws {
+        NSApp.activate()
+        window.makeKeyAndOrderFront(nil)
+        try await Task.sleep(for: .milliseconds(900))
+        let view = window.contentView!.superview!
+        let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
+        view.cacheDisplay(in: view.bounds, to: rep)
+        Attachment.record(rep.representation(using: .png, properties: [:])!, named: name + ".png")
+    }
+
+    func host<V: View>(_ view: V, width: CGFloat, height: CGFloat, title: String = "BitPast") -> NSWindow {
+        let window = NSWindow(contentRect: NSRect(x: 80, y: 80, width: width, height: height),
+                              styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
+        window.title = title
+        window.contentView = NSHostingView(rootView: view)
+        window.makeKeyAndOrderFront(nil)
+        return window
+    }
+
+    @Test func windows() async throws {
+        let vm = ConverterViewModel.shared
+        // These tests run inside the app, so the appearance they set is saved in its preferences: restore it afterwards
+        let originalAppearance = AppSettings.shared.appearanceMode
+        Attachment.record(Data(originalAppearance.rawValue.utf8), named: "original-appearance.txt")
+        defer { AppSettings.shared.appearanceMode = originalAppearance }
+        AppSettings.shared.appearanceMode = .light
+        try await Task.sleep(for: .milliseconds(500))
+
+        let all = items()
+        vm.inputImages = all
+        let which: [Int: String] = [0: "popsicles", 1: "copenhagen", 2: "balloon", 3: "bird", 4: "pencils", 5: "toucan", 6: "flowers", 7: "rainbow", 8: "carnival", 9: "copenhagen", 10: "balloon", 11: "rainbow", 12: "popsicles", 13: "toucan", 14: "flowers"]
+        vm.selectedImageId = all[0].id
+        vm.selectedMachineIndex = 1
+        let main = host(ContentView(), width: 1500, height: 893)
+        try await Task.sleep(for: .seconds(1))
+
+        let ids = ["AppleII", "AppleIIGS", "Amiga500", "Amiga1200", "AmstradCPC", "Atari800", "AtariST", "BBCMicro", "C64", "MSX", "PC", "Plus4", "TRS80CoCo", "VIC20", "ZXSpectrum"]
+        for (i, id) in ids.enumerated() {
+            vm.selectedMachineIndex = i
+            vm.selectedImageId = all.first { $0.name == which[i]! + ".jpg" }!.id
+            vm.convertImmediately()
+            try await waitForConversion()
+            try await capture(main, as: "w-sys-\(id)")
+        }
+
+        // Image browser with a selection and a locked picture (IIgs)
+        vm.selectedMachineIndex = 1
+        vm.selectedImageId = all[0].id
+        vm.convertImmediately()
+        try await waitForConversion()
+        vm.lockCurrentSettings()
+        vm.selectedImageId = all[1].id
+        vm.selectedImageIds = [all[1].id, all[2].id, all[5].id]
+        vm.convertImmediately()
+        try await waitForConversion()
+        try await capture(main, as: "w-browser")
+        vm.selectedImageIds = []
+        vm.unlockSettings()
+        main.close()
+
+        // Other windows
+        let beach = all.first { $0.name == "flowers.jpg" }!.image
+        let result = try await ZZManual.convert("AppleIIGS", beach, ["mode": "3200 Colors (Brooks)"])
+        let palettes = result.palettes.map { $0.map { PaletteColor(r: $0.r, g: $0.g, b: $0.b) } }
+        struct PaletteHost: View {
+            @State var palettes: [[PaletteColor]]
+            var body: some View { PaletteEditorView(isPresented: .constant(true), palettes: $palettes, onApply: { _ in }) }
+        }
+        let editor = host(PaletteHost(palettes: palettes), width: 760, height: 620, title: "Palette Editor")
+        try await capture(editor, as: "w-palette-editor"); editor.close()
+
+        vm.inputImages = all
+        for (name, index) in [("c64", 8), ("amiga", 2), ("appleii", 0)] {
+            let sheet = host(CreateDiskSheet(isPresented: .constant(true), selectedSystemIndex: .constant(index), viewModel: vm, onExport: { _ in }),
+                             width: 900, height: 520, title: "Create Disk Image")
+            try await capture(sheet, as: "w-disk-\(name)"); sheet.close()
+        }
+
+        let help = host(HelpView(), width: 750, height: 700, title: "Graphics Mode Guide")
+        try await capture(help, as: "w-help"); help.close()
+
+        let settings = host(SettingsView(), width: 460, height: 220, title: "Settings")
+        try await capture(settings, as: "w-settings"); settings.close()
+
+        for (mode, machine, photoName, name) in [(AppearanceMode.retroIIgs, 1, "copenhagen", "gsos"), (.retroII, 0, "popsicles", "apple2"),
+                                                 (.retroC64, 8, "toucan", "c64"), (.dark, 1, "copenhagen", "dark")] {
+            AppSettings.shared.appearanceMode = mode
+            try await Task.sleep(for: .milliseconds(700))
+            vm.selectedMachineIndex = machine
+            vm.selectedImageId = all.first { $0.name == photoName + ".jpg" }!.id
+            vm.convertImmediately()
+            try await waitForConversion()
+            let themed = host(ContentView(), width: 1500, height: 893)
+            try await Task.sleep(for: .seconds(1))
+            try await capture(themed, as: "w-theme-\(name)"); themed.close()
+        }
+        AppSettings.shared.appearanceMode = .light
+        try await Task.sleep(for: .milliseconds(500))
+
+        let histogram = host(ZStack { Color.black; HistogramOverlay(image: result.previewImage, isShowing: .constant(true)) }, width: 420, height: 300)
+        try await capture(histogram, as: "w-histogram"); histogram.close()
+    }
+}

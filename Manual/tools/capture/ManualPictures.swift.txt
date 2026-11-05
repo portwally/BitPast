@@ -1,0 +1,155 @@
+import AppKit
+import SwiftUI
+import Testing
+@testable import BitPast
+
+// Temporary: gathers facts and pictures for the manual. Not for commit.
+private final class Anchor {}
+
+@Suite("zz manual", .serialized, .enabled(if: ProcessInfo.processInfo.environment["BITPAST_MANUAL"] == "1"))
+struct ZZManual {
+
+    // MARK: Helpers
+
+    nonisolated static func photo(_ name: String) -> NSImage {
+        let root = Bundle(for: Anchor.self).bundleURL
+        let walker = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)!
+        for case let url as URL in walker where url.lastPathComponent == name + ".jpg" {
+            let cg = NSImage(contentsOf: url)!.cgImage(forProposedRect: nil, context: nil, hints: nil)!
+            return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))   // pixels, not points
+        }
+        fatalError("missing photo \(name)")
+    }
+
+    /// A crop of a photo, `fx`/`fy` and `fw`/`fh` as fractions of its size.
+    nonisolated static func crop(_ image: NSImage, x fx: Double, y fy: Double, w fw: Double, h fh: Double) -> NSImage {
+        let cg = image.cgImage(forProposedRect: nil, context: nil, hints: nil)!
+        let rect = CGRect(x: Double(cg.width) * fx, y: Double(cg.height) * fy, width: Double(cg.width) * fw, height: Double(cg.height) * fh).integral
+        let part = cg.cropping(to: rect)!
+        return NSImage(cgImage: part, size: NSSize(width: part.width, height: part.height))
+    }
+
+    nonisolated static func png(_ image: NSImage) -> Data {
+        var rect = CGRect(origin: .zero, size: image.size)
+        let cg = image.cgImage(forProposedRect: &rect, context: nil, hints: nil)!
+        return NSBitmapImageRep(cgImage: cg).representation(using: .png, properties: [:])!
+    }
+
+    nonisolated static func convert(_ id: String, _ image: NSImage, _ changes: [String: String], offset: CGPoint = .zero) async throws -> ConversionResult {
+        let machine = ConverterGoldenTests.makeMachine(id)
+        var options = machine.options
+        for (key, value) in changes {
+            guard let i = options.firstIndex(where: { $0.key == key }) else { fatalError("no option \(key) on \(id)") }
+            options[i].selectedValue = value
+        }
+        return try await ConverterViewModel.convertInBackground(machine, image: image, settings: ImageFraming.settings(options, offset: offset))
+    }
+
+    nonisolated static func record(_ result: ConversionResult, as name: String) {
+        Attachment.record(png(result.previewImage), named: name + ".png")
+    }
+
+    // MARK: Pictures for every mode
+
+    @Test func modes() async throws {
+        let photo = Self.photo("toucan")
+        var facts: [[String: Any]] = []
+        func add(_ id: String, _ index: Int, _ mode: String, _ changes: [String: String]) async throws {
+            do {
+                let r = try await Self.convert(id, photo, changes)
+                let file = "m-\(id)-\(index)"
+                Self.record(r, as: file)
+                let cg = r.previewImage.cgImage(forProposedRect: nil, context: nil, hints: nil)!
+                let assets: [[String: Any]] = r.fileAssets.map { url in
+                    let size = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? -1
+                    return ["name": url.lastPathComponent, "ext": url.pathExtension, "bytes": size]
+                }
+                facts.append(["machine": id, "index": index, "mode": mode, "file": file, "w": cg.width, "h": cg.height, "assets": assets])
+            } catch {
+                facts.append(["machine": id, "index": index, "mode": mode, "error": "\(error)"])
+            }
+        }
+        for id in ConverterGoldenTests.machineNames {
+            let machine = ConverterGoldenTests.makeMachine(id)
+            guard let modeOption = machine.options.first(where: { $0.key == "mode" }) else {
+                try await add(id, 0, "Standard (256×192)", [:])
+                continue
+            }
+            for (i, value) in modeOption.values.enumerated() {
+                var changes = ["mode": value]
+                if id == "AppleII" { changes["resolution"] = (value == "DHGR" || value == "Mono") ? "560x384" : "280x192" }
+                if id == "AppleIIGS", value.hasPrefix("256") { changes["scb_mode"] = "Per-Line" }
+                try await add(id, i, value, changes)
+            }
+            if id == "AppleII" { try await add(id, 5, "Mono (280×192)", ["mode": "Mono", "resolution": "280x192"]) }
+        }
+        let data = try JSONSerialization.data(withJSONObject: facts, options: [.prettyPrinted, .sortedKeys])
+        Attachment.record(data, named: "facts.json")
+    }
+
+    // MARK: Comparison galleries
+
+    @Test func galleries() async throws {
+        let balloon = Self.photo("balloon"), toucan = Self.photo("toucan"), copenhagen = Self.photo("copenhagen")
+        let bird = Self.photo("bird"), popsicles = Self.photo("popsicles")
+        let iigs256 = "256 Colors (16 Palettes)", iigs16 = "320x200 (16 Colors)"
+        for scb in ["Banded", "Palette Reuse", "Per-Line"] {
+            Self.record(try await Self.convert("AppleIIGS", balloon, ["mode": iigs256, "scb_mode": scb]), as: "v-scb-\(scb)")
+        }
+        for d in ["None", "Floyd-Steinberg", "Atkinson", "Bayer 4x4", "Bayer 8x8", "Blue 16x16"] {
+            Self.record(try await Self.convert("AmstradCPC", balloon, ["mode": "Mode 1 (320×200, 4 colors)", "dither": d, "dither_amount": "1"]), as: "v-dither-\(d)")
+        }
+        for c in ["None", "HE", "CLAHE", "SWAHE"] {
+            Self.record(try await Self.convert("Amiga500", bird, ["contrast": c]), as: "v-contrast-\(c)")
+        }
+        for f in ["None", "Lowpass", "Median", "Sharpen", "Sigma", "Solarize", "Emboss", "Find Edges"] {
+            Self.record(try await Self.convert("AppleIIGS", copenhagen, ["mode": "3200 Colors (Brooks)", "preprocess": f]), as: "v-prefilter-\(f)")
+        }
+        for c in ["Euclidean", "Perceptive", "Luma", "Chroma", "Hue"] {
+            Self.record(try await Self.convert("PC", toucan, ["mode": "EGA (16 colors)", "color_match": c, "dither": "Bayer 4x4"]), as: "v-match-\(c)")
+        }
+        // Fit, Aspect and position, with a portrait crop of the tree
+        let portrait = Self.crop(balloon, x: 0.25, y: 0, w: 0.5625, h: 1)   // 3:4, around the balloon
+        for fit in ["Stretch", "Contain", "Cover", "None"] {
+            Self.record(try await Self.convert("Amiga1200", portrait, ["fit": fit]), as: "v-fit-\(fit)")
+        }
+        for (name, y) in [("top", -1.0), ("center", 0.0), ("bottom", 1.0)] {
+            Self.record(try await Self.convert("Amiga1200", portrait, ["fit": "Cover"], offset: CGPoint(x: 0, y: y)), as: "v-pos-\(name)")
+        }
+        for a in ["Correct", "Ignore"] {
+            Self.record(try await Self.convert("AtariST", portrait, ["mode": "Medium Res (640×200)", "fit": "Contain", "aspect": a]), as: "v-aspect-\(a)")
+        }
+        for (name, set, mode) in [("set0", "Set 0 (Green/Yellow/Blue/Red)", "PMODE 3 (128×192, 4 colors)"),
+                                  ("set1", "Set 1 (Buff/Cyan/Magenta/Orange)", "PMODE 3 (128×192, 4 colors)"),
+                                  ("artifact", "Artifact (NTSC)", "PMODE 4 (256×192, 2 colors)")] {
+            Self.record(try await Self.convert("TRS80CoCo", popsicles, ["mode": mode, "colorset": set]), as: "v-coco-\(name)")
+        }
+        for pm in ["Average", "Brightest"] {
+            Self.record(try await Self.convert("C64", toucan, ["mode": "Multicolor (160×200)", "pixel_merge": pm]), as: "v-merge-\(pm)")
+        }
+        for r in ["320×256", "320×512", "640×512"] {
+            Self.record(try await Self.convert("Amiga1200", copenhagen, ["resolution": r]), as: "v-res-\(r)")
+        }
+    }
+
+    // MARK: Palettes
+
+    @Test func palettes() throws {
+        func rgb(_ rows: [[UInt8]]) -> [[Int]] { rows.map { $0.prefix(3).map { Int($0) } } }
+        let all: [String: [[Int]]] = [
+            "C64": C64Converter.c64Palette.map { Array($0.prefix(3)) },
+            "VIC20": rgb(VIC20Converter.vic20Palette),
+            "ZXSpectrum": rgb(ZXSpectrumConverter.zxPalette),
+            "BBCMicro": rgb(BBCMicroConverter.bbcPalette),
+            "AmstradCPC": rgb(AmstradCPCConverter.cpcPalette),
+            "PC-CGA": rgb(PCConverter.cgaPalette),
+            "PC-EGA": rgb(PCConverter.egaPalette),
+            "MSX1": rgb(MSXConverter.tms9918Palette),
+            "Plus4": rgb(Plus4Converter.plus4Palette),
+            "Atari800": rgb(Atari800Converter.atari800Palette),
+            "IIgsDesktop": AppleIIGSConverter.iigsSystemPalette.map { [Int($0.r), Int($0.g), Int($0.b)] },
+            "CoCo3": rgb(TRS80CoCoConverter.coco3Palette),
+        ]
+        Attachment.record(try JSONSerialization.data(withJSONObject: all, options: [.prettyPrinted, .sortedKeys]), named: "palettes.json")
+    }
+}
