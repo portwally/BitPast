@@ -90,7 +90,9 @@ nonisolated class Plus4Converter: RetroMachine {
 
     // Plus/4 palette: 128 colors (16 hues × 8 luminance levels)
     // From Plus4Renderer.java - stored as BGR in original
-    static let plus4Palette: [[UInt8]] = [
+    static let plus4Palette: [[UInt8]] = plus4PaletteBGR.map { [$0[2], $0[1], $0[0]] }
+
+    private static let plus4PaletteBGR: [[UInt8]] = [
         // Luminance 0 (darkest)
         [0x00, 0x00, 0x00], [0x17, 0x17, 0x17], [0x0a, 0x07, 0x46], [0x26, 0x2a, 0x00],
         [0x46, 0x02, 0x3e], [0x00, 0x33, 0x00], [0x70, 0x0d, 0x0f], [0x00, 0x21, 0x1f],
