@@ -2,6 +2,25 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [4.6] - 2026-11-05
+
+### Added
+- **Fit** - Every converter can now choose how the picture fills the screen (shared in `ImageFraming`):
+  - Stretch (default, as before), Contain (whole picture with black bars), Cover (fill and crop) and None (no scaling, one source pixel per screen line)
+  - Applied where each converter scales the source, so previews, saves, batch exports and disk images all match
+- **Aspect** - Correct takes each machine's non-square pixels into account (assuming a 4:3 screen), so circles stay round; Ignore treats pixels as square. Shown when Fit isn't Stretch
+- **Apple IIgs SCB Mode** - New setting for 256-colour mode that picks which of the 16 palettes each line uses:
+  - Banded (default): 16 even bands of lines, as before
+  - Palette Reuse: the older method, previously only reachable through the hidden 3200 Quantization setting
+  - Per-Line: any line can use any palette; lines are assigned to the best-fitting palette and the palettes rebuilt from their lines until nothing moves
+- **Tests** - Fit and Aspect placement, black bars with Contain on all 15 machines, Per-Line palettes and SCBs, palette saving, and flipping; 62 new golden fingerprints
+
+### Fixed
+- **Palette Editor Changes Not Saved** - Edits only changed the preview; saving wrote the original palettes. Edited palettes are now written into the `.SHR` / `.3200` file, and batch export and Create Disk use the edited result for that picture instead of converting it again
+- **Palette Editor Preview in 256-Colour Mode** - Lines used palette `y % 16` instead of their own; the result now carries each line's palette
+- **H-Flip and V-Flip Not Saved** - Flipping only mirrored the preview, and the next conversion undid it. The flip is now kept per picture and applied before converting, so saved files and disk images are flipped too; the buttons show when a picture is flipped
+- **Golden Fingerprints** - The PC text modes are re-recorded after the macOS 27.2 font rendering change; the recorder also attaches the fingerprint file to the test results, since macOS can block its Caches folder
+
 ## [4.5] - 2026-10-25
 
 ### Added
