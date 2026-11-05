@@ -1395,11 +1395,46 @@ nonisolated class AppleIIGSConverter: RetroMachine {
     }
     
     func rgbToIIGS(_ rgb: RGB) -> UInt16 {
-        // Proper 8-bit to 4-bit conversion with rounding to preserve brightness
-        let r4 = UInt16((min(255, max(0, rgb.r)) * 15.0 + 127.5) / 255.0) & 0x0F
-        let g4 = UInt16((min(255, max(0, rgb.g)) * 15.0 + 127.5) / 255.0) & 0x0F
-        let b4 = UInt16((min(255, max(0, rgb.b)) * 15.0 + 127.5) / 255.0) & 0x0F
-        return (0 << 12) | (r4 << 8) | (g4 << 4) | b4
+        Self.iigsColor(r: rgb.r, g: rgb.g, b: rgb.b)
+    }
+
+    /// 8-bit RGB to a IIgs $0RGB colour word, rounding to preserve brightness.
+    static func iigsColor(r: Double, g: Double, b: Double) -> UInt16 {
+        let r4 = UInt16((min(255, max(0, r)) * 15.0 + 127.5) / 255.0) & 0x0F
+        let g4 = UInt16((min(255, max(0, g)) * 15.0 + 127.5) / 255.0) & 0x0F
+        let b4 = UInt16((min(255, max(0, b)) * 15.0 + 127.5) / 255.0) & 0x0F
+        return (r4 << 8) | (g4 << 4) | b4
+    }
+
+    /// A copy of a converted file with new palettes, for palette editor changes. The pixels and
+    /// SCBs stay as they are. Handles 32 KB SHR files (up to 16 palettes, unused slots get the
+    /// first one, as when converting) and Brooks 3200 files (200 palettes, colours stored 15 to 0).
+    /// Returns nil for anything else.
+    static func replacingPalettes(_ palettes: [[PaletteRGB]], in file: Data) -> Data? {
+        guard let first = palettes.first else { return nil }
+        var data = file
+        func put(_ color: PaletteRGB?, at offset: Int) {
+            let word = color.map { iigsColor(r: $0.r, g: $0.g, b: $0.b) } ?? 0
+            data[data.startIndex + offset] = UInt8(word & 0xFF)
+            data[data.startIndex + offset + 1] = UInt8(word >> 8)
+        }
+        func color(_ palette: [PaletteRGB], _ index: Int) -> PaletteRGB? {
+            index < palette.count ? palette[index] : nil
+        }
+        switch file.count {
+        case 32768 where palettes.count <= 16:
+            for slot in 0..<16 {
+                let palette = slot < palettes.count ? palettes[slot] : first
+                for index in 0..<16 { put(color(palette, index), at: 32256 + slot * 32 + index * 2) }
+            }
+        case 38400 where palettes.count == 200:
+            for line in 0..<200 {
+                for index in 0..<16 { put(color(palettes[line], 15 - index), at: 32000 + line * 32 + index * 2) }
+            }
+        default:
+            return nil
+        }
+        return data
     }
     
     func generateSHRData(indices: [Int], palettes: [[RGB]], width: Int, height: Int, is640: Bool,

@@ -17,9 +17,11 @@ nonisolated struct ConversionResult {
     var imageHeight: Int
     /// Which of `palettes` each line uses, when lines share a few palettes (IIgs 256 colours)
     var paletteLines: [Int]
+    /// The palettes were changed in the palette editor after converting
+    var editedPalettes: Bool
 
     init(previewImage: NSImage, fileAssets: [URL], palettes: [[PaletteRGB]] = [], pixelIndices: [Int] = [], imageWidth: Int = 0, imageHeight: Int = 0,
-         paletteLines: [Int] = []) {
+         paletteLines: [Int] = [], editedPalettes: Bool = false) {
         self.previewImage = previewImage
         self.fileAssets = fileAssets
         self.palettes = palettes
@@ -27,6 +29,7 @@ nonisolated struct ConversionResult {
         self.imageWidth = imageWidth
         self.imageHeight = imageHeight
         self.paletteLines = paletteLines
+        self.editedPalettes = editedPalettes
     }
 }
 

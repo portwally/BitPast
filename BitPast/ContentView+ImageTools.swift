@@ -36,16 +36,35 @@ extension ContentView {
             paletteLines: result.paletteLines
         )
 
+        // Write the new palettes into a copy of the converted file, so saving keeps them
+        var fileAssets = result.fileAssets
+        if let url = fileAssets.first {
+            do {
+                let data = try Data(contentsOf: url)
+                if let edited = AppleIIGSConverter.replacingPalettes(result.palettes, in: data) {
+                    let copy = FileManager.default.temporaryDirectory
+                        .appendingPathComponent("iigs_\(UUID().uuidString.prefix(8))_edited.\(url.pathExtension)")
+                    try edited.write(to: copy)
+                    fileAssets[0] = copy
+                }
+            } catch {
+                viewModel.errorMessage = "Couldn't save the edited palettes: \(error.localizedDescription)"
+            }
+        }
+
         // Update the result
         viewModel.currentResult = ConversionResult(
             previewImage: preview,
-            fileAssets: result.fileAssets,
+            fileAssets: fileAssets,
             palettes: result.palettes,
             pixelIndices: result.pixelIndices,
             imageWidth: result.imageWidth,
             imageHeight: result.imageHeight,
-            paletteLines: result.paletteLines
+            paletteLines: result.paletteLines,
+            editedPalettes: true
         )
+        viewModel.paletteEditsImageId = viewModel.selectedImageId
+        viewModel.paletteEditsMachineIndex = viewModel.selectedMachineIndex
     }
 
     func regeneratePreview(indices: [Int], palettes: [[PaletteColor]], width: Int, height: Int,
@@ -150,7 +169,8 @@ extension ContentView {
             pixelIndices: result.pixelIndices,
             imageWidth: result.imageWidth,
             imageHeight: result.imageHeight,
-            paletteLines: result.paletteLines
+            paletteLines: result.paletteLines,
+            editedPalettes: result.editedPalettes
         )
     }
 }
