@@ -32,7 +32,7 @@ nonisolated class Amiga1200Converter: RetroMachine {
                         range: 0.5...2.0, defaultValue: 1.0),
         ConversionOption(label: "Gamma", key: "gamma",
                         range: 0.5...2.0, defaultValue: 1.0)
-    ]
+    ] + ImageFraming.options
 
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
         try validateSourceImage(sourceImage)
@@ -62,7 +62,7 @@ nonisolated class Amiga1200Converter: RetroMachine {
         }
 
         try Task.checkCancellation()
-        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: ImageFraming(opts))
 
         try Task.checkCancellation()
         // Apply preprocessing

@@ -32,7 +32,8 @@ extension ContentView {
             indices: result.pixelIndices,
             palettes: newPalettes,
             width: result.imageWidth,
-            height: result.imageHeight
+            height: result.imageHeight,
+            paletteLines: result.paletteLines
         )
 
         // Update the result
@@ -42,11 +43,13 @@ extension ContentView {
             palettes: result.palettes,
             pixelIndices: result.pixelIndices,
             imageWidth: result.imageWidth,
-            imageHeight: result.imageHeight
+            imageHeight: result.imageHeight,
+            paletteLines: result.paletteLines
         )
     }
 
-    func regeneratePreview(indices: [Int], palettes: [[PaletteColor]], width: Int, height: Int) -> NSImage {
+    func regeneratePreview(indices: [Int], palettes: [[PaletteColor]], width: Int, height: Int,
+                           paletteLines: [Int] = []) -> NSImage {
         guard !indices.isEmpty, !palettes.isEmpty else {
             return NSImage(size: NSSize(width: width, height: height))
         }
@@ -55,7 +58,10 @@ extension ContentView {
 
         for y in 0..<height {
             let paletteIndex: Int
-            if palettes.count == 200 {
+            if y < paletteLines.count {
+                // IIgs 256 colours - the palette this line's SCB selects
+                paletteIndex = min(paletteLines[y], palettes.count - 1)
+            } else if palettes.count == 200 {
                 // Brooks 3200 mode - one palette per scanline
                 paletteIndex = y
             } else {
@@ -143,7 +149,8 @@ extension ContentView {
             palettes: result.palettes,
             pixelIndices: result.pixelIndices,
             imageWidth: result.imageWidth,
-            imageHeight: result.imageHeight
+            imageHeight: result.imageHeight,
+            paletteLines: result.paletteLines
         )
     }
 }

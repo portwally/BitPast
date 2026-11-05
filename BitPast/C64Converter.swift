@@ -86,7 +86,7 @@ nonisolated class C64Converter: RetroMachine {
             range: 0.5...2.5,
             defaultValue: 1.0
         )
-    ]
+    ] + ImageFraming.options
 
     // PETSCII charset (256 characters × 8 bytes each = 2048 bytes)
     // The C64 ROM contains two charsets (4096 bytes total) - we use the first one (uppercase/graphics)
@@ -146,7 +146,7 @@ nonisolated class C64Converter: RetroMachine {
         try Task.checkCancellation()
         // Get pixel data using the same approach as AppleIIGSConverter
         var pixels = try getPixelData(from: sourceImage, width: width, height: height,
-                                       saturation: saturation, gamma: gamma)
+                                       saturation: saturation, gamma: gamma, framing: ImageFraming(opts))
 
         try Task.checkCancellation()
         // Apply contrast processing
@@ -1220,7 +1220,7 @@ nonisolated class C64Converter: RetroMachine {
     // MARK: - Pixel Reading (same approach as AppleIIGSConverter)
 
     private func getPixelData(from sourceImage: NSImage, width: Int, height: Int,
-                               saturation: Double, gamma: Double) throws -> [[Float]] {
+                               saturation: Double, gamma: Double, framing: ImageFraming) throws -> [[Float]] {
         // Try to get CGImage from source and draw it directly
         guard let cgImage = CommodoreFamilyImageOps.getCGImage(from: sourceImage) else {
             throw NSError(domain: "C64Converter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get CGImage from source"])
@@ -1239,7 +1239,7 @@ nonisolated class C64Converter: RetroMachine {
 
         // Draw cgImage scaled to target size
         ctx.interpolationQuality = .high
-        ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        framing.draw(cgImage, in: ctx, width: width, height: height)
 
         // Convert bytes to float array (0-1 range)
         var pixels = [[Float]](repeating: [Float](repeating: 0, count: 3), count: width * height)

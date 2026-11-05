@@ -1,5 +1,6 @@
 {
   "Amiga1200" : {
+    "aspect=Ignore" : "460e479b349ba13d35b1658c9cdc1f48ed2b18e827dbaacaea4efdd7e5216fab",
     "color_match=Chroma" : "1865b4b06a34267d24551d212587ecdab72683a517cd3debaa3e03727614c5d7",
     "color_match=Euclidean" : "5159cce060155c3b0645a19831ff3b00423142b65214d3ac95112d411b2dd7ea",
     "color_match=Luma" : "b31457563bf4c03a677b7f7101fc9bdcb472ca763174746b551fe76cd6f01025",
@@ -17,6 +18,9 @@
     "filter=Emboss" : "c1db7cbd435cfd9e3a32c63186613907ab326317ea9fcd2809792b23c7ef9763",
     "filter=Lowpass" : "25ac656c90755a1b62194b7d66ecf47f665af4248f957809d322e858c1118a45",
     "filter=Sharpen" : "e3abebe056936ebefd363a7dd73f0f04c91b46565818ce61b6ab5b90b2977a91",
+    "fit=Contain" : "460e479b349ba13d35b1658c9cdc1f48ed2b18e827dbaacaea4efdd7e5216fab",
+    "fit=Cover" : "460e479b349ba13d35b1658c9cdc1f48ed2b18e827dbaacaea4efdd7e5216fab",
+    "fit=None" : "888fb99dc765ee3ccddf48faab4f42c9f680007414aded7b973e20a291f5ce99",
     "gamma=1.50" : "5476ac23b379c5a8256910b1c4e3d6b3030c6212da3cb25c4935a62515a57d16",
     "mode=HAM8 (262144 colors)" : "3ff7d37f0453edd095e0f62fb01f4694763a0d3751ff7b86e282bfde3dea8951",
     "resolution=320×512" : "beac4b28008d1257d5368747525b9d40f53f36f991dcb8427e733227f29c9cf9",
@@ -24,6 +28,7 @@
     "saturation=1.50" : "a7fb06ddca9f665b7bbd232350ec961829da204d73fef5b3103b398d42c3c556"
   },
   "Amiga500" : {
+    "aspect=Ignore" : "63ab671a4d2e013b901efde1ab5e070d93c7fbe9a74bd754393fd87e183dd464",
     "color_match=Chroma" : "33165c676207208425a968da0ed7c8ee5b4486a606b5fa6766492ae7a1716d1c",
     "color_match=Euclidean" : "4217dec4d8f310e7d45590fbfc5210c8cd1b0cb848d068b8958f6707e28e2d39",
     "color_match=Luma" : "fb3bdb4286f014f7c52ae3112154e2c69c5ae9fd4f4b0ed78bf62dbc6069941d",
@@ -41,12 +46,16 @@
     "filter=Emboss" : "3bfa66218c2be7b4ce4b9fa66a5b17ae95e8564a517328085c8ce854726e637c",
     "filter=Lowpass" : "04535e27555dbb0552c7b95edbb6cf81c6beade83461cc103cf93d68e8ec7c4d",
     "filter=Sharpen" : "0cf639e2892772fc733b884b0b4cc4565c135c21cbf2ddfd7cb3ca634d0ac985",
+    "fit=Contain" : "63ab671a4d2e013b901efde1ab5e070d93c7fbe9a74bd754393fd87e183dd464",
+    "fit=Cover" : "63ab671a4d2e013b901efde1ab5e070d93c7fbe9a74bd754393fd87e183dd464",
+    "fit=None" : "c91d134ab1fd1c4db4115a635367a19560515e119cb0c70efe845b6e7fca8c5f",
     "gamma=1.50" : "448233a381be7f3b0525c2ddac1b20997303970ba218ba52d862e8fafd8ab0ce",
     "mode=HAM6 (4096 colors)" : "c846c873619bf0f8ce3460428aa554cdede849bd55b6a88714427fc0f8974884",
     "resolution=320×512" : "54e877324558eb50b61135356aa5921533ac7fdebb652e8a758c74ecaba1770e",
     "saturation=1.50" : "d17ac75cf0c2d760757dae54bf34e926163880df50b6dbbca9fa7e9949f0337f"
   },
   "AmstradCPC" : {
+    "aspect=Ignore" : "dfaf19299188a5c327b06fc944f33018c501bca7e4b75713444e5b5600bf9f37",
     "color_match=Chroma" : "5a42a66a1e34543ace33e32d44b7b1b519258bdcd8bc7f07a9099b7b4589f73e",
     "color_match=Euclidean" : "b02ebcb58a1eb1b28e78c530504aa578bf5c317ab07f82bfd859617e19904d89",
     "color_match=Luma" : "46110ba3b81a6ca6c4467bdd108c8a7cde9e38897d881fada0cf706a190ec8a8",
@@ -68,12 +77,16 @@
     "filter=Emboss" : "0a2c9888cb8191d30666c941016893d7efb080047e2f17515b44cdd9034c01a1",
     "filter=Lowpass" : "819c4a1e5c2b75161762d433e5f4bcb6529a34b2dfd6a6a29ffddb3743c2c3af",
     "filter=Sharpen" : "0e926f93f90f4651689f229b78782a3cf211c85bfdddb631f21cc6b69ff2cc7d",
+    "fit=Contain" : "dfaf19299188a5c327b06fc944f33018c501bca7e4b75713444e5b5600bf9f37",
+    "fit=Cover" : "dfaf19299188a5c327b06fc944f33018c501bca7e4b75713444e5b5600bf9f37",
+    "fit=None" : "a20165ea0e80a1af29d3ff89e55301abe7d8172d387f4e60af5f00af67bff967",
     "gamma=1.50" : "039502edcb183e8266f4300f6c178afdbea7443f86427958edbb67992d751b7c",
     "mode=Mode 0 (160×200, 16 colors)" : "db0c3a1bfc434074022b1d839024ad37ddbba5959718159793dfe2c22cb53e28",
     "pixel_merge=Brightest" : "dfaf19299188a5c327b06fc944f33018c501bca7e4b75713444e5b5600bf9f37",
     "saturation=1.50" : "49acb2b3a569dfae7f2d3c202bd6dd78bdd7833493f288174f276fbc013d236f"
   },
   "AppleII" : {
+    "aspect=Ignore" : "ead9886f6f3a6418481fac145ed1c9c8e2bbd20852296719552a95a6f79a2d12",
     "crosshatch=5.00" : "ebd310a6ba5a0a60b3d613c21fd4a456092d3800b7877d2aa9a8d5054b9cb4db",
     "default" : "ead9886f6f3a6418481fac145ed1c9c8e2bbd20852296719552a95a6f79a2d12",
     "dither=Atkinson" : "89322f6810a8d6785759714ddb7ec6e130aa4d90e4a4938adce1dd4252f49d19",
@@ -86,6 +99,9 @@
     "dither=Sierra Two" : "86158c34d83aade6df6eecdc5919757b7fc2ec76a4894a4df97748babfa7dbcc",
     "dither=Stucki" : "e8d99faca367ca8526ee6bad2969554a6f25f04a2267f1ab90ffbfb4a4230289",
     "error_matrix=5.50" : "ead9886f6f3a6418481fac145ed1c9c8e2bbd20852296719552a95a6f79a2d12",
+    "fit=Contain" : "ead9886f6f3a6418481fac145ed1c9c8e2bbd20852296719552a95a6f79a2d12",
+    "fit=Cover" : "ead9886f6f3a6418481fac145ed1c9c8e2bbd20852296719552a95a6f79a2d12",
+    "fit=None" : "eb8c016ce9cde0d48b2e0f652738b11bd30671507ba94621857848e067aa29ee",
     "mode=DLGR" : "6856426cf32240504680f06f8223270b4ae99cb0fb8a6c9621daa0918f2d9b87",
     "mode=HGR" : "5c4de47229e5db7bfeef9a0442fba984b4b2dbf97eae86463cebf2975353f607",
     "mode=LGR" : "96689343e258f7731f85ce97ac80cd1ed815900293710e1a173fd994a9fe0ec4",
@@ -107,6 +123,7 @@
     "z_threshold=20.00" : "6d114c0734248ea1619b18edb4b6d673fcf6291458789402cd0ecf665f3e4266"
   },
   "AppleIIGS" : {
+    "aspect=Ignore" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "default" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "dither=Atkinson" : "a619b7caba5a69017bff12be09f503a2bb9b5afcefcd1b35848fd4e9b86a1c0b",
     "dither=Bayer 16x16" : "9543b58f1251a35b8caae8dd1542753fca917858774883f2b4d2b4f0deb11624",
@@ -122,6 +139,9 @@
     "dither_amount=1.00" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "edge_threshold=75.00" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "emboss_depth=1.50" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
+    "fit=Contain" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
+    "fit=Cover" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
+    "fit=None" : "426cfed00c28133ce348afcc48e6e9b6c2073761422c85396e1bdcaa666ba334",
     "median_size=5x5" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "median_size=7x7" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "mode=256 Colors (16 Palettes)" : "aa745d157d5a6aab0e6da13ddd631c4729f933eba562f47cf5274545f2ffa4e5",
@@ -138,12 +158,15 @@
     "preprocess=Solarize" : "de456625ee06364136536d4798b456fd5b2ea497ee7694bc1ef6579ec31a78c6",
     "quantization_method=Palette Reuse" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "saturation=1.55" : "690afcc228808f0f1f2ad40a5c2eb7e1de112f8988d3b9216185d11d7a44e72b",
+    "scb_mode=Palette Reuse" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
+    "scb_mode=Per-Line" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "sharpen_strength=1.75" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "sigma_range=35.00" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "solarize_threshold=176.00" : "7dc14c690fb9d5b5fd5a5bf405c0e951edbd27431e7dd3f081f60d786fc256eb",
     "threshold=30.00" : "5254d4f6467ac5aedf3d88dc7e43c7359ea3e35532963929689554b75223e3a8"
   },
   "Atari800" : {
+    "aspect=Ignore" : "237a104efed035c7eedef6d3d16b2d2bad40e4b46cdfc037ecbcc6babfeffdab",
     "color_match=Chroma" : "ed54b509bf688ed7456ee497391c0312545eba8f3d87bcff58d4c304e81402a8",
     "color_match=Euclidean" : "05cf87aac92c41ac67ffe30d848ba6273b4492d6a3f570995a6c019eb51bfe98",
     "color_match=Hue" : "c34875fd89c4f98d0e5ebf6c5375f254abfa3a358be8b36095e73c32011e1909",
@@ -165,6 +188,9 @@
     "filter=Emboss" : "356f37423543e2526ecb2b67aa14e1b34124247ebb9deaf7a53a3597ff6b598c",
     "filter=Lowpass" : "fd06ed46321f3cd4a413baff07730fb545be09c512ca02e6c080871316f48705",
     "filter=Sharpen" : "47bac45842ddceb63d95b6329f5615208644a482e10bb31da7a3d43c84cb3953",
+    "fit=Contain" : "237a104efed035c7eedef6d3d16b2d2bad40e4b46cdfc037ecbcc6babfeffdab",
+    "fit=Cover" : "237a104efed035c7eedef6d3d16b2d2bad40e4b46cdfc037ecbcc6babfeffdab",
+    "fit=None" : "6c5db031101042167e72ac6686ac3c1121a9ba16f5d88bed62e8f498c528dea6",
     "gamma=1.50" : "b38cbf770be92f44c5ae749d57be15c5c9c265cc32c838d68f1ff68fe3d995fc",
     "mode=Graphics 10 (80×192, 9 colors)" : "e712830b6b6cf67d2a41e85652d1a5dea3594ee41f28b20fb21fc1ff3bc404f8",
     "mode=Graphics 11 (80×192, 16 hues)" : "5ea680f4cff559fc5202fcaaf5b72fc313a89ce06d13fbbbf18e07dd9751eccf",
@@ -173,6 +199,7 @@
     "saturation=1.50" : "29e99372f5d3fd2a7170469ed29b1fe817147c978f972773537e7b2e4eb8451b"
   },
   "AtariST" : {
+    "aspect=Ignore" : "99c8e0671f4cdadaef1ea7af13f1d8b95849ea5e43e7343b4852cba6dfae0a5c",
     "color_match=Chroma" : "837adee0362a03113afadfca7bbd2160e2457cc7773e4a5fb2b0ff52d936e55d",
     "color_match=Euclidean" : "5c65f261a32197b93a40bf176002eb919666989bfe9f3eb9d7b0395a789f4808",
     "color_match=Luma" : "8e4e68e305aad83a8256e839bf7f8208ca57b7236bb0a032f4c77fc482403357",
@@ -194,12 +221,16 @@
     "filter=Emboss" : "4ed7cd7cd677aa211d225908109b0a0e6826f77cbd1c055dba53588d085611f7",
     "filter=Lowpass" : "d83ed2fa0c4eba2eec746cdd91309c4cb14c491ee2321b15c5213c03f7905dd2",
     "filter=Sharpen" : "59b00ecc1485929ca61aa019e4b3d43c6a45405ee3fb39edcb38715acceaac45",
+    "fit=Contain" : "99c8e0671f4cdadaef1ea7af13f1d8b95849ea5e43e7343b4852cba6dfae0a5c",
+    "fit=Cover" : "99c8e0671f4cdadaef1ea7af13f1d8b95849ea5e43e7343b4852cba6dfae0a5c",
+    "fit=None" : "eea0c10b8f304a6483dd5c09599eb05d992590513b1d12f58192244a0437cfa1",
     "gamma=1.50" : "a803b4e30f6a70faf15ea87b5ed1cdca2b0aee1195d5baee00098301807c3194",
     "mode=High Res (640×400)" : "66a2742514006dc703aa352d542328495a760869b7c07d432553e45df7e17693",
     "mode=Medium Res (640×200)" : "60f6c77fc1e4a138782c416de1c5e1d0faee5c1b792908b72d5d203169cbf5f5",
     "saturation=1.50" : "e68b6185d525fbed534e625b07baabbcf0580662f587d5bf33bf371e6be0ecc0"
   },
   "BBCMicro" : {
+    "aspect=Ignore" : "c7e4209ee797553d086518f164f34253e3b04e085e88cd53d24327ea34957996",
     "color_match=Chroma" : "6568e5957979fd3f6b74c5397b81b5da2c4f446bfb54a88d8c9c964d7eea5d68",
     "color_match=Euclidean" : "c98aaa1d143bd28c90617b860fbb687d9d795246dd5a89d1513f9f579ec2b04e",
     "color_match=Hue" : "3ec55044e8e8b630071e07054839f373c70a1232ec39080f424673c96f7d4e93",
@@ -221,6 +252,9 @@
     "filter=Emboss" : "9330a45d1e30f230cfcbf23993a32fcd6acf62fe1708fc00b83f48d05c93aaa6",
     "filter=Lowpass" : "f51b6da17ed75afa9e16dfa9a57659146b39b2d1b9966f2c18871784e98296ae",
     "filter=Sharpen" : "03534788894160116f33eed4f7d47a19de4ab2d81279578115626df17e1f9f4e",
+    "fit=Contain" : "c7e4209ee797553d086518f164f34253e3b04e085e88cd53d24327ea34957996",
+    "fit=Cover" : "c7e4209ee797553d086518f164f34253e3b04e085e88cd53d24327ea34957996",
+    "fit=None" : "8fb68adb7e360215f4b5beb4097b6abc769fe59fa4bce65a8bb9137b06abd155",
     "gamma=1.50" : "a8e20eb496ac1d24997c8d75f462a44bfcf7a73f46256468a9c9b5f2eca66cc0",
     "mode=Mode 0 (640×256, 2 colors)" : "f1326c72d2aa3864350325dff7832f5b3750f1ff21f8d22a35eb14370e1f65f9",
     "mode=Mode 1 (320×256, 4 colors)" : "fb18af8db5e032d7b94bb34345db9fd26a0ac8314bc3fa302cc9beabe129f51a",
@@ -229,6 +263,7 @@
     "saturation=1.50" : "30e75fa1e4a275e871995e04168a429e7ddc943d4e632e50d8f1645cdef62346"
   },
   "C64" : {
+    "aspect=Ignore" : "ced85e6c8d5a6881f6bc986a7236b4a5dee1da7fae669b83493e92ab8a9edc8e",
     "color_match=Chroma" : "727d2d5d2bbfc9ac0450fb15a4be9514381472f20370906f366aca2ae8a8c950",
     "color_match=Euclidean" : "0b37a19bcf89f3fab98eb1c15242214858ef52f83c72fde9305e9734cbbf1a4c",
     "color_match=Luma" : "9ef1b68b59d62ee1853d87526d89529994790355c650c48e250b1960ee531fd3",
@@ -250,6 +285,9 @@
     "filter=Emboss" : "4e51774e633dab51c8a8509ccce898ef63a636486b567fecd0dc429bb96efd49",
     "filter=Lowpass" : "6d2006ef021b91da3e99f63ed25291d9831ed0a1431bec6f27dc4424ffbee05d",
     "filter=Sharpen" : "70673046b8a020dc27769d9eadbb332be883f66d9b7c0f68910e8bf06542cc89",
+    "fit=Contain" : "ced85e6c8d5a6881f6bc986a7236b4a5dee1da7fae669b83493e92ab8a9edc8e",
+    "fit=Cover" : "ced85e6c8d5a6881f6bc986a7236b4a5dee1da7fae669b83493e92ab8a9edc8e",
+    "fit=None" : "656faa5b92ce55b2ee29c3ed5f78fa4bbca11e3ed705898f8fcff369225000f8",
     "gamma=1.75" : "955cdff7b26fc4b093616ba4803dcc91561a89fc76429f12d38915597a7b02a7",
     "mode=HiRes (320×200)" : "997d937f618dcc9275b148d23e5df2c0f6b30679f2d444d947eae51600be8787",
     "mode=PETSCII (40×25)" : "60349f2ec0f498da9d1f9cae3375b6fbe54a0142f426d3d2896727cfaa9405d7",
@@ -257,6 +295,7 @@
     "saturation=1.50" : "4fc717c2534a99f9e24955c9206f62e4eee73741c6ca7f8816db482616723ad3"
   },
   "MSX" : {
+    "aspect=Ignore" : "c77e8ce6220d75909c358fdbf30d7bb6b716309ec19c633f1ca1db6deeffda7a",
     "color_match=Chroma" : "c303dae0736c1ad788a6711782e66d3a11c26dfd2d8b7e9be14e05697aa0b053",
     "color_match=Euclidean" : "e05286fd3b9bb97b371288c13be779f9fdf802d8e1447b87b16f8e96d97280fc",
     "color_match=Hue" : "7935b495870d51b122bacb8b3403c6d11a7710522b7d8e6fecb436e1bec230bc",
@@ -275,12 +314,16 @@
     "filter=Emboss" : "d97ec599c736005c924ff1d4dbd69afe12bfc1d4a10ab2091acfbc238f37e9c4",
     "filter=Lowpass" : "8d4c01946b42725d5cbfbbe1a666ef8ac57d1561d6887586c3d8d3b53652a67b",
     "filter=Sharpen" : "ca8472d90f0a42184e4fb5d59cf941f92ef71dc77a5c36fb675c588af2f67cf8",
+    "fit=Contain" : "c77e8ce6220d75909c358fdbf30d7bb6b716309ec19c633f1ca1db6deeffda7a",
+    "fit=Cover" : "c77e8ce6220d75909c358fdbf30d7bb6b716309ec19c633f1ca1db6deeffda7a",
+    "fit=None" : "4b5721c1e08a9fbb0315c1a77c0ef6954b2c85b8cfc25577f9779fa22c235faf",
     "gamma=1.50" : "f4ab2c7f515a1f6fec954b0e6f41d4532f49b1c67350d9d8437885f7f9f45864",
     "mode=Screen 2 (MSX1)" : "e84ad0dd83c450a7511bc01316d65781813d9899e67ef993f3b7090e78d5adb2",
     "mode=Screen 8 (MSX2)" : "8ab05318088fbe5439e1002019c2745e4ecd7e308a5c1834ac2e5d01260f1113",
     "saturation=1.50" : "5cfbe6b587e270cbb0ef62649f700d1dd800306b7a2ccbad19d927d3cd2a6d77"
   },
   "PC" : {
+    "aspect=Ignore" : "8130377819090891676a50d591f43ed86f300e9691ade26b0aec8b7234a5d2fd",
     "cga_palette=Cyan\/Magenta\/Gray" : "8130377819090891676a50d591f43ed86f300e9691ade26b0aec8b7234a5d2fd",
     "cga_palette=Green\/Red\/Brown" : "8130377819090891676a50d591f43ed86f300e9691ade26b0aec8b7234a5d2fd",
     "cga_palette=Green\/Red\/Yellow" : "8130377819090891676a50d591f43ed86f300e9691ade26b0aec8b7234a5d2fd",
@@ -302,15 +345,19 @@
     "filter=Emboss" : "97bc661c5d93bab89c236a29b708030eec4ad18ba6c344a5de9977d76b640463",
     "filter=Lowpass" : "da30c2edd612f6bab37c225e9a1b6f7fea337ad3dc33511cb96a97210b101c0c",
     "filter=Sharpen" : "3662aaa290a7f44390ca3673fc546eb5e663f5bcd0bbb56557518b1a1df9d823",
+    "fit=Contain" : "8130377819090891676a50d591f43ed86f300e9691ade26b0aec8b7234a5d2fd",
+    "fit=Cover" : "8130377819090891676a50d591f43ed86f300e9691ade26b0aec8b7234a5d2fd",
+    "fit=None" : "3d43796014ad466b937dc5155b080e0a5edb145f2f523eed9119750bb142ceb4",
     "gamma=1.50" : "850f89a97ee97f82f24cf822493d8399907549661c201cf88527ec35042060cc",
     "mode=CGA (4 colors)" : "95f46b85245be81b507942c120078ef2683bbde9bcfdd0a51373f01918356eaf",
-    "mode=CGA 80×25 Text" : "610d22314d78b94a91d9ac9be4e789973dae0d853dd258fb6cd9e0b718330d4c",
+    "mode=CGA 80×25 Text" : "765ccffd6071d690ed13921142c64e6f50e717121cf31aafdd16669f828633a7",
     "mode=EGA (16 colors)" : "42ce4ddab1ea026c9467d2d0c0abb33dab8e3036681af8781bae70c22ff087e0",
     "mode=EGA 64 (16 from 64)" : "8f1c3bf3b3dccdcbd482c96dd129024224c8e63ca5f8f4cc1b690ff6e6535a96",
-    "mode=VESA 132×50 Text" : "023920ab8d771451e3a818fa424c684026f65051e1d1a5545075b0ad3aced3de",
+    "mode=VESA 132×50 Text" : "dd224c8be0910076337758971d0ce9cae0d37bd9f453a39a5a4e05530b6d4430",
     "saturation=1.50" : "694f5a624eb218ea73a9b87fba172f4d7fc49333751f2ac8e376df7f5425ccd5"
   },
   "Plus4" : {
+    "aspect=Ignore" : "42f8e349e206a4336ba6ee8dfaddc19125bfdf1d5a6b67249fa5b1a4cd4f379e",
     "color_match=Chroma" : "4b4d84e4afc7357bba81587d954f89c233a2aa49f772be8eac204a026a949065",
     "color_match=Euclidean" : "4065321789e46f58b0bec2a5ac8e7a4682c26977a380886a6298e094ad8633f4",
     "color_match=Luma" : "5c483c5d8615d74ea8806770820787880b9884964f9c03bc6e46ffc95560c6c9",
@@ -332,12 +379,16 @@
     "filter=Emboss" : "fa941bac6804b712f05ed0a3f940e3aced93e2ee08b11d9fc74c3e98f68360a7",
     "filter=Lowpass" : "09fefd485bd973206af169676aeef5fe98ceccc54ea78af6fdb8089f67e15ab8",
     "filter=Sharpen" : "5b3b128d506f21ba79ae041426b327c85aecd6baf62e2d71562f5c0a2681a8e3",
+    "fit=Contain" : "42f8e349e206a4336ba6ee8dfaddc19125bfdf1d5a6b67249fa5b1a4cd4f379e",
+    "fit=Cover" : "42f8e349e206a4336ba6ee8dfaddc19125bfdf1d5a6b67249fa5b1a4cd4f379e",
+    "fit=None" : "29d6e1436a59ab710c291db4833d9d0192b3ba68b95c2c8fd27094216e803469",
     "gamma=1.50" : "e21086789a23200eb9de885345e6348fcac9a6566f03fef1cacd08c2a89cb50d",
     "mode=Multicolor (160×200)" : "2badc4386f153ca1b76bf9ef6e8130290989dbd608d67bc780cdffd1cbfe888e",
     "pixel_merge=Brightest" : "42f8e349e206a4336ba6ee8dfaddc19125bfdf1d5a6b67249fa5b1a4cd4f379e",
     "saturation=1.50" : "109ee294525a17a3dcb53f2652e0a44443ea1a69a94f310e0f22768522c05dbd"
   },
   "TRS80CoCo" : {
+    "aspect=Ignore" : "b45b029e9904faff6667681463e13798a735bd7e5ad0bc5cae8fda188c946740",
     "color_match=Chroma" : "f07321adc772ca3fc313464987b3bd66166e288a8196627594de4b7c5fc68ffe",
     "color_match=Euclidean" : "a95d14d486513ebe658095fa32ba90b57e8d53a11c17b9df1aa1fb62ca0c8371",
     "color_match=Hue" : "e6c8ea440c684d590f173ea7c120a7fe53b0374d4f48174f726127bb0547d241",
@@ -361,6 +412,9 @@
     "filter=Emboss" : "423f77c5886e577a4679f0fcb5e0d23b0b77c0b3bb6ecadf70b885ca02f8cdd2",
     "filter=Lowpass" : "0c828c6ba12422fcb09fd0ed3a1e3721154c98da71ea3f740f553824cb2d388c",
     "filter=Sharpen" : "eb60e1747ca9395ae959497e1144393ffdde7e103306bb495bf42615e497fa68",
+    "fit=Contain" : "b45b029e9904faff6667681463e13798a735bd7e5ad0bc5cae8fda188c946740",
+    "fit=Cover" : "b45b029e9904faff6667681463e13798a735bd7e5ad0bc5cae8fda188c946740",
+    "fit=None" : "690eee253c76d3c002305a6d18889bde324b2e499903483a6eeed02f6af0df84",
     "gamma=1.50" : "3c0d6f443faa6bf5220aa47b8f69b2111e90b3703b1dd3e8e7bc29a9af9d10e7",
     "mode=CoCo 3 (320×200, 16 colors)" : "6c424cd340cd653630ce83c7deda5de61133da211521b78ed627076d49cb550d",
     "mode=CoCo 3 (640×200, 4 colors)" : "99a13f7a1e8217e4ffc0f1a966e34b18ac0bbaa483b55525c3925d4e66b889c8",
@@ -370,6 +424,7 @@
     "saturation=1.50" : "2fdd939166b9daaba501ef16f243780a3d4f6236f062833676d6266d5d72bbce"
   },
   "VIC20" : {
+    "aspect=Ignore" : "20220866bfb7eb9d7fb83f1a57cb7323b98481c7d93ea5d3f20b6309e8af5fe0",
     "color_match=Chroma" : "1453b97d1ce866c38d33db3b9ca27f266b7ed420ad64ff7c9eb0b021b6bfbc10",
     "color_match=Euclidean" : "6b3fba5b970da3489be1ab514bef5640e836adb8726dc922a456fcb23776549d",
     "color_match=Luma" : "8b6173a539f90ed8f9137ac50780fa213f2ba1fc7a66eca7e276dff5e79c4b9b",
@@ -391,12 +446,16 @@
     "filter=Emboss" : "30a71941ab97e629029ca26d1e8e149a5540069ae9e07e5c8a9529c15ede4bd7",
     "filter=Lowpass" : "a1c5c0dabfb22cefb23fc3bcede4a6563ec2e3318dece1fe0938b9c6d9eb804b",
     "filter=None" : "57eeaca83666abf46666713e15879beb799d75da8b1c6e33f33c6151a2bca1ef",
+    "fit=Contain" : "20220866bfb7eb9d7fb83f1a57cb7323b98481c7d93ea5d3f20b6309e8af5fe0",
+    "fit=Cover" : "20220866bfb7eb9d7fb83f1a57cb7323b98481c7d93ea5d3f20b6309e8af5fe0",
+    "fit=None" : "3c9257c54fd8f50eccea9dc8f1fe33aba8a2d4c6b758dab1fca48633b09774be",
     "gamma=1.50" : "605471fbde9ae6dd8aa1c4236f2a57ba6c4de29740bcb5c4f310fbafaee4f669",
     "mode=LowRes (88×184)" : "615466fc07021a620f105ca8cb9fc69bc486644105e086f1f2be643ebf574263",
     "pixel_merge=Brightest" : "20220866bfb7eb9d7fb83f1a57cb7323b98481c7d93ea5d3f20b6309e8af5fe0",
     "saturation=1.50" : "01915510feeb1e6ec607ab3000e327b3d22f991b29f830be5d4cc159e6291fbd"
   },
   "ZXSpectrum" : {
+    "aspect=Ignore" : "9a6f382e3921c025b3b439a5fcca46206eff7f78e0ce2a97cba19e371d62318f",
     "color_match=Chroma" : "e8292c9f171be7adcde1358aa9aa8254e188a9da51db981c56b44c430fae3677",
     "color_match=Euclidean" : "0352ec71813a3bac53817521a6ea626f9f1a79bfc359e098bbb48a0c11abc3e3",
     "color_match=Luma" : "8964066fe0eb08939b711d173f333feb44e513c781bab8a7bc1a3b1ea97714da",
@@ -418,6 +477,9 @@
     "filter=Emboss" : "f4a961f962a4d1d1920f03d71ab7954c11e6232d7d057590657d0095cc66e0b6",
     "filter=Lowpass" : "92df61505155c7068102c3361e6f7e547a73964445f2af69b2d63ecc256b9825",
     "filter=Sharpen" : "1a107e74f001aa45f67626e46db3436d8dc4f3fe7f5f5fe0f42cc0f7d26c574b",
+    "fit=Contain" : "9a6f382e3921c025b3b439a5fcca46206eff7f78e0ce2a97cba19e371d62318f",
+    "fit=Cover" : "9a6f382e3921c025b3b439a5fcca46206eff7f78e0ce2a97cba19e371d62318f",
+    "fit=None" : "e4e7e4fa290632ecaae72d3ed812b33eaf35e34f8988a303cffc702f08c712b1",
     "gamma=1.50" : "13e24e907ff45080081995f665b89c8bcc9a9a55c265c141fed05202c453003d",
     "saturation=1.50" : "5479d707b8fc036330d62f30af77fce25e5ec0f6a02c9207813a7c600396626b"
   }

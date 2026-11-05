@@ -83,16 +83,21 @@ extension ContentView {
                     let visibleControls = group.filter { key in
                         // Check visibility conditions
                         let modeOption = viewModel.currentMachine.options.first(where: { $0.key == "mode" })
-                        let quantOption = viewModel.currentMachine.options.first(where: { $0.key == "quantization_method" })
+                        let scbOption = viewModel.currentMachine.options.first(where: { $0.key == "scb_mode" })
+                        let fitOption = viewModel.currentMachine.options.first(where: { $0.key == ImageFraming.fitKey })
                         let preprocessOption = viewModel.currentMachine.options.first(where: { $0.key == "preprocess" })
                         let selectedFilter = preprocessOption?.selectedValue ?? "None"
                         let is3200Brooks = modeOption?.selectedValue.contains("3200 Colors") == true
-                        let is256WithReuse = modeOption?.selectedValue.contains("256 Colors") == true && quantOption?.selectedValue.contains("Reuse") == true
+                        let is256 = modeOption?.selectedValue.contains("256 Colors") == true
+                        let is256Reuse = is256 && scbOption?.selectedValue == "Palette Reuse"
 
-                        // Show quantization ONLY in 3200 mode
+                        // Show quantization ONLY in 3200 mode, line palettes ONLY in 256 mode
                         if key == "quantization_method" && !is3200Brooks { return false }
-                        // Hide threshold unless 3200 or 256+Reuse
-                        if key == "threshold" && !(is3200Brooks || is256WithReuse) { return false }
+                        if key == "scb_mode" && !is256 { return false }
+                        // Hide threshold unless 3200 or 256+Palette Reuse
+                        if key == "threshold" && !(is3200Brooks || is256Reuse) { return false }
+                        // Aspect only matters when the picture isn't stretched
+                        if key == ImageFraming.aspectKey && fitOption?.selectedValue == ImageFraming.Fit.stretch.rawValue { return false }
 
                         // Filter-specific parameter visibility
                         if key == "median_size" && selectedFilter != "Median" { return false }

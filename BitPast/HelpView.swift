@@ -193,8 +193,8 @@ struct AppleIIgsHelpContent: View {
                 description: "Standard SHR format with 16 palette slots. Scanlines are grouped and share palettes. Maximum 256 unique colors (16 palettes × 16 colors).",
                 bestFor: "Compatibility with standard SHR viewers, when file size matters",
                 options: [
-                    OptionHelp(name: "3200 Quantization", description: "Per-Scanline: Groups consecutive scanlines into 16 slots. Palette Reuse: Tries to reuse palettes between similar scanlines."),
-                    OptionHelp(name: "Palette Merge Tolerance", description: "Only visible with 'Palette Reuse' quantization. Controls how similar scanlines must be to share a palette.")
+                    OptionHelp(name: "SCB Mode", description: "Which of the 16 palettes each scanline uses. Banded: 16 even bands of lines. Palette Reuse: the older method, which reuses the previous line's palette when it fits well enough; on photos it usually looks worse than Banded. Per-Line: any line can use any palette, so similar lines share one even when they're far apart; usually the best quality."),
+                    OptionHelp(name: "Palette Merge Tolerance", description: "Only visible with 'Palette Reuse'. Controls how similar scanlines must be to share a palette.")
                 ]
             )
 
@@ -1746,6 +1746,29 @@ struct GeneralOptionsHelpContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HelpHeader(title: "General Options", subtitle: "Common settings across all converters")
+
+            GeneralOptionHelp(
+                name: "Fit",
+                options: [
+                    "Stretch: Fills the screen and ignores the picture's shape (default)",
+                    "Contain: Shows the whole picture, with black bars where it doesn't fill the screen",
+                    "Cover: Fills the screen and crops what sticks out",
+                    "None: No scaling; one picture pixel per screen line, centered and cropped"
+                ]
+            )
+
+            Divider()
+
+            GeneralOptionHelp(
+                name: "Aspect",
+                options: [
+                    "Correct: Takes the machine's non-square pixels into account, so circles stay round (assumes the picture fills a 4:3 screen)",
+                    "Ignore: Treats the machine's pixels as square",
+                    "Only shown when Fit isn't Stretch"
+                ]
+            )
+
+            Divider()
 
             GeneralOptionHelp(
                 name: "Dithering Algorithm",

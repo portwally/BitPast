@@ -29,7 +29,7 @@ nonisolated class Atari800Converter: RetroMachine {
                         range: 0.5...2.0, defaultValue: 1.0),
         ConversionOption(label: "Gamma", key: "gamma",
                         range: 0.5...2.0, defaultValue: 1.0)
-    ]
+    ] + ImageFraming.options
 
     // Generate full 128-color Atari 800 palette (16 hues × 8 luminances)
     // Based on GTIA color generation
@@ -117,7 +117,7 @@ nonisolated class Atari800Converter: RetroMachine {
 
         try Task.checkCancellation()
         // Scale image
-        var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: ImageFraming(opts))
 
         try Task.checkCancellation()
         // Apply preprocessing

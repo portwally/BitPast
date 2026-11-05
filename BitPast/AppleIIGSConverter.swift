@@ -51,6 +51,18 @@ nonisolated class AppleIIGSConverter: RetroMachine {
             ],
             selectedValue: "Per-Scanline"
         ),
+
+        // 2c. SCB MODE (for 256 mode): which of the 16 palettes each line uses
+        ConversionOption(
+            label: "SCB Mode",
+            key: "scb_mode",
+            values: [
+                "Banded",     // 16 even bands of lines
+                "Palette Reuse",  // the older method: reuses the previous line's palette when close enough
+                "Per-Line"    // any line can use any palette
+            ],
+            selectedValue: "Banded"
+        ),
         
         // 3. DITHER STRENGTH
         ConversionOption(
@@ -141,7 +153,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
             range: 10.0...100.0,
             defaultValue: 50.0
         )
-    ]
+    ] + ImageFraming.options
     
     // MARK: - Global Structs (HIER DEFINIERT DAMIT SIE ÜBERALL SICHTBAR SIND)
     
@@ -320,6 +332,9 @@ nonisolated class AppleIIGSConverter: RetroMachine {
         let ditherAmount = Double(opts.first(where: {$0.key == "dither_amount"})?.selectedValue ?? "1.0") ?? 1.0
         let saturation = Double(opts.first(where: {$0.key == "saturation"})?.selectedValue ?? "1.0") ?? 1.0
         let quantMethod = opts.first(where: {$0.key == "quantization_method"})?.selectedValue ?? "Per-Scanline (Default)"
+        // Settings from before SCB Mode existed picked the 256-colour method with 3200 Quantization
+        let scbMode = opts.first(where: {$0.key == "scb_mode"})?.selectedValue
+            ?? (quantMethod.contains("Reuse") ? "Palette Reuse" : "Banded")
         let mergeThreshold = Double(opts.first(where: {$0.key == "threshold"})?.selectedValue ?? "10.0") ?? 10.0
         let preprocessFilter = opts.first(where: {$0.key == "preprocess"})?.selectedValue ?? "None"
 
@@ -343,7 +358,7 @@ nonisolated class AppleIIGSConverter: RetroMachine {
 
         try Task.checkCancellation()
         // 1. Resize & Pixel Data
-        let resized = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
+        let resized = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH, framing: ImageFraming(opts))
         guard let cgImage = resized.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw NSError(domain: "IIGS", code: 1, userInfo: [NSLocalizedDescriptionKey: "No CGImage"])
         }
@@ -566,9 +581,42 @@ nonisolated class AppleIIGSConverter: RetroMachine {
 
         } else {
             // D. 256 COLORS MODE (16 palettes - was previously called "3200 Mode")
-            let usePaletteReuse = quantMethod.contains("Reuse")
+            let usePaletteReuse = scbMode == "Palette Reuse"
             
-            if usePaletteReuse {
+            if scbMode == "Per-Line" {
+                // Any line can use any of the 16 palettes
+                let plan = try planPerLinePalettes(rawPixels, width: targetW, height: targetH)
+                finalPalettes = plan.palettes
+                paletteSlotMapping = plan.lineSlots
+
+                for y in 0..<targetH {
+                    try Task.checkCancellation()  // stop early if this preview was replaced
+                    let currentPalette = finalPalettes[paletteSlotMapping[y]]
+                    for x in 0..<targetW {
+                        let idx = y * targetW + x
+                        var p = rawPixels[idx]
+                        p.r = min(255, max(0, p.r))
+                        p.g = min(255, max(0, p.g))
+                        p.b = min(255, max(0, p.b))
+                        if isOrdered {
+                            let offset = getOrderedDitherOffset(x: x, y: y, ditherType: ditherName, amount: ditherAmount)
+                            p.r = min(255, max(0, p.r + offset))
+                            p.g = min(255, max(0, p.g + offset))
+                            p.b = min(255, max(0, p.b + offset))
+                        }
+                        let match = findNearestColor(pixel: p, palette: currentPalette)
+                        outputIndices[idx] = match.index
+                        if !isNone && !isOrdered {
+                            // The error is a colour difference, so it carries over to lines with other palettes
+                            distributeError(source: &rawPixels, x: x, y: y, w: targetW, h: targetH,
+                                            errR: (p.r - match.rgb.r) * ditherAmount,
+                                            errG: (p.g - match.rgb.g) * ditherAmount,
+                                            errB: (p.b - match.rgb.b) * ditherAmount,
+                                            kernel: kernel)
+                        }
+                    }
+                }
+            } else if usePaletteReuse {
                 
                 // Sequential palette reuse: try to reuse previous scanline's palette
                 var linePalettes = [[RGB]]()
@@ -909,7 +957,8 @@ nonisolated class AppleIIGSConverter: RetroMachine {
             palettes: paletteRGBs,
             pixelIndices: outputIndices,
             imageWidth: targetW,
-            imageHeight: targetH
+            imageHeight: targetH,
+            paletteLines: is256Color ? paletteSlotMapping : []
         )
     }
     
@@ -1161,6 +1210,104 @@ nonisolated class AppleIIGSConverter: RetroMachine {
             }
         }
         pixels = result
+    }
+
+    /// Per-Line SCBs for 256-colour mode: 16 palettes, and each line uses whichever fits it best,
+    /// so similar lines share a palette even when they're far apart.
+    /// Starts from 16 even bands, then refines like k-means: assign every line to its best palette,
+    /// rebuild each palette from its lines, and repeat until no line moves. Deterministic.
+    func planPerLinePalettes(_ pixels: [PixelFloat], width: Int, height: Int) throws -> (palettes: [[RGB]], lineSlots: [Int]) {
+        let slotCount = 16
+        // Every other pixel is enough to judge and build palettes
+        let lines: [[PixelFloat]] = (0..<height).map { y in
+            stride(from: 0, to: width, by: 2).map { x in
+                let p = pixels[y * width + x]
+                return PixelFloat(r: max(0, min(255, p.r)), g: max(0, min(255, p.g)), b: max(0, min(255, p.b)))
+            }
+        }
+
+        // Every 4th pixel as flat r,g,b values, for judging how well a palette fits a line
+        let samples: [[Double]] = (0..<height).map { y in
+            stride(from: 0, to: width, by: 4).flatMap { x -> [Double] in
+                let p = pixels[y * width + x]
+                return [max(0, min(255, p.r)), max(0, min(255, p.g)), max(0, min(255, p.b))]
+            }
+        }
+        // Total distance from each sample to its nearest palette colour (flat loops keep Debug builds fast)
+        func fitError(_ line: [Double], _ palette: [Double]) -> Double {
+            line.withUnsafeBufferPointer { sp in
+                palette.withUnsafeBufferPointer { pp in
+                    var total = 0.0
+                    var i = 0
+                    while i < sp.count {
+                        let r = sp[i], g = sp[i + 1], b = sp[i + 2]
+                        var nearest = Double.greatestFiniteMagnitude
+                        var j = 0
+                        while j < pp.count {
+                            let dr = r - pp[j], dg = g - pp[j + 1], db = b - pp[j + 2]
+                            let d = dr * dr + dg * dg + db * db
+                            if d < nearest { nearest = d }
+                            j += 3
+                        }
+                        total += nearest.squareRoot()
+                        i += 3
+                    }
+                    return total
+                }
+            }
+        }
+
+        var slots = (0..<height).map { $0 * slotCount / height }
+        var palettes = [[RGB]]()
+        var flatPalettes = [[Double]]()
+        func rebuildPalettes() throws {
+            palettes = []
+            for slot in 0..<slotCount {
+                try Task.checkCancellation()
+                var members: [PixelFloat] = []
+                for y in 0..<height where slots[y] == slot { members.append(contentsOf: lines[y]) }
+                palettes.append(generatePaletteMedianCut(pixels: members, maxColors: 16))
+            }
+            flatPalettes = palettes.map { $0.flatMap { [$0.r, $0.g, $0.b] } }
+        }
+        try rebuildPalettes()
+
+        for _ in 0..<8 {
+            // Assign every line to the palette that fits it best (ties go to the lower slot)
+            var newSlots = slots
+            var errors = [Double](repeating: 0, count: height)
+            for y in 0..<height {
+                try Task.checkCancellation()  // stop early if this preview was replaced
+                var best = 0
+                var bestError = Double.greatestFiniteMagnitude
+                for slot in 0..<slotCount {
+                    let error = fitError(samples[y], flatPalettes[slot])
+                    if error < bestError { bestError = error; best = slot }
+                }
+                newSlots[y] = best
+                errors[y] = bestError
+            }
+
+            // Hand palettes no line chose to the worst-fitting lines, so all 16 are used
+            var counts = [Int](repeating: 0, count: slotCount)
+            for slot in newSlots { counts[slot] += 1 }
+            let worstFirst = (0..<height).sorted { errors[$0] != errors[$1] ? errors[$0] > errors[$1] : $0 < $1 }
+            var next = 0
+            for slot in 0..<slotCount where counts[slot] == 0 {
+                while next < worstFirst.count && counts[newSlots[worstFirst[next]]] < 2 { next += 1 }
+                guard next < worstFirst.count else { break }
+                let line = worstFirst[next]
+                counts[newSlots[line]] -= 1
+                newSlots[line] = slot
+                counts[slot] = 1
+                next += 1
+            }
+
+            if newSlots == slots { break }
+            slots = newSlots
+            try rebuildPalettes()
+        }
+        return (palettes, slots)
     }
 
     func calculatePaletteFitError(pixels: [PixelFloat], palette: [RGB]) -> Double {

@@ -33,7 +33,7 @@ nonisolated class BBCMicroConverter: RetroMachine {
                         range: 0.5...2.0, defaultValue: 1.0),
         ConversionOption(label: "Gamma", key: "gamma",
                         range: 0.5...2.0, defaultValue: 1.0)
-    ]
+    ] + ImageFraming.options
 
     // BBC Micro 8-color palette (fixed)
     static let bbcPalette: [[UInt8]] = [
@@ -98,7 +98,7 @@ nonisolated class BBCMicroConverter: RetroMachine {
 
         try Task.checkCancellation()
         // Scale image
-        var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: ImageFraming(opts))
 
         try Task.checkCancellation()
         // Apply preprocessing

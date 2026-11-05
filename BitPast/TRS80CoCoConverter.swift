@@ -33,7 +33,7 @@ nonisolated class TRS80CoCoConverter: RetroMachine {
                         range: 0.5...2.0, defaultValue: 1.0),
         ConversionOption(label: "Gamma", key: "gamma",
                         range: 0.5...2.0, defaultValue: 1.0)
-    ]
+    ] + ImageFraming.options
 
     // MC6847 Color Set 0: Black, Green, Yellow, Blue, Red, White, Cyan, Magenta
     // PMODE uses 4-color subsets: background (black) + 3 colors from set
@@ -136,7 +136,7 @@ nonisolated class TRS80CoCoConverter: RetroMachine {
 
         try Task.checkCancellation()
         // Scale image
-        var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: ImageFraming(opts))
 
         try Task.checkCancellation()
         // Apply preprocessing

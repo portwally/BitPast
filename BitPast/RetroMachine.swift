@@ -15,14 +15,18 @@ nonisolated struct ConversionResult {
     var pixelIndices: [Int]       // Pixel-to-palette-color indices
     var imageWidth: Int
     var imageHeight: Int
+    /// Which of `palettes` each line uses, when lines share a few palettes (IIgs 256 colours)
+    var paletteLines: [Int]
 
-    init(previewImage: NSImage, fileAssets: [URL], palettes: [[PaletteRGB]] = [], pixelIndices: [Int] = [], imageWidth: Int = 0, imageHeight: Int = 0) {
+    init(previewImage: NSImage, fileAssets: [URL], palettes: [[PaletteRGB]] = [], pixelIndices: [Int] = [], imageWidth: Int = 0, imageHeight: Int = 0,
+         paletteLines: [Int] = []) {
         self.previewImage = previewImage
         self.fileAssets = fileAssets
         self.palettes = palettes
         self.pixelIndices = pixelIndices
         self.imageWidth = imageWidth
         self.imageHeight = imageHeight
+        self.paletteLines = paletteLines
     }
 }
 
@@ -116,7 +120,7 @@ nonisolated extension RetroMachine {
 
 // Hilfserweiterung für Scaling
 nonisolated extension NSImage {
-    func fitToStandardSize(targetWidth: Int, targetHeight: Int) -> NSImage {
+    func fitToStandardSize(targetWidth: Int, targetHeight: Int, framing: ImageFraming = .stretch) -> NSImage {
         let newSize = NSSize(width: targetWidth, height: targetHeight)
         let img = NSImage(size: newSize)
         
@@ -125,7 +129,15 @@ nonisolated extension NSImage {
         NSRect(origin: .zero, size: newSize).fill()
         
         let srcSize = self.size
-        self.draw(in: NSRect(x: 0, y: 0, width: targetWidth, height: targetHeight),
+        var destination = NSRect(x: 0, y: 0, width: targetWidth, height: targetHeight)
+        if framing.fit != .stretch {
+            // Measure the source in pixels, not points, so None maps pixels 1:1
+            let pixels = self.cgImage(forProposedRect: nil, context: nil, hints: nil)
+            destination = framing.destination(sourceWidth: pixels?.width ?? Int(srcSize.width),
+                                              sourceHeight: pixels?.height ?? Int(srcSize.height),
+                                              width: targetWidth, height: targetHeight)
+        }
+        self.draw(in: destination,
                   from: NSRect(origin: .zero, size: srcSize),
                   operation: .sourceOver,
                   fraction: 1.0)

@@ -501,7 +501,8 @@ enum AtariFamilyImageOps {
         return min(max(bestIndex, 0), palette.count - 1)
     }
 
-    nonisolated static func getPixelData(from image: NSImage, width: Int, height: Int) -> [[Float]]? {
+    nonisolated static func getPixelData(from image: NSImage, width: Int, height: Int,
+                                        framing: ImageFraming = .stretch) -> [[Float]]? {
         guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
 
         let colorSpace = CGColorSpaceCreateDeviceRGB()
@@ -517,7 +518,7 @@ enum AtariFamilyImageOps {
             return nil
         }
 
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        framing.draw(cgImage, in: context, width: width, height: height)
 
         var result = [[Float]](repeating: [0, 0, 0], count: width * height)
         for i in 0..<(width * height) {
@@ -558,7 +559,8 @@ enum AtariFamilyImageOps {
         return (h, s, l)
     }
 
-    nonisolated static func scaleImage(_ cgImage: CGImage, toWidth width: Int, height: Int) -> [[Float]] {
+    nonisolated static func scaleImage(_ cgImage: CGImage, toWidth width: Int, height: Int,
+                                       framing: ImageFraming = .stretch) -> [[Float]] {
         let context = CGContext(data: nil,
                                 width: width,
                                 height: height,
@@ -568,7 +570,7 @@ enum AtariFamilyImageOps {
                                 bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
 
         context.interpolationQuality = .high
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        framing.draw(cgImage, in: context, width: width, height: height)
 
         let data = context.data!.bindMemory(to: UInt8.self, capacity: width * height * 4)
         var pixels = [[Float]](repeating: [0, 0, 0], count: width * height)

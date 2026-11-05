@@ -36,7 +36,7 @@ nonisolated class PCConverter: RetroMachine {
                         range: 0.5...2.0, defaultValue: 1.0),
         ConversionOption(label: "Gamma", key: "gamma",
                         range: 0.5...2.0, defaultValue: 1.0)
-    ]
+    ] + ImageFraming.options
 
     // CGA 16-color palette (used for text modes and EGA)
     static let cgaPalette: [[UInt8]] = [
@@ -197,6 +197,7 @@ nonisolated class PCConverter: RetroMachine {
         try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
+        let framing = ImageFraming(opts)
 
         let mode = opts.first(where: { $0.key == "mode" })?.selectedValue ?? "VGA (256 colors)"
         let cgaPaletteChoice = opts.first(where: { $0.key == "cga_palette" })?.selectedValue ?? "Cyan/Magenta/White"
@@ -215,28 +216,28 @@ nonisolated class PCConverter: RetroMachine {
         try Task.checkCancellation()
         switch mode {
         case "CGA (4 colors)":
-            return try await convertCGA(cgImage: cgImage, paletteChoice: cgaPaletteChoice, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+            return try await convertCGA(cgImage: cgImage, framing: framing, paletteChoice: cgaPaletteChoice, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         case "EGA (16 colors)":
-            return try await convertEGA(cgImage: cgImage, useFixedPalette: true, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+            return try await convertEGA(cgImage: cgImage, framing: framing, useFixedPalette: true, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         case "EGA 64 (16 from 64)":
-            return try await convertEGA(cgImage: cgImage, useFixedPalette: false, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+            return try await convertEGA(cgImage: cgImage, framing: framing, useFixedPalette: false, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         case "VGA (256 colors)":
-            return try await convertVGA(cgImage: cgImage, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+            return try await convertVGA(cgImage: cgImage, framing: framing, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         case "CGA 80×25 Text":
-            return try await convertText(cgImage: cgImage, cols: 80, rows: 25, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+            return try await convertText(cgImage: cgImage, framing: framing, cols: 80, rows: 25, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         case "VESA 132×50 Text":
-            return try await convertText(cgImage: cgImage, cols: 132, rows: 50, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+            return try await convertText(cgImage: cgImage, framing: framing, cols: 132, rows: 50, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         default:
-            return try await convertVGA(cgImage: cgImage, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+            return try await convertVGA(cgImage: cgImage, framing: framing, ditherAlg: ditherAlg, ditherAmount: ditherAmount, contrast: contrast, filter: filterMode, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
         }
     }
 
     // MARK: - CGA 320×200 4-color mode
 
-    private func convertCGA(cgImage: CGImage, paletteChoice: String, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
+    private func convertCGA(cgImage: CGImage, framing: ImageFraming, paletteChoice: String, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 320, height = 200
         try Task.checkCancellation()
-        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: framing)
 
         try Task.checkCancellation()
         // Preprocessing
@@ -274,10 +275,10 @@ nonisolated class PCConverter: RetroMachine {
 
     // MARK: - EGA 320×200 16-color mode
 
-    private func convertEGA(cgImage: CGImage, useFixedPalette: Bool, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
+    private func convertEGA(cgImage: CGImage, framing: ImageFraming, useFixedPalette: Bool, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 320, height = 200
         try Task.checkCancellation()
-        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: framing)
 
         try Task.checkCancellation()
         if saturation != 1.0 { AmigaFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation) }
@@ -313,10 +314,10 @@ nonisolated class PCConverter: RetroMachine {
 
     // MARK: - VGA 320×200 256-color mode (Mode 13h)
 
-    private func convertVGA(cgImage: CGImage, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
+    private func convertVGA(cgImage: CGImage, framing: ImageFraming, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 320, height = 200
         try Task.checkCancellation()
-        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: framing)
 
         try Task.checkCancellation()
         if saturation != 1.0 { AmigaFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation) }
@@ -387,13 +388,13 @@ nonisolated class PCConverter: RetroMachine {
 
     // MARK: - Text Mode Conversion
 
-    private func convertText(cgImage: CGImage, cols: Int, rows: Int, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
+    private func convertText(cgImage: CGImage, framing: ImageFraming, cols: Int, rows: Int, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let charWidth = 8, charHeight = 8
         let width = cols * charWidth
         let height = rows * charHeight
 
         try Task.checkCancellation()
-        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: framing)
 
         try Task.checkCancellation()
         if saturation != 1.0 { AmigaFamilyImageOps.applySaturation(&pixels, width: width, height: height, saturation: saturation) }

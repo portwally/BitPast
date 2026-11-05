@@ -27,7 +27,8 @@ struct ContentView: View {
     // Control groups for vertical pairing layout
     // Each group: [dropdown(s), slider(s)] displayed vertically
     let controlGroups: [[String]] = [
-        ["mode", "resolution", "quantization_method", "threshold"],  // Mode + 3200-specific options
+        ["mode", "resolution", "quantization_method", "scb_mode", "threshold"],  // Mode + IIgs palette options
+        ["fit", "aspect"],                    // How the picture fills the screen
         ["dither", "error_matrix", "dither_amount"],  // Dithering controls
         ["palette"],                          // Palette selection
         ["preprocess", "median_size", "sharpen_strength", "sigma_range", "solarize_threshold", "emboss_depth", "edge_threshold"], // Preprocessing filter + filter-specific params

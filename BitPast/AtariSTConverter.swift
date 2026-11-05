@@ -31,7 +31,7 @@ nonisolated class AtariSTConverter: RetroMachine {
                         range: 0.5...2.0, defaultValue: 1.0),
         ConversionOption(label: "Gamma", key: "gamma",
                         range: 0.5...2.0, defaultValue: 1.0)
-    ]
+    ] + ImageFraming.options
 
     // Generate full 512-color Atari ST palette (8 levels R × 8 levels G × 8 levels B)
     static let stPalette: [[UInt8]] = {
@@ -104,7 +104,7 @@ nonisolated class AtariSTConverter: RetroMachine {
 
         try Task.checkCancellation()
         // Scale image to 320×200
-        var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AtariFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: ImageFraming(opts))
 
         try Task.checkCancellation()
         // Apply preprocessing

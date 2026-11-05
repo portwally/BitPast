@@ -31,7 +31,7 @@ nonisolated class MSXConverter: RetroMachine {
                         range: 0.5...2.0, defaultValue: 1.0),
         ConversionOption(label: "Gamma", key: "gamma",
                         range: 0.5...2.0, defaultValue: 1.0)
-    ]
+    ] + ImageFraming.options
 
     // TMS9918 palette (MSX1) - 16 colors
     static let tms9918Palette: [[UInt8]] = [
@@ -86,6 +86,7 @@ nonisolated class MSXConverter: RetroMachine {
         try validateSourceImage(sourceImage)
         // Use provided settings or fall back to instance options
         let opts = settings ?? options
+        let framing = ImageFraming(opts)
 
         guard let cgImage = sourceImage.cgImage(forProposedRect: nil, context: nil, hints: nil) else {
             throw NSError(domain: "MSXConverter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get CGImage"])
@@ -103,19 +104,19 @@ nonisolated class MSXConverter: RetroMachine {
         try Task.checkCancellation()
         switch mode {
         case "Screen 2 (MSX1)":
-            return try await convertScreen2(cgImage: cgImage, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
+            return try await convertScreen2(cgImage: cgImage, framing: framing, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
                                             contrast: contrast, filter: filterMode, colorMatch: colorMatch,
                                             saturation: saturation, gamma: gamma)
         case "Screen 5 (MSX2)":
-            return try await convertScreen5(cgImage: cgImage, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
+            return try await convertScreen5(cgImage: cgImage, framing: framing, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
                                             contrast: contrast, filter: filterMode, colorMatch: colorMatch,
                                             saturation: saturation, gamma: gamma)
         case "Screen 8 (MSX2)":
-            return try await convertScreen8(cgImage: cgImage, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
+            return try await convertScreen8(cgImage: cgImage, framing: framing, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
                                             contrast: contrast, filter: filterMode, colorMatch: colorMatch,
                                             saturation: saturation, gamma: gamma)
         default:
-            return try await convertScreen5(cgImage: cgImage, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
+            return try await convertScreen5(cgImage: cgImage, framing: framing, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
                                             contrast: contrast, filter: filterMode, colorMatch: colorMatch,
                                             saturation: saturation, gamma: gamma)
         }
@@ -123,10 +124,10 @@ nonisolated class MSXConverter: RetroMachine {
 
     // MARK: - Screen 2 (MSX1) - 256×192, 2 colors per 8×1 line
 
-    private func convertScreen2(cgImage: CGImage, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
+    private func convertScreen2(cgImage: CGImage, framing: ImageFraming, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 256, height = 192
         try Task.checkCancellation()
-        var pixels = scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = scaleImage(cgImage, toWidth: width, height: height, framing: framing)
 
         try Task.checkCancellation()
         if saturation != 1.0 { applySaturation(&pixels, width: width, height: height, saturation: saturation) }
@@ -207,10 +208,10 @@ nonisolated class MSXConverter: RetroMachine {
 
     // MARK: - Screen 5 (MSX2) - 256×212, 16 colors from 512
 
-    private func convertScreen5(cgImage: CGImage, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
+    private func convertScreen5(cgImage: CGImage, framing: ImageFraming, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 256, height = 212
         try Task.checkCancellation()
-        var pixels = scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = scaleImage(cgImage, toWidth: width, height: height, framing: framing)
 
         try Task.checkCancellation()
         if saturation != 1.0 { applySaturation(&pixels, width: width, height: height, saturation: saturation) }
@@ -241,10 +242,10 @@ nonisolated class MSXConverter: RetroMachine {
 
     // MARK: - Screen 8 (MSX2) - 256×212, 256 fixed colors (3-3-2 RGB)
 
-    private func convertScreen8(cgImage: CGImage, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
+    private func convertScreen8(cgImage: CGImage, framing: ImageFraming, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
         let width = 256, height = 212
         try Task.checkCancellation()
-        var pixels = scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = scaleImage(cgImage, toWidth: width, height: height, framing: framing)
 
         try Task.checkCancellation()
         if saturation != 1.0 { applySaturation(&pixels, width: width, height: height, saturation: saturation) }
@@ -508,7 +509,7 @@ nonisolated class MSXConverter: RetroMachine {
 
     // MARK: - Common Helper Functions
 
-    private func scaleImage(_ cgImage: CGImage, toWidth width: Int, height: Int) -> [[Float]] {
+    private func scaleImage(_ cgImage: CGImage, toWidth width: Int, height: Int, framing: ImageFraming) -> [[Float]] {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         var rawData = [UInt8](repeating: 0, count: width * height * 4)
 
@@ -519,7 +520,7 @@ nonisolated class MSXConverter: RetroMachine {
         }
 
         context.interpolationQuality = .high
-        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        framing.draw(cgImage, in: context, width: width, height: height)
 
         var pixels: [[Float]] = []
         for i in 0..<(width * height) {

@@ -86,7 +86,7 @@ nonisolated class Plus4Converter: RetroMachine {
             range: 0.5...2.0,
             defaultValue: 1.0
         )
-    ]
+    ] + ImageFraming.options
 
     // Plus/4 palette: 128 colors (16 hues × 8 luminance levels)
     // From Plus4Renderer.java - stored as BGR in original
@@ -153,7 +153,8 @@ nonisolated class Plus4Converter: RetroMachine {
         let screenHeight = 200
 
         try Task.checkCancellation()
-        guard var pixels = AtariFamilyImageOps.getPixelData(from: sourceImage, width: screenWidth, height: screenHeight) else {
+        guard var pixels = AtariFamilyImageOps.getPixelData(from: sourceImage, width: screenWidth, height: screenHeight,
+                                                              framing: ImageFraming(opts)) else {
             throw NSError(domain: "Plus4Converter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get pixel data"])
         }
 

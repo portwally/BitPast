@@ -32,7 +32,7 @@ nonisolated class Amiga500Converter: RetroMachine {
                         range: 0.5...2.0, defaultValue: 1.0),
         ConversionOption(label: "Gamma", key: "gamma",
                         range: 0.5...2.0, defaultValue: 1.0)
-    ]
+    ] + ImageFraming.options
 
     // Generate 4096-color OCS palette (4 bits R × 4 bits G × 4 bits B)
     static let ocsPalette: [[UInt8]] = {
@@ -73,7 +73,7 @@ nonisolated class Amiga500Converter: RetroMachine {
         }
 
         try Task.checkCancellation()
-        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height)
+        var pixels = AmigaFamilyImageOps.scaleImage(cgImage, toWidth: width, height: height, framing: ImageFraming(opts))
 
         try Task.checkCancellation()
         // Apply preprocessing

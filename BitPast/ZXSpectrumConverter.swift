@@ -70,7 +70,7 @@ nonisolated class ZXSpectrumConverter: RetroMachine {
             range: 0.5...2.0,
             defaultValue: 1.0
         )
-    ]
+    ] + ImageFraming.options
 
     // ZX Spectrum palette (from ZXRenderer.java)
     // 8 colors × 2 brightness levels = 16 colors
@@ -114,7 +114,7 @@ nonisolated class ZXSpectrumConverter: RetroMachine {
 
         try Task.checkCancellation()
         var pixels = try getPixelData(from: sourceImage, width: screenWidth, height: screenHeight,
-                                       saturation: saturation, gamma: gamma)
+                                       saturation: saturation, gamma: gamma, framing: ImageFraming(opts))
 
         try Task.checkCancellation()
         // Apply contrast processing
@@ -435,7 +435,7 @@ nonisolated class ZXSpectrumConverter: RetroMachine {
     // MARK: - Pixel Reading
 
     private func getPixelData(from sourceImage: NSImage, width: Int, height: Int,
-                               saturation: Double, gamma: Double) throws -> [[Float]] {
+                               saturation: Double, gamma: Double, framing: ImageFraming) throws -> [[Float]] {
         guard let cgImage = CommodoreFamilyImageOps.getCGImage(from: sourceImage) else {
             throw NSError(domain: "ZXSpectrumConverter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get CGImage from source"])
         }
@@ -451,7 +451,7 @@ nonisolated class ZXSpectrumConverter: RetroMachine {
         }
 
         ctx.interpolationQuality = .high
-        ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        framing.draw(cgImage, in: ctx, width: width, height: height)
 
         var pixels = [[Float]](repeating: [Float](repeating: 0, count: 3), count: width * height)
 

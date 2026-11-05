@@ -92,7 +92,7 @@ nonisolated class AppleIIConverter: RetroMachine {
             range: 0.0...10.0,
             defaultValue: 1.0
         )
-    ]
+    ] + ImageFraming.options
     
     func convert(sourceImage: NSImage, withSettings settings: [ConversionOption]? = nil) async throws -> ConversionResult {
         try validateSourceImage(sourceImage)
@@ -158,7 +158,7 @@ nonisolated class AppleIIConverter: RetroMachine {
         }
         
         // --- SAVE BMP ---
-        let readyImage = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH)
+        let readyImage = sourceImage.fitToStandardSize(targetWidth: targetW, targetHeight: targetH, framing: ImageFraming(opts))
         try readyImage.saveAsStrict24BitBMP(to: inputUrl)
         
         // --- B2D ARGUMENTS ---

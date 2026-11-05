@@ -19,7 +19,9 @@ import Testing
 ///
 /// When output changes on purpose, run the same command with
 /// `TEST_RUNNER_BITPAST_RECORD_GOLDEN=1` instead, then copy the file named in
-/// the test log over `BitPastTests/Golden/converter-fingerprints.json`.
+/// the test log over `BitPastTests/Golden/converter-fingerprints.json`. If that
+/// folder is blocked, export the last `converter-fingerprints.json` attachment
+/// with `xcrun xcresulttool export attachments`.
 /// Settings whose output differs between two identical runs are not recorded.
 @Suite("Converter golden output", .enabled(if: GoldenRun.isRequested))
 struct ConverterGoldenTests {
@@ -175,7 +177,11 @@ final class GoldenRecorder: @unchecked Sendable {
         all[machine] = prints
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        try encoder.encode(all).write(to: url)
+        let data = try encoder.encode(all)
+        try data.write(to: url)
+        // The test host's Caches folder sits in its sandbox container, which macOS can block
+        // from the shell; the attachment can always be exported from the result bundle
+        Attachment.record(data, named: "converter-fingerprints.json")
         Issue.record(Comment(rawValue: "Recorded \(prints.count) fingerprints for \(machine) to \(url.path)"))
     }
 }

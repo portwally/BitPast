@@ -86,7 +86,7 @@ nonisolated class VIC20Converter: RetroMachine {
             range: 0.5...2.0,
             defaultValue: 1.0
         )
-    ]
+    ] + ImageFraming.options
 
     // VIC-20 palette (from Vic20Renderer.java)
     // First 8 colors can be foreground, all 16 can be background
@@ -132,7 +132,7 @@ nonisolated class VIC20Converter: RetroMachine {
         try Task.checkCancellation()
         // Get pixel data
         var pixels = try getPixelData(from: sourceImage, width: screenWidth, height: screenHeight,
-                                       saturation: saturation, gamma: gamma)
+                                       saturation: saturation, gamma: gamma, framing: ImageFraming(opts))
 
         try Task.checkCancellation()
         // Apply contrast processing
@@ -793,7 +793,7 @@ nonisolated class VIC20Converter: RetroMachine {
     // MARK: - Pixel Reading
 
     private func getPixelData(from sourceImage: NSImage, width: Int, height: Int,
-                               saturation: Double, gamma: Double) throws -> [[Float]] {
+                               saturation: Double, gamma: Double, framing: ImageFraming) throws -> [[Float]] {
         guard let cgImage = CommodoreFamilyImageOps.getCGImage(from: sourceImage) else {
             throw NSError(domain: "VIC20Converter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get CGImage from source"])
         }
@@ -809,7 +809,7 @@ nonisolated class VIC20Converter: RetroMachine {
         }
 
         ctx.interpolationQuality = .high
-        ctx.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        framing.draw(cgImage, in: ctx, width: width, height: height)
 
         var pixels = [[Float]](repeating: [Float](repeating: 0, count: 3), count: width * height)
 

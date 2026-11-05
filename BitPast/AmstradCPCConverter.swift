@@ -86,7 +86,7 @@ nonisolated class AmstradCPCConverter: RetroMachine {
             range: 0.5...2.0,
             defaultValue: 1.0
         )
-    ]
+    ] + ImageFraming.options
 
     // Amstrad CPC 27-color hardware palette as RGB, indexed by firmware color number
     static let cpcPalette: [[UInt8]] = [
@@ -147,7 +147,8 @@ nonisolated class AmstradCPCConverter: RetroMachine {
 
         try Task.checkCancellation()
         // Get pixel data at screen resolution
-        guard var pixels = AtariFamilyImageOps.getPixelData(from: sourceImage, width: screenWidth, height: screenHeight) else {
+        guard var pixels = AtariFamilyImageOps.getPixelData(from: sourceImage, width: screenWidth, height: screenHeight,
+                                                              framing: ImageFraming(opts)) else {
             throw NSError(domain: "AmstradCPCConverter", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to get pixel data"])
         }
 
