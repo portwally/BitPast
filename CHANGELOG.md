@@ -9,6 +9,9 @@ All notable changes to BitPast will be documented in this file.
   - Stretch (default, as before), Contain (whole picture with black bars), Cover (fill and crop) and None (no scaling, one source pixel per screen line)
   - Applied where each converter scales the source, so previews, saves, batch exports and disk images all match
 - **Aspect** - Correct takes each machine's non-square pixels into account (assuming a 4:3 screen), so circles stay round; Ignore treats pixels as square. Shown when Fit isn't Stretch
+- **Picture Position** - With Contain, Cover or None, drag the preview to choose which part of the picture shows; double-click recenters it:
+  - Kept per picture and used for saves, batch exports and disk images
+  - Each conversion reports how large it drew the picture relative to the screen, so the picture follows the mouse exactly on every machine
 - **Apple IIgs SCB Mode** - New setting for 256-colour mode that picks which of the 16 palettes each line uses:
   - Banded (default): 16 even bands of lines, as before
   - Palette Reuse: the older method, previously only reachable through the hidden 3200 Quantization setting
@@ -19,6 +22,7 @@ All notable changes to BitPast will be documented in this file.
 - **Palette Editor Changes Not Saved** - Edits only changed the preview; saving wrote the original palettes. Edited palettes are now written into the `.SHR` / `.3200` file, and batch export and Create Disk use the edited result for that picture instead of converting it again
 - **Palette Editor Preview in 256-Colour Mode** - Lines used palette `y % 16` instead of their own; the result now carries each line's palette
 - **H-Flip and V-Flip Not Saved** - Flipping only mirrored the preview, and the next conversion undid it. The flip is now kept per picture and applied before converting, so saved files and disk images are flipped too; the buttons show when a picture is flipped
+- **Apple II and IIgs Output Depended on the Attached Screens** - Scaling drew with `lockFocus`, which takes its pixel density and colour handling from the screens, so the same picture could convert differently with an external display connected. It now draws into a fixed sRGB bitmap of exactly the target size (Apple II and IIgs output changes slightly)
 - **Golden Fingerprints** - The PC text modes are re-recorded after the macOS 27.2 font rendering change; the recorder also attaches the fingerprint file to the test results, since macOS can block its Caches folder
 
 ## [4.5] - 2026-10-25
