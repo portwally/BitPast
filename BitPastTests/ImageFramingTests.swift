@@ -125,6 +125,14 @@ struct ImageFramingTests {
         #expect(picture - bar > 0.5, "\(machine): bar \(bar), picture \(picture)")
     }
 
+    @Test("Apple II and IIgs scaling gives exactly the target pixels, whatever screens are attached")
+    func standardSizeIsExact() throws {
+        let scaled = ConverterGoldenTests.testPicture().fitToStandardSize(targetWidth: 320, targetHeight: 200)
+        let cg = try #require(scaled.cgImage(forProposedRect: nil, context: nil, hints: nil))
+        #expect(cg.width == 320 && cg.height == 200)
+        #expect(scaled.representations.count == 1)
+    }
+
     // MARK: - IIgs Per-Line
 
     nonisolated static func iigsOptions(scb: String) -> [ConversionOption] {

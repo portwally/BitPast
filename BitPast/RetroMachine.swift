@@ -138,29 +138,23 @@ nonisolated extension NSImage {
         return NSImage(cgImage: mirrored, size: size)
     }
 
+    /// Scales the picture to exactly `targetWidth`×`targetHeight` pixels on black, placed by
+    /// `framing`. Draws into a fixed sRGB bitmap, so the result doesn't depend on the screens
+    /// attached (`lockFocus` picked its pixel density and colours from them).
     func fitToStandardSize(targetWidth: Int, targetHeight: Int, framing: ImageFraming = .stretch) -> NSImage {
-        let newSize = NSSize(width: targetWidth, height: targetHeight)
-        let img = NSImage(size: newSize)
-        
-        img.lockFocus()
-        NSColor.black.set()
-        NSRect(origin: .zero, size: newSize).fill()
-        
-        let srcSize = self.size
-        var destination = NSRect(x: 0, y: 0, width: targetWidth, height: targetHeight)
-        if framing.fit != .stretch {
-            // Measure the source in pixels, not points, so None maps pixels 1:1
-            let pixels = self.cgImage(forProposedRect: nil, context: nil, hints: nil)
-            destination = framing.destination(sourceWidth: pixels?.width ?? Int(srcSize.width),
-                                              sourceHeight: pixels?.height ?? Int(srcSize.height),
-                                              width: targetWidth, height: targetHeight)
+        let size = NSSize(width: targetWidth, height: targetHeight)
+        guard let source = cgImage(forProposedRect: nil, context: nil, hints: nil),
+              let ctx = CGContext(data: nil, width: targetWidth, height: targetHeight, bitsPerComponent: 8, bytesPerRow: 0,
+                                  space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                  bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+            return NSImage(size: size)
         }
-        self.draw(in: destination,
-                  from: NSRect(origin: .zero, size: srcSize),
-                  operation: .sourceOver,
-                  fraction: 1.0)
-        
-        img.unlockFocus()
-        return img
+        ctx.setFillColor(CGColor(red: 0, green: 0, blue: 0, alpha: 1))
+        ctx.fill(CGRect(origin: .zero, size: size))
+        ctx.interpolationQuality = .high
+        ctx.draw(source, in: framing.destination(sourceWidth: source.width, sourceHeight: source.height,
+                                                 width: targetWidth, height: targetHeight))
+        guard let scaled = ctx.makeImage() else { return NSImage(size: size) }
+        return NSImage(cgImage: scaled, size: size)
     }
 }
