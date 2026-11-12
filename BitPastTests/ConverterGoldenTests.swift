@@ -29,7 +29,7 @@ struct ConverterGoldenTests {
     /// Machines in the same order as the app's machine list.
     nonisolated static let machineNames = [
         "AppleII", "AppleIIGS", "Amiga500", "Amiga1200", "AmstradCPC", "Atari800", "AtariST",
-        "BBCMicro", "C64", "MSX", "PC", "Plus4", "TRS80CoCo", "VIC20", "ZXSpectrum", "ColecoVision", "PET",
+        "BBCMicro", "C64", "MSX", "PC", "Plus4", "TRS80CoCo", "VIC20", "ZXSpectrum", "ColecoVision", "PET", "Atari2600",
     ]
 
     nonisolated static func makeMachine(_ name: String) -> RetroMachine {
@@ -50,6 +50,7 @@ struct ConverterGoldenTests {
         case "VIC20": VIC20Converter()
         case "ColecoVision": ColecoVisionConverter()
         case "PET": PETConverter()
+        case "Atari2600": Atari2600Converter()
         default: ZXSpectrumConverter()
         }
     }

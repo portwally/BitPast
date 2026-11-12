@@ -18,6 +18,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
     case trs80coco = "TRS-80 CoCo"
     case colecoVision = "ColecoVision"
     case pet = "Commodore PET"
+    case atari2600 = "Atari 2600"
     case diskImages = "Disk Images"
     case generalOptions = "General Options"
     case filters = "Preprocessing Filters"
@@ -43,6 +44,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
         case .trs80coco: return "tv"
         case .colecoVision: return "gamecontroller"
         case .pet: return "desktopcomputer"
+        case .atari2600: return "gamecontroller"
         case .diskImages: return "externaldrive"
         case .generalOptions: return "slider.horizontal.3"
         case .filters: return "camera.filters"
@@ -57,7 +59,7 @@ struct HelpView: View {
         NavigationSplitView {
             List(selection: $selectedSection) {
                 Section("Systems") {
-                    ForEach([HelpSection.appleII, .appleIIgs, .bbcMicro, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atari800, .atariST, .amiga500, .amiga1200, .pc, .msx, .trs80coco, .colecoVision, .pet], id: \.self) { section in
+                    ForEach([HelpSection.appleII, .appleIIgs, .bbcMicro, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atari800, .atariST, .amiga500, .amiga1200, .pc, .msx, .trs80coco, .colecoVision, .pet, .atari2600], id: \.self) { section in
                         Label(section.rawValue, systemImage: section.iconName)
                             .tag(section)
                     }
@@ -118,6 +120,8 @@ struct HelpView: View {
             ColecoVisionHelpContent()
         case .pet:
             PETHelpContent()
+        case .atari2600:
+            Atari2600HelpContent()
         case .trs80coco:
             TRS80CoCoHelpContent()
         case .diskImages:
@@ -1282,6 +1286,26 @@ struct PCHelpContent: View {
 }
 
 // MARK: - MSX Help
+
+struct Atari2600HelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "Atari 2600", subtitle: "Playfield pictures, drawn line by line")
+
+            ModeHelpSection(
+                title: "Playfield (40×192, 2 colors per line)",
+                fileFormat: ".bin (4 KB cartridge)",
+                description: "The 2600 has no screen memory: a program draws every line as the TV beam passes. BitPast uses the playfield, 40 blocks across, and changes it halfway along each line so both halves of the picture can differ. Every one of the 192 lines has its own two colors from the 128 NTSC colors.",
+                bestFor: "Sunsets, landscapes and pictures with strong horizontal bands",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Error diffusion carries what one line cannot show into the next, which helps smooth gradients."),
+                    OptionHelp(name: "Color Matching", description: "Perceptive picks the two colors for each line the way the eye sees them; Luma keeps the brightness."),
+                    OptionHelp(name: "Running it", description: "Open the .bin in Stella (or any 2600 emulator) or put it on a flash cartridge. The cartridge is NTSC (262 lines). There is no disk: Create Disk is not available.")
+                ]
+            )
+        }
+    }
+}
 
 struct PETHelpContent: View {
     var body: some View {

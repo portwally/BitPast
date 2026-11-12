@@ -20,6 +20,7 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
     case zxSpectrum = 14
     // 15 is the ColecoVision, which has no disks
     case pet = 16
+    // 17 is the Atari 2600, which has no disks
 
     var id: Int { rawValue }
 

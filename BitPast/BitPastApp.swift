@@ -217,6 +217,18 @@ struct BitPastApp: App {
                 }
                 .keyboardShortcut("E", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 16)
+
+                Button("Atari 2600") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 17 && vm.selectedMachineIndex != 17 {
+                            vm.selectedMachineIndex = 17
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("K", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 17)
             }
 
             CommandGroup(after: .newItem) {

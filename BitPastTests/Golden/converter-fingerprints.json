@@ -165,6 +165,21 @@
     "solarize_threshold=176.00" : "1d64e8bcc99069ad3965353efc591bc32c142049d7e9a5ed7f1d1a216697f562",
     "threshold=30.00" : "bb1dab4144cb355cf251def2b1c17ace7aa1f38b38a69cdc1d1622187d248a4b"
   },
+  "Atari2600" : {
+    "aspect=Ignore" : "303b75fbf80b59eb74ab0ee60461c18143ae03655dd00ffd2c9f3e1bb457d75d",
+    "color_match=Euclidean" : "fdea46c558bac1661bd568d9768249ffcdc20f9554c985303d07365f6290a317",
+    "color_match=Luma" : "9e9d12ca0b164cd912a48fc94b380398da003daa3e611e46f227f5557a1997a2",
+    "contrast=HE" : "08a87feca855b1429dba854a2d1d6acd9df2c98702cc1b18c14f9d4e4e292f40",
+    "default" : "303b75fbf80b59eb74ab0ee60461c18143ae03655dd00ffd2c9f3e1bb457d75d",
+    "dither=Atkinson" : "43904e22f477c263431eaf924a685703181bc7d323d15d0948c90ff091ed0d82",
+    "dither=None" : "f6322134c7f2bd7784bb0101dea43c4c8a1f15f5f5b8ef1b7b81578a2b5f86c9",
+    "dither_amount=0.75" : "561a303d7f371a2aefdf70ef990aa7702b774699c0a3b245734ff8c8fd899beb",
+    "fit=Contain" : "303b75fbf80b59eb74ab0ee60461c18143ae03655dd00ffd2c9f3e1bb457d75d",
+    "fit=Cover" : "303b75fbf80b59eb74ab0ee60461c18143ae03655dd00ffd2c9f3e1bb457d75d",
+    "fit=None" : "3eade35656412fdcee92da719dd7e0425300e8ae50252489cd08b38ac6a0c424",
+    "gamma=1.50" : "b45df422e8908d6cfe95318873b30edcd871812ad20f06c0334d30dfed64d465",
+    "saturation=1.50" : "4bec983896c13e0a2aa111a75fa7bc85588a7105ed157df9b23142af212bbc48"
+  },
   "Atari800" : {
     "aspect=Ignore" : "237a104efed035c7eedef6d3d16b2d2bad40e4b46cdfc037ecbcc6babfeffdab",
     "color_match=Chroma" : "ed54b509bf688ed7456ee497391c0312545eba8f3d87bcff58d4c304e81402a8",

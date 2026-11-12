@@ -29,7 +29,7 @@ struct HorizontalSystemBar: View {
         return RetroTheme.font(size: 10)
     }
 
-    private let systemIcons = ["icon_apple2", "icon_iigs", "icon_Amiga500", "icon_Amiga1200", "icon_AmstradCPC", "icon_Atari800", "icon_AtariST", "icon_BBCmicro", "icon_C64", "icon_MSX", "icon_PC", "icon_commodoreplus4", "icon_TRS80", "icon_vic20", "icon_ZXSpectrum", "icon_ColecoVision", "icon_PET"]
+    private let systemIcons = ["icon_apple2", "icon_iigs", "icon_Amiga500", "icon_Amiga1200", "icon_AmstradCPC", "icon_Atari800", "icon_AtariST", "icon_BBCmicro", "icon_C64", "icon_MSX", "icon_PC", "icon_commodoreplus4", "icon_TRS80", "icon_vic20", "icon_ZXSpectrum", "icon_ColecoVision", "icon_PET", "icon_Atari2600"]
 
     /// Buttons share the width of the window: up to `maxButtonWidth` each, and no
     /// narrower than `minButtonWidth`. Only when even that does not fit does the bar scroll.
