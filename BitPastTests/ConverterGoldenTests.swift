@@ -118,9 +118,20 @@ struct ConverterGoldenTests {
         hasher.update(data: Data(bytes: ctx.data!, count: cg.width * cg.height * 4))
         for url in result.fileAssets {
             hasher.update(data: Data(url.pathExtension.utf8))
-            hasher.update(data: try Data(contentsOf: url))
+            hasher.update(data: withoutSAUCEDate(try Data(contentsOf: url)))
         }
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// A file with a SAUCE record (the PC text modes) carries the day it was made at bytes
+    /// 82–89 of the record. Blank it, or the fingerprint would change every day.
+    nonisolated static func withoutSAUCEDate(_ data: Data) -> Data {
+        guard data.count >= 128 else { return data }
+        let start = data.count - 128
+        guard data[start..<start + 7].elementsEqual("SAUCE00".utf8) else { return data }
+        var copy = data
+        copy.replaceSubrange(start + 82..<start + 90, with: Data(repeating: 0x30, count: 8))
+        return copy
     }
 
     static func goldenURL() -> URL? {

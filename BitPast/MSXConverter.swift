@@ -454,14 +454,18 @@ nonisolated class MSXConverter: RetroMachine {
         // Execution address: 0x0000
         data.append(0x00); data.append(0x00)
 
+        // The rest is VRAM $0000–$37FF in order, as BLOAD "…",S loads it
         // Pattern table (6144 bytes at 0x0000)
         data.append(patternTable)
-        // Color table (6144 bytes at 0x2000)
-        data.append(colorTable)
         // Name table (768 bytes at 0x1800) - sequential pattern references
         for i in 0..<768 {
             data.append(UInt8(i % 256))
         }
+        // Sprite attributes (0x1B00): $D0 ends the list, so no sprites show; then unused space up to 0x1FFF
+        data.append(0xD0)
+        data.append(Data(count: 0x2000 - 0x1B01))
+        // Color table (6144 bytes at 0x2000)
+        data.append(colorTable)
 
         return data
     }

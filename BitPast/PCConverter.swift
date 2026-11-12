@@ -1229,6 +1229,8 @@ nonisolated class PCConverter: RetroMachine {
 
         // Date CCYYMMDD (8 bytes)
         let formatter = DateFormatter()
+        formatter.calendar = Calendar(identifier: .gregorian)   // CCYYMMDD is always Gregorian, whatever the user's calendar
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyyMMdd"
         let dateStr = formatter.string(from: Date())
         sauce.append(contentsOf: Array(dateStr.utf8))
