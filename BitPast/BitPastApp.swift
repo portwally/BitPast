@@ -205,6 +205,26 @@ struct BitPastApp: App {
                 }
                 .keyboardShortcut("O", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 15)
+
+                Button("Commodore PET") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 16 && vm.selectedMachineIndex != 16 {
+                            vm.selectedMachineIndex = 16
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("E", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 16)
+            }
+
+            CommandGroup(after: .newItem) {
+                Button("Open Images…") {
+                    Task { @MainActor in ConverterViewModel.shared.selectImagesFromFinder() }
+                }
+                .keyboardShortcut("o", modifiers: .command)
+                OpenRecentMenu()
             }
 
             CommandGroup(replacing: .help) {
@@ -279,6 +299,23 @@ struct BitPastApp: App {
             }
         } catch {
             // Silently ignore errors - temp cleanup is not critical
+        }
+    }
+}
+
+/// File ▸ Open Recent: the last ten pictures, newest first.
+struct OpenRecentMenu: View {
+    @ObservedObject private var recent = RecentFiles.shared
+
+    var body: some View {
+        Menu("Open Recent") {
+            ForEach(recent.entries) { entry in
+                Button(entry.name) { ConverterViewModel.shared.openRecent(entry) }
+                    .help(entry.path)
+            }
+            if !recent.entries.isEmpty { Divider() }
+            Button("Clear Menu") { recent.clear() }
+                .disabled(recent.entries.isEmpty)
         }
     }
 }

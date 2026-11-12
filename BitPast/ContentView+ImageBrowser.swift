@@ -115,9 +115,22 @@ extension ContentView {
                             .font(isRetro ? retroBoldFont : .title3)
                             .fontWeight(.medium)
                             .foregroundColor(isRetro ? retroTextColor : .secondary)
-                        Text("or click + to add")
+                        Text("or")
                             .font(isRetro ? retroSmallFont : .subheadline)
                             .foregroundColor(isRetro ? retroTextColor.opacity(0.7) : Color(NSColor.tertiaryLabelColor))
+                        if isRetro {
+                            RetroActionButton(title: "Open Images", isAppleII: isAppleII, isC64: isC64) {
+                                viewModel.selectImagesFromFinder()
+                            }
+                            .frame(width: 190)
+                        } else {
+                            Button(action: { viewModel.selectImagesFromFinder() }) {
+                                Label("Open Images…", systemImage: "folder")
+                                    .padding(.horizontal, 6)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.large)
+                        }
                     }
                     .padding()
                 }.frame(maxWidth: .infinity, maxHeight: .infinity)

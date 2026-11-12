@@ -72,7 +72,7 @@ struct InputImage: Identifiable, Hashable {
 class ConverterViewModel: ObservableObject {
     static let shared = ConverterViewModel()
 
-    @Published var machines: [RetroMachine] = [AppleIIConverter(), AppleIIGSConverter(), Amiga500Converter(), Amiga1200Converter(), AmstradCPCConverter(), Atari800Converter(), AtariSTConverter(), BBCMicroConverter(), C64Converter(), MSXConverter(), PCConverter(), Plus4Converter(), TRS80CoCoConverter(), VIC20Converter(), ZXSpectrumConverter(), ColecoVisionConverter()]
+    @Published var machines: [RetroMachine] = [AppleIIConverter(), AppleIIGSConverter(), Amiga500Converter(), Amiga1200Converter(), AmstradCPCConverter(), Atari800Converter(), AtariSTConverter(), BBCMicroConverter(), C64Converter(), MSXConverter(), PCConverter(), Plus4Converter(), TRS80CoCoConverter(), VIC20Converter(), ZXSpectrumConverter(), ColecoVisionConverter(), PETConverter()]
     @Published var selectedMachineIndex: Int = 0
     
     @Published var inputImages: [InputImage] = []
@@ -553,8 +553,16 @@ class ConverterViewModel: ObservableObject {
         return found
     }
     
+    /// Opens a file from File ▸ Open Recent.
+    func openRecent(_ entry: RecentFiles.Entry) {
+        if !RecentFiles.shared.open(entry, { loadImage(from: $0) }) {
+            errorMessage = "\(entry.name) could not be found. It may have been moved or deleted."
+        }
+    }
+
     private func loadImage(from url: URL) {
         if let img = NSImage(contentsOf: url) {
+            RecentFiles.shared.add(url)
             let name = url.lastPathComponent
             let ext = url.pathExtension.uppercased()
             let info = "\(ext.isEmpty ? "?" : ext) • \(Int(img.size.width))x\(Int(img.size.height))"
@@ -1070,7 +1078,7 @@ class ConverterViewModel: ObservableObject {
 
             createProDOSDisk(size: proDOSSize, format: proDOSFormat, volumeName: configuration.volumeName)
 
-        case .c64, .vic20, .plus4:
+        case .c64, .vic20, .plus4, .pet:
             createBatchDisk(configuration: configuration, systemName: "Commodore") { url, files in
                 D64Writer.shared.createDiskImageWithNames(at: url, volumeName: configuration.volumeName,
                                                           format: configuration.format, size: configuration.size, files: files)

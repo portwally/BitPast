@@ -17,6 +17,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
     case msx = "MSX"
     case trs80coco = "TRS-80 CoCo"
     case colecoVision = "ColecoVision"
+    case pet = "Commodore PET"
     case diskImages = "Disk Images"
     case generalOptions = "General Options"
     case filters = "Preprocessing Filters"
@@ -41,6 +42,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
         case .msx: return "tv"
         case .trs80coco: return "tv"
         case .colecoVision: return "gamecontroller"
+        case .pet: return "desktopcomputer"
         case .diskImages: return "externaldrive"
         case .generalOptions: return "slider.horizontal.3"
         case .filters: return "camera.filters"
@@ -55,7 +57,7 @@ struct HelpView: View {
         NavigationSplitView {
             List(selection: $selectedSection) {
                 Section("Systems") {
-                    ForEach([HelpSection.appleII, .appleIIgs, .bbcMicro, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atari800, .atariST, .amiga500, .amiga1200, .pc, .msx, .trs80coco, .colecoVision], id: \.self) { section in
+                    ForEach([HelpSection.appleII, .appleIIgs, .bbcMicro, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atari800, .atariST, .amiga500, .amiga1200, .pc, .msx, .trs80coco, .colecoVision, .pet], id: \.self) { section in
                         Label(section.rawValue, systemImage: section.iconName)
                             .tag(section)
                     }
@@ -114,6 +116,8 @@ struct HelpView: View {
             MSXHelpContent()
         case .colecoVision:
             ColecoVisionHelpContent()
+        case .pet:
+            PETHelpContent()
         case .trs80coco:
             TRS80CoCoHelpContent()
         case .diskImages:
@@ -1279,6 +1283,39 @@ struct PCHelpContent: View {
 
 // MARK: - MSX Help
 
+struct PETHelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "Commodore PET", subtitle: "Pictures made of PETSCII block characters")
+
+            ModeHelpSection(
+                title: "40 Columns (80×50 blocks)",
+                fileFormat: ".prg (BASIC + machine code)",
+                description: "The PET has no graphics mode, only 40×25 characters. But its character set has every way to fill the four quarters of a character, so each character becomes 2×2 blocks: a picture of 80×50 blocks, lit or dark. For the PET 2001, 3000 and 4000 series.",
+                bestFor: "Bold shapes, portraits and logos with strong contrast",
+                options: [
+                    OptionHelp(name: "Threshold", description: "How bright a part of the picture must be to light a block. Lower values light more blocks."),
+                    OptionHelp(name: "Dither", description: "None (the default) gives the clearest shapes at this size. Floyd-Steinberg and Atkinson suggest grey tones, Bayer a regular pattern."),
+                    OptionHelp(name: "Invert", description: "Swaps lit and dark, for pictures that read better as light on dark.")
+                ]
+            )
+
+            Divider()
+
+            ModeHelpSection(
+                title: "80 Columns (160×50 blocks)",
+                fileFormat: ".prg (BASIC + machine code)",
+                description: "The PET 8032 shows 80 characters a line, so the same blocks give 160×50, with blocks twice as tall as they are wide. This program only works on an 80-column PET.",
+                bestFor: "More horizontal detail on the 8032",
+                options: [
+                    OptionHelp(name: "Monitor", description: "Shows the preview in the green of the 4000 and 8000 series or the white of the original 2001."),
+                    OptionHelp(name: "Running it", description: "LOAD and RUN the program like any BASIC program. It switches to the graphics characters, draws the picture and keeps it on screen until you reset the PET.")
+                ]
+            )
+        }
+    }
+}
+
 struct ColecoVisionHelpContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -1549,6 +1586,15 @@ struct DiskImagesHelpContent: View {
                 filesystem: "ProDOS",
                 description: "Apple ProDOS disk images. 140KB for 5.25\" floppy, 800KB for 3.5\" floppy, 32MB for hard disk images.",
                 emulators: "AppleWin, KEGS, GSport, Virtual II"
+            )
+
+            DiskFormatHelpSection(
+                system: "Commodore PET",
+                formats: ".D64",
+                sizes: "170KB",
+                filesystem: "CBM DOS",
+                description: "The single-sided 2031 and 4040 drives use the same disk layout as the 1541, so PET pictures go on a D64. Load a picture with LOAD\"NAME\",8 and RUN.",
+                emulators: "VICE (xpet) with a 2031 or 4040 drive"
             )
 
             DiskFormatHelpSection(

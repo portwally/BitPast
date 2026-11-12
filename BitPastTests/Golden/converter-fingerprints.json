@@ -382,6 +382,27 @@
     "mode=VESA 132×50 Text" : "24a8e9a1309a09f12fff89db716c4436591239ea473851b7960f821bff2efaf9",
     "saturation=1.50" : "694f5a624eb218ea73a9b87fba172f4d7fc49333751f2ac8e376df7f5425ccd5"
   },
+  "PET" : {
+    "aspect=Ignore" : "4c7533d23346fa5ed82e8d31fc2a98210925764a655409690f4bdbaf9bfebdca",
+    "contrast=HE" : "09d83160b68d2b47af5d786b4c013ebca3ad7d37c9f71604b36eaf7a199f8e28",
+    "default" : "4c7533d23346fa5ed82e8d31fc2a98210925764a655409690f4bdbaf9bfebdca",
+    "dither=Atkinson" : "a85030d5f48b5260f3c6d066f327f653718d8ff2f8cc4f1874c1f7f347e727a1",
+    "dither=Bayer 4x4" : "54c3a35e26d16f5d5bd59eb974f5794045141b7f0cd0b33a6b40abe0b439ecb0",
+    "dither=Bayer 8x8" : "bce1add81e75298af0b77da503a4c8b4acbfc9c4dc80b0c00ab7be8f64a5c945",
+    "dither=Floyd-Steinberg" : "7bd7cd3c1e4b5552af8a523ad231ad95e40fb84e907d7dec1efc6fafeb0b056e",
+    "filter=Edge" : "7378bbff41b1fc9c5a9b6ee318f5acaba50f22e2871415da21b3955aee99452e",
+    "filter=Emboss" : "065cc03c6f97279600d751f3663eb1cbb0aab7d2cd02f76a64d5ddd9cf6e89a6",
+    "filter=Lowpass" : "b6b743cd5414a12cbe241cdafb4fcd7996a205ca0b554f7b96b29a0f12d6e948",
+    "filter=Sharpen" : "5b3a81ff03870b0f037d5dab57d244778673b83a77043de88ea676fe63cb04bf",
+    "fit=Contain" : "4c7533d23346fa5ed82e8d31fc2a98210925764a655409690f4bdbaf9bfebdca",
+    "fit=Cover" : "4c7533d23346fa5ed82e8d31fc2a98210925764a655409690f4bdbaf9bfebdca",
+    "fit=None" : "fa9b6d4401d9badd5c9f52163b64f054ba44dff80ffce5dc0d8315a2a09dcbc1",
+    "gamma=1.50" : "9cc9f251b75916534126f227e89cc9196d4d0fed7471291ee8b32549997ba823",
+    "invert=On" : "ec5b1e2641a864448f9b746846695d714e88f8da036d2ad7ad910025e38b5ce0",
+    "mode=80 Columns (160×50 blocks)" : "ec4bc79d305ab7facaa83c5f820a5cda35b93d8cfbc64ead4e5880e5b08378a6",
+    "monitor=White" : "6d9d61f8d4426bde99062ce5b649639c1c2851b1454e2b729ab594b21fa47b47",
+    "threshold=0.65" : "df55d75a0545d773882de280e558d9255eea49386e609bb1087f3761530dee54"
+  },
   "Plus4" : {
     "aspect=Ignore" : "92572cf17a888db70fdf41e447fc45b5b31a33136d58e09fdb08945c43e8bb36",
     "color_match=Chroma" : "2828fde2fa3aa2ba1d2e80df11f96a254465eede75e9e7227794a3d2a6c381ac",

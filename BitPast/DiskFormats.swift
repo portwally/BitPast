@@ -18,6 +18,8 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
     case trs80coco = 12
     case vic20 = 13
     case zxSpectrum = 14
+    // 15 is the ColecoVision, which has no disks
+    case pet = 16
 
     var id: Int { rawValue }
 
@@ -38,6 +40,7 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
         case .trs80coco: return "TRS-80 CoCo"
         case .vic20: return "VIC-20"
         case .zxSpectrum: return "ZX Spectrum"
+        case .pet: return "PET"
         }
     }
 
@@ -58,6 +61,7 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
         case .trs80coco: return "icon_TRS80"
         case .vic20: return "icon_vic20"
         case .zxSpectrum: return "icon_ZXSpectrum"
+        case .pet: return "icon_PET"
         }
     }
 
@@ -67,6 +71,8 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
             return [.po, .twoMG, .hdv]
         case .c64, .vic20, .plus4:
             return [.d64, .d71, .d81]
+        case .pet:
+            return [.d64]
         case .amiga500, .amiga1200:
             return [.adf]
         case .atari800:
@@ -94,6 +100,8 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
             return [.kb140, .kb800, .mb32]
         case .c64, .vic20, .plus4:
             return [.kb170, .kb340, .kb800]
+        case .pet:
+            return [.kb170]
         case .amiga500:
             return [.kb880]
         case .amiga1200:
@@ -133,7 +141,7 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
         switch self {
         case .appleII, .appleIIgs:
             return 15
-        case .c64, .vic20, .plus4:
+        case .c64, .vic20, .plus4, .pet:
             return 16
         case .amiga500, .amiga1200:
             return 30
@@ -161,7 +169,7 @@ enum DiskSystem: Int, CaseIterable, Identifiable {
         case .appleII, .appleIIgs:
             // ProDOS: A-Z, 0-9, period, must start with letter
             return CharacterSet.uppercaseLetters.union(.decimalDigits).union(CharacterSet(charactersIn: "."))
-        case .c64, .vic20, .plus4:
+        case .c64, .vic20, .plus4, .pet:
             // PETSCII: Most printable characters
             return CharacterSet.alphanumerics.union(CharacterSet(charactersIn: " !\"#$%&'()*+,-./:;<=>?"))
         case .amiga500, .amiga1200:
