@@ -2,7 +2,7 @@
 from lib import *
 from systems import SYSTEMS, ORDER, fact
 
-VERSION = "4.6"
+VERSION = "4.7"
 DATE = "November 2026"
 
 def default_index(sysid):
@@ -13,7 +13,7 @@ def default_index(sysid):
 
 def cover():
     return (f'<section class="cover"><div class="top">for macOS</div><h1>BitPast</h1><div class="sub">User’s Guide and Technical Reference</div>'
-            f'<div class="tagl">Turn modern pictures into graphics for fifteen classic computers</div>'
+            f'<div class="tagl">Turn modern pictures into graphics for eighteen classic computers and consoles</div>'
             f'<div class="art">{macwin("sys-AppleIIGS", "BitPast", "BitPast converting a photograph for the Apple IIgs")}</div>'
             f'<div class="foot">Version {VERSION}</div>{stripe()}</section>')
 
@@ -23,17 +23,17 @@ def titlepage():
             '<div class="legal">'
             '<p><b>Written by</b> Walter Tengler.</p>'
             '<p>© 2026 Walter Tengler. BitPast’s user interface code is released under the MIT License. The source code and releases are at github.com/portwally/BitPast.</p>'
-            '<p>Apple II, Apple IIgs and Macintosh are trademarks of Apple Inc. Amiga, Commodore 64, VIC-20, Plus/4, Atari 800, Atari ST, ZX Spectrum, Amstrad CPC, MSX, BBC Micro, IBM PC, TRS-80 and other names are trademarks of their respective owners. '
+            '<p>Apple II, Apple IIgs and Macintosh are trademarks of Apple Inc. Amiga, Commodore 64, Commodore PET, VIC-20, Plus/4, Atari 800, Atari ST, Atari 2600, ColecoVision, ZX Spectrum, Amstrad CPC, MSX, BBC Micro, IBM PC, TRS-80 and other names are trademarks of their respective owners. '
             'BitPast is an independent app and is not affiliated with or endorsed by any of them. This guide is set in its own style and is not an Apple publication.</p>'
             '<p>The sample photographs are from Pixabay and are used under the Pixabay Content License; see Appendix D for the photographers. '
             'The pictures of the old computers’ graphics were made by BitPast itself.</p>'
-            '<p>Every effort has been made to make this guide accurate. The settings, modes and file sizes it lists were taken from BitPast version 4.6 itself.</p></div></div></section>')
+            f'<p>Every effort has been made to make this guide accurate. The settings, modes and file sizes it lists were taken from BitPast version {VERSION} itself.</p></div></div></section>')
 
 def about():
     body = (f'<div class="row h2row"><div class="margin"></div><h2>About This Guide</h2></div>'
             + row("", p("This guide explains how to use BitPast, and lists what it can do: every system it supports, every graphics mode and every setting. It is meant to be read from the beginning, and used afterwards as a reference.", "lead"))
             + row("<b>If you are new</b>", p("Read Chapters 1 to 3, then try the exercise in Chapter 2. The rest can wait until you need it."))
-            + row("<b>If you want a system</b>", p("Chapter 6 has a section for each of the fifteen systems, with every mode, its picture, its file and its settings. Appendix A lists the files; Appendix B shows the colour palettes."))
+            + row("<b>If you want a system</b>", p("Chapter 6 has a section for each of the eighteen systems, with every mode, its picture, its file and its settings. Appendix A lists the files; Appendix B shows the colour palettes."))
             + row("<b>Conventions</b>", p("Names you see on the screen — menu items, buttons and pop-up menus — are set in this typeface: [[Create Disk]]. File names and extensions look like this: {{.shr}}. Keyboard shortcuts are shown with symbols: ^^⇧⌘1^^ means hold Shift and Command and press 1.")
                      + '<p>Three kinds of note appear in the margin:</p>')
             + note("note", "A **Note** adds something that is good to know.")
@@ -45,17 +45,17 @@ def about():
 def ch1():
     ch = Chapter("ch1", 1, "Welcome to BitPast")
     b = ""
-    b += row("", p("BitPast converts ordinary pictures — photographs, drawings, screenshots — into graphics for fifteen classic home computers. It does not simply shrink a picture and reduce its colours. Each conversion follows the rules of the real hardware.", "lead"))
+    b += row("", p("BitPast converts ordinary pictures — photographs, drawings, screenshots — into graphics for eighteen classic home computers and game consoles. It does not simply shrink a picture and reduce its colours. Each conversion follows the rules of the real hardware.", "lead"))
     b += row("", ps("A ZX Spectrum picture may use only two colours in every 8×8 cell. A Commodore 64 multicolor picture has four colours in each 4×8 cell. An Apple IIgs picture can use a different palette on every line of the screen. BitPast makes these choices for you, shows the result at once, and saves it in a file that the machine or an emulator can load."))
     b += ch.h2("What BitPast does", "ch1-what")
     b += row("<b>Convert</b>", p("Add pictures, choose a system, and the preview shows how the picture will look on that machine. Every change to a setting converts the picture again."))
     b += row("<b>Save</b>", p("Save the preview as PNG, JPEG, GIF or TIFF to share it, or save the machine’s native file — a {{.shr}} for the Apple IIgs, a {{.kla}} for the Commodore 64, a {{.scr}} for the ZX Spectrum — to load on the real thing."))
-    b += row("<b>Disk</b>", p("Put a whole set of converted pictures onto a disk image for the system — {{.d64}}, {{.adf}}, {{.po}}, {{.atr}} and more — that an emulator, a floppy emulator or a disk-copying tool can use."))
+    b += row("<b>Disk</b>", p("Put a whole set of converted pictures onto a disk image for the system — {{.d64}}, {{.adf}}, {{.po}}, {{.atr}} and more — that an emulator, a floppy emulator or a disk-copying tool can use. Pictures for the two game consoles, the ColecoVision and the Atari 2600, are saved as cartridges instead."))
     tiles = []
     for sid in ORDER:
         tiles.append((f"m-{sid}-{default_index(sid)}", SYSTEMS[sid]["name"], ""))
-    b += '<div class="figrow wide"><div class="fig">' + pxgrid(tiles, cols=5) + "</div>" + \
-         f'<div class="cap"><b>Figure {fig_number()}</b>One photograph, fifteen machines. Each picture was converted in the system’s default mode, with default settings.</div></div>'
+    b += '<div class="figrow wide"><div class="fig">' + pxgrid(tiles, cols=6) + "</div>" + \
+         f'<div class="cap"><b>Figure {fig_number()}</b>One photograph, eighteen machines. Each picture was converted in the system’s default mode, with default settings.</div></div>'
     b += ch.h2("How a conversion works", "ch1-how")
     b += row("", p("Every conversion passes the picture through the same six stages. Knowing them helps you decide which setting to change when a result is not what you hoped for."))
     stages = [("1", "Picture", "Any picture macOS can open: JPEG, PNG, GIF, TIFF, BMP, HEIC and more."),
@@ -72,7 +72,7 @@ def ch1():
     b += row("<b>Pictures</b>", p("Any picture macOS can read. Pictures with strong shapes and clear colours convert best, especially for the systems with the smallest palettes."))
     b += row("<b>Somewhere to try the files</b>", p("An emulator for the system you chose, or the real machine with a way to get files onto it. The previews need nothing."))
     b += row("<b>Where to get it</b>", p("BitPast is available from the Mac App Store. Releases are also published at github.com/portwally/BitPast."))
-    b += ch.h2("The fifteen systems at a glance", "ch1-glance")
+    b += ch.h2("The eighteen systems at a glance", "ch1-glance")
     rows = [
       ["Apple II", "1977", "280×192, 560×192; Lo-Res 40×48, 80×48", "6 or 16", ".BIN .A2FC .A2FM .SLO .DLO"],
       ["Apple IIgs", "1986", "320×200, 640×200", "up to 3,200", ".SHR .3200"],
@@ -89,6 +89,9 @@ def ch1():
       ["TRS-80 CoCo", "1980", "128×96 to 640×200", "2, 4 or 16", ".bin .cm3"],
       ["VIC-20", "1980", "88×184, 176×184", "16", ".prg"],
       ["ZX Spectrum", "1982", "256×192", "15", ".scr"],
+      ["ColecoVision", "1982", "256×192", "15", ".col"],
+      ["Commodore PET", "1977", "80×50, 160×50 blocks", "2", ".prg"],
+      ["Atari 2600", "1977", "40×192 blocks", "2 per line of 128", ".bin"],
     ]
     rows = [[f'<span class="nm">{a}</span>', b_, c, d, f'<span class="file">{e_}</span>'] for a, b_, c, d, e_ in rows]
     b += table(["System", "Introduced", "Screen sizes", "Colours", "Native files"], rows, cls="tight", widths=["19%", "11%", "30%", "19%", "21%"])
@@ -106,9 +109,9 @@ def ch2():
                          "If that does not work, open Terminal and type {{xattr -cr /Applications/BitPast.app}}, then try again."))
     b += ch.h2("Your first conversion", "ch2-first")
     b += step("1", "**Open BitPast.** The window is empty: the Image Browser on the left says “Drag Images Here”.")
-    b += step("2", "**Add pictures.** Drag one or more pictures from the Finder into the Image Browser, or click the [[+]] button above it and choose files. Each picture appears as a thumbnail.")
+    b += step("2", "**Add pictures.** Drag one or more pictures from the Finder into the Image Browser, or click [[Open Images…]] in the empty browser (or the [[+]] button above it) and choose files. Each picture appears as a thumbnail. [[File ▸ Open Images…]] (^^⌘O^^) does the same.")
     b += step("3", "**Select a picture.** Click a thumbnail. A blue frame marks the picture you are working on, and the preview shows its conversion.")
-    b += step("4", "**Choose a system.** Click one of the fifteen icons across the top of the window — for example [[Apple IIgs]]. The preview changes at once.")
+    b += step("4", "**Choose a system.** Click one of the eighteen icons across the top of the window — for example [[Apple IIgs]]. The preview changes at once.")
     b += step("5", "**Choose a mode and adjust.** The panel at the bottom holds the settings for the system. Try the [[Display Mode]] pop-up menu, then [[Dithering Algo]]. Each change converts the picture again.")
     b += step("6", "**Save.** Click [[Save Image…]] in the Actions column. Choose [[PNG]] for a picture you can share, or [[Native Format]] for the file the machine loads.")
     b += figrow(macwin("sys-AppleIIGS", "BitPast", "BitPast with the Apple IIgs selected"), "BitPast with a picture selected and the Apple IIgs chosen.", "", wide=True)
@@ -123,10 +126,10 @@ def ch3():
     ch = Chapter("ch3", 3, "The BitPast Window")
     b = ""
     b += row("", p("BitPast has one main window. This chapter names its parts, and the chapters that follow refer to them.", "lead"))
-    callouts = [(1, 95.8, 4.0), (2, 15.0, 61.9), (3, 20.3, 10.7), (4, 71.6, 10.7), (5, 32.5, 44.5), (6, 97.6, 16.8), (7, 11.2, 78.9), (8, 55.3, 78.8), (9, 96.5, 79.0)]
+    callouts = [(1, 46.0, 10.2), (2, 15.0, 61.9), (3, 20.3, 10.7), (4, 71.6, 10.7), (5, 32.5, 44.5), (6, 97.6, 16.8), (7, 11.2, 78.9), (8, 55.3, 78.8), (9, 96.5, 79.0)]
     b += '<div class="figrow wide"><div class="fig">' + macwin("sys-AppleIIGS", "BitPast", "The BitPast window", callouts) + "</div>" + \
          f'<div class="cap"><b>Figure {fig_number()}</b>The parts of the BitPast window.</div></div>'
-    b += legend([(1, "**System bar.** Fifteen icons, one for each system."),
+    b += legend([(1, "**System bar.** Eighteen icons, one for each system."),
                  (2, "**Image Browser.** The pictures you have added."),
                  (3, "**Image Browser tools.** Select all, remove, lock settings, add."),
                  (4, "**Preview tools.** Palette editor (Apple IIgs only), flip, histogram."),
@@ -136,12 +139,13 @@ def ch3():
                  (8, "**Settings panel.** The controls for the selected system."),
                  (9, "**Actions.** Save the picture, or create a disk image.")])
     b += ch.h2("The system bar", "ch3-bar")
-    b += row("", ps("The bar across the top shows an icon for each of the fifteen systems. Click one to convert for it. The selected system is highlighted, and the settings panel, the preview and the Output facts change to match.",
+    b += row("", ps("The bar across the top shows an icon for each of the eighteen systems. Click one to convert for it. The selected system is highlighted, and the settings panel, the preview and the Output facts change to match.",
+                    "The icons grow and shrink with the window. When the window is too narrow for all of them, scroll the bar sideways; it scrolls by itself to show the selected system.",
                     "Each system keeps its own settings while BitPast is open, so you can move between systems without losing what you set. Pictures with locked settings (Chapter 4) are released when you change system."))
-    b += row("<b>Keyboard</b>", p("The [[System]] menu lists the same fifteen systems, each with a shortcut: ^^⇧⌘1^^ to ^^⇧⌘0^^ for the first ten, then ^^⇧⌘P^^, ^^⇧⌘L^^, ^^⇧⌘T^^, ^^⇧⌘V^^ and ^^⇧⌘Z^^. Chapter 10 has the full list."))
+    b += row("<b>Keyboard</b>", p("The [[System]] menu lists the same eighteen systems, each with a shortcut: ^^⇧⌘1^^ to ^^⇧⌘0^^ for the first ten, then ^^⇧⌘P^^, ^^⇧⌘L^^, ^^⇧⌘T^^, ^^⇧⌘V^^, ^^⇧⌘Z^^, ^^⇧⌘O^^, ^^⇧⌘E^^ and ^^⇧⌘K^^. Chapter 10 has the full list."))
     b += ch.h2("The Image Browser", "ch3-browser")
     b += row("", ps("The browser on the left holds every picture you have added, as thumbnails with their file names. The picture with the blue frame is the one shown in the preview. The small circle at the top right of each thumbnail selects it for batch work.",
-                    "Four tools sit above the thumbnails: a checkbox that selects or deselects every picture, a trash can that removes the selected pictures, a padlock that locks the current settings for the selected picture, and [[+]], which adds pictures."))
+                    "Four tools sit above the thumbnails: a checkbox that selects or deselects every picture, a trash can that removes the selected pictures, a padlock that locks the current settings for the selected picture, and [[+]], which adds pictures. While the browser is empty it also shows an [[Open Images…]] button."))
     b += ch.h2("The preview", "ch3-preview")
     b += row("", ps("The preview shows the conversion of the selected picture. Above it, from left to right: [[Palette]] (Apple IIgs only), [[H-Flip]], [[V-Flip]] and [[Histogram]], then the zoom buttons. While a new conversion is worked out, a [[Converting…]] indicator appears over the old picture.",
                     "When Fit is set to something other than Stretch, you can drag the preview to choose which part of the picture shows. Chapter 4 explains how."))
@@ -154,7 +158,8 @@ def ch3():
     b += row("", ps("[[Save Image…]] is a menu. It saves the preview as PNG, JPG, GIF or TIFF, or the machine’s file as [[Native Format]]. When several pictures are selected it changes to [[Save 3 Images…]] (or however many you selected) and saves them all.",
                     "[[Create Disk]] opens a sheet for making a disk image of the system’s files (Chapter 9)."))
     b += ch.h2("The menus", "ch3-menus")
-    b += row("<b>System</b>", p("Switch to any of the fifteen systems, with a shortcut for each."))
+    b += row("<b>File</b>", p("[[Open Images…]] (^^⌘O^^) adds pictures, like the [[+]] button. [[Open Recent]] lists the last ten pictures you opened; choose one to add it again, or [[Clear Menu]] to empty the list. A picture that has been moved or deleted is taken off the list."))
+    b += row("<b>System</b>", p("Switch to any of the eighteen systems, with a shortcut for each."))
     b += row("<b>Help</b>", p("[[Graphics Mode Guide]] (^^⌘?^^) opens a window describing every system, mode and setting — the same information as this guide, inside the app. [[Visit GitHub Page]] opens the project page in your browser."))
     b += row("<b>Settings</b>", p("Choose [[BitPast ▸ Settings…]] (^^⌘,^^) to change the appearance of the app (Chapter 10)."))
     return chapter_html(ch, "A tour of everything you see", b)

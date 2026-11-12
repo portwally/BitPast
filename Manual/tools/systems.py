@@ -1,10 +1,12 @@
-"""The fifteen system sections: facts from the app's option lists, in-app Help and measured output files."""
+"""The eighteen system sections: facts from the app's option lists, in-app Help and measured output files."""
 from lib import *
 
 HELPKEY = {"AppleII": "AppleII", "AppleIIGS": "AppleIIgs", "Amiga500": "Amiga500", "Amiga1200": "Amiga1200", "AmstradCPC": "AmstradCPC",
            "Atari800": "Atari800", "AtariST": "AtariST", "BBCMicro": "BBCMicro", "C64": "C64", "MSX": "MSX", "PC": "PC", "Plus4": "Plus4",
-           "TRS80CoCo": "TRS80CoCo", "VIC20": "VIC20", "ZXSpectrum": "ZXSpectrum"}
-ORDER = ["AppleII", "AppleIIGS", "Amiga500", "Amiga1200", "AmstradCPC", "Atari800", "AtariST", "BBCMicro", "C64", "MSX", "PC", "Plus4", "TRS80CoCo", "VIC20", "ZXSpectrum"]
+           "TRS80CoCo": "TRS80CoCo", "VIC20": "VIC20", "ZXSpectrum": "ZXSpectrum",
+           "ColecoVision": "ColecoVision", "PET": "PET", "Atari2600": "Atari2600"}
+ORDER = ["AppleII", "AppleIIGS", "Amiga500", "Amiga1200", "AmstradCPC", "Atari800", "AtariST", "BBCMicro", "C64", "MSX", "PC", "Plus4", "TRS80CoCo", "VIC20", "ZXSpectrum",
+         "ColecoVision", "PET", "Atari2600"]
 VARIES = {"iff", "pcx", "ans"}
 
 def fact(machine, index):
@@ -176,6 +178,28 @@ SYSTEMS = {
            dict(label="LowRes (88×184)", res="88×184", col="4 per cell", fact=1, help=1, size="varies")],
     gallery=[("m-VIC20-0", "HiRes"), ("m-VIC20-1", "LowRes")],
  ),
+ "ColecoVision": dict(
+    name="ColecoVision", year="1982", chip="TMS9928A · 15 colours",
+    intro=["The ColecoVision game console has the same video chip as the MSX1, and BitPast makes its pictures in the same way as the MSX’s Screen 2: 256×192 pixels, with two colours in every 8-pixel stretch of a line, chosen from a fixed palette of 15 colours.",
+           "The console has no disk drive, so BitPast saves a 16 KB cartridge ({{.col}}) instead. The cartridge skips the usual title screen and shows the picture as soon as the console starts. Open it in an emulator, or copy it to a flash cartridge for a real console."],
+    modes=[dict(label="Graphics II (256×192)", res="256×192", col="2 per 8×1 stretch (15 fixed)", fact=0, help=0)],
+    gallery=[("m-ColecoVision-0", "Graphics II (256×192)")],
+ ),
+ "PET": dict(
+    name="Commodore PET", year="1977", chip="Character display · PETSCII blocks",
+    intro=["The PET has no graphics mode at all: its screen shows only characters, in green or white on black. But the PETSCII character set has a character for every way of filling the four quarters of a character cell. BitPast uses them to turn each character into 2×2 blocks, so a 40-column PET shows a picture of 80×50 blocks, lit or dark.",
+           "The result is saved as a program ({{.prg}}) that you LOAD and RUN like any BASIC program. It switches to the graphics characters, draws the picture and keeps it on the screen until you reset the PET. With so few blocks, pictures with bold shapes and strong contrast work best; use **Threshold** to decide how bright a part of the picture must be to light a block."],
+    modes=[dict(label="40 Columns (80×50 blocks)", res="80×50 blocks (40×25 characters)", col="2 (lit or dark)", fact=0, help=0),
+           dict(label="80 Columns (160×50 blocks)", res="160×50 blocks (80×25 characters)", col="2 (lit or dark)", fact=1, help=1)],
+    gallery=[("m-PET-0", "40 Columns"), ("m-PET-1", "80 Columns")],
+ ),
+ "Atari2600": dict(
+    name="Atari 2600", year="1977", chip="TIA · 128-colour NTSC palette",
+    intro=["The Atari 2600 has no screen memory. A program has to set up every line of the picture while the television’s beam draws it. BitPast builds its picture from the playfield, the blocky background the console can draw: 40 blocks across and 192 lines down, and every line has its own two colours from the 2600’s 128 NTSC colours. The program changes the playfield halfway along each line, so the left and right halves of the picture can differ.",
+           "BitPast saves a 4 KB NTSC cartridge ({{.bin}}) for Stella, other emulators or a flash cartridge. Wide blocks and bands of colour make the 2600 best at sunsets, landscapes and other pictures with strong horizontal shapes."],
+    modes=[dict(label="Playfield (40×192)", res="40×192 blocks", col="2 per line, of 128", fact=0, help=0)],
+    gallery=[("m-Atari2600-0", "Playfield (40×192)")],
+ ),
  "ZXSpectrum": dict(
     name="ZX Spectrum", year="1982", chip="ULA · 15 colours",
     intro=["The ZX Spectrum has one graphics mode: 256×192 pixels in which every 8×8 cell may use only two colours, called __ink__ and __paper__, taken from 8 colours in two levels of brightness (15 colours in all, because bright black is the same as black). Where a picture needs more colours in a cell than the hardware allows, the colours of neighbouring cells “clash”, and BitPast’s output shows that clash exactly as the real machine would. Files are {{.scr}} screen dumps of 6,912 bytes: 6,144 bytes of bitmap and 768 of colour attributes."],
@@ -207,6 +231,8 @@ OPT_DESC = {
  "sigma_range": "How different colours may be and still be smoothed together by the Sigma filter.",
  "solarize_threshold": "Brightness above which the Solarize filter inverts tones.",
  "emboss_depth": "Depth of the Emboss effect.",
+ "monitor": "The colour of the PET’s screen in the preview: the green of the 4000 and 8000 series, or the white of the original 2001.",
+ "invert": "Swaps lit and dark blocks.",
  "edge_threshold": "How strong an edge must be for Find Edges to draw it.",
  "palette": "The colour table used to display and judge the Apple II’s colours.",
  "crosshatch": "A b2d pattern setting; 0 turns it off.",
@@ -214,6 +240,11 @@ OPT_DESC = {
  "error_matrix": "A b2d setting for the error-diffusion matrix.",
 }
 OPT_NAMES = {"mode": "Mode"}
+# Where a key means something different on one system
+SYS_OPT_DESC = {
+ ("PET", "threshold"): "How bright a part of the picture must be to light a block; lower values light more blocks.",
+ ("PET", "dither"): "How grey tones are suggested with lit and dark blocks. None gives the clearest shapes.",
+}
 
 def choices(o):
     if o["type"] == "slider":
@@ -227,7 +258,7 @@ def settings_table(sysid):
     for o in OPTIONS[sysid]["options"]:
         if o["key"] in ("fit", "aspect"):
             continue
-        rows.append([f'<span class="nm">{esc(o["label"])}</span>', esc(choices(o)), esc(o["default"]), esc(OPT_DESC.get(o["key"], ""))])
+        rows.append([f'<span class="nm">{esc(o["label"])}</span>', esc(choices(o)), esc(o["default"]), esc(SYS_OPT_DESC.get((sysid, o["key"]), OPT_DESC.get(o["key"], "")))])
     return table(["Setting", "Choices", "Default", "What it does"], rows, cls="tight", widths=["24%", "36%", "12%", "28%"])
 
 def modes_table(sysid, s):

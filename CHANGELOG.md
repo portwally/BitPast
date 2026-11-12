@@ -2,6 +2,26 @@
 
 All notable changes to BitPast will be documented in this file.
 
+## [4.7] - 2026-11-12
+
+### Added
+- **ColecoVision** - 256×192 with 2 colours per 8×1 stretch (the MSX1's Screen 2 rules, same video chip), saved as a 16 KB cartridge (`.col`) that skips the title screen and shows the picture. ⇧⌘O
+- **Commodore PET** - 40 columns (80×50 blocks) or 80 columns (160×50 blocks) built from the PETSCII quarter-block characters, in green or white; saved as a `.prg` (BASIC `SYS1037` plus a 6502 copy routine) for the 2001/3000/4000 or the 8032. Threshold, Dither, Invert and Monitor settings. Goes on D64 disks. ⇧⌘E
+- **Atari 2600** - 40×192 playfield with two of the 128 NTSC colours on every line, the playfield rewritten mid-line so both halves differ; saved as a 4 KB NTSC cartridge (`.bin`). ⇧⌘K
+- **Open Images** - A button in the empty Image Browser and File > Open Images… (⌘O)
+- **Open Recent** - File > Open Recent lists the last 10 pictures (kept with security-scoped bookmarks), with Clear Menu; moved or deleted pictures drop off the list
+- **System bar** - Buttons size themselves to the window (60–90 points) and the bar scrolls, keeping the selected system in view, when there is not room for all 18
+- **User's Guide** - `Manual/BitPast-Manual.pdf` and `.html`, with their sources in `Manual/tools`
+- **Tests** - Z80/VDP, 6502 and cycle-counting 6502/TIA models run the ColecoVision, PET and Atari 2600 programs; golden fingerprints for the three new systems
+
+### Changed
+- **Create Disk** - Dimmed, with an explanation, for the systems without disks (ColecoVision, Atari 2600)
+
+### Fixed
+- **Plus/4 Colours** - The palette table is stored blue-green-red but was read as red-green-blue, so red and blue were swapped
+- **MSX Screen 2 Files** - `.sc2` files now hold the whole video memory from $0000 to $37FF (patterns, names, sprite terminator, colours), so `BLOAD "x.sc2",S` shows the picture
+- **Golden Fingerprints** - PC text-mode files carry the day they were made in their SAUCE record; the fingerprint now ignores it, and the SAUCE date is written with the Gregorian calendar whatever the Mac's settings
+
 ## [4.6] - 2026-11-05
 
 ### Added

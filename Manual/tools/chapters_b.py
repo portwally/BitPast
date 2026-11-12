@@ -7,7 +7,7 @@ def ch4():
     b = ""
     b += row("", p("This chapter covers everything you can do with a picture before and after it is converted: adding and selecting pictures, looking at the result closely, and choosing how the picture fills the screen.", "lead"))
     b += ch.h2("Adding pictures", "ch4-add")
-    b += row("", ps("Drag pictures from the Finder into the Image Browser. You can also click [[+]] above the browser and choose files. Add as many as you like: they appear as thumbnails, and the first picture you add is selected automatically.",
+    b += row("", ps("Drag pictures from the Finder into the Image Browser. You can also click [[+]] above the browser, [[Open Images…]] in the empty browser, or choose [[File ▸ Open Images…]] (^^⌘O^^), and choose files. [[File ▸ Open Recent]] brings back any of the last ten pictures you opened. Add as many as you like: they appear as thumbnails, and the first picture you add is selected automatically.",
                     "BitPast opens any picture format macOS can read, such as JPEG, PNG, GIF, TIFF, BMP and HEIC. Adding a picture never changes the original file."))
     b += ch.h2("Selecting and removing pictures", "ch4-select")
     b += row("", ps("Click a thumbnail to show it in the preview. That is the picture you are working on, and it has a blue frame.",
@@ -64,7 +64,8 @@ def settings_matrix():
     keys = [("dither", "Dithering"), ("dither_amount", "Dither amount"), ("contrast", "Contrast"), ("filter", "Filter"), ("color_match", "Colour match"),
             ("pixel_merge", "Pixel merge"), ("saturation", "Saturation"), ("gamma", "Gamma"), ("preprocess", "Preprocessing")]
     short = {"AppleII": "II", "AppleIIGS": "GS", "Amiga500": "A5", "Amiga1200": "A12", "AmstradCPC": "CPC", "Atari800": "800", "AtariST": "ST", "BBCMicro": "BBC",
-             "C64": "C64", "MSX": "MSX", "PC": "PC", "Plus4": "P/4", "TRS80CoCo": "CoCo", "VIC20": "V20", "ZXSpectrum": "ZX"}
+             "C64": "C64", "MSX": "MSX", "PC": "PC", "Plus4": "P/4", "TRS80CoCo": "CoCo", "VIC20": "V20", "ZXSpectrum": "ZX",
+             "ColecoVision": "CV", "PET": "PET", "Atari2600": "2600"}
     rows = []
     for k, label in keys:
         r = [f'<span class="nm">{label}</span>']
@@ -73,7 +74,7 @@ def settings_matrix():
             r.append("●" if has else "")
         rows.append(r)
     heads = ["Setting"] + [short[s] for s in ORDER]
-    t = table(heads, rows, cls="tight", widths=["19%"] + ["5.4%"] * 15)
+    t = table(heads, rows, cls="tight", widths=["19%"] + [f"{81 / len(ORDER):.2f}%"] * len(ORDER))
     return t.replace("<td class=\"\">●", '<td class="" style="text-align:center">●').replace("<th class=\"\">", '<th class="" style="text-align:center">')
 
 def ch5():

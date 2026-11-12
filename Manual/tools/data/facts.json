@@ -4,7 +4,7 @@
       {
         "bytes" : 16384,
         "ext" : "A2FC",
-        "name" : "BP_1F47FC51.A2FC"
+        "name" : "BP_2F59276E.A2FC"
       }
     ],
     "file" : "m-AppleII-0",
@@ -19,7 +19,7 @@
       {
         "bytes" : 8192,
         "ext" : "BIN",
-        "name" : "BP_2C67A87FC.BIN"
+        "name" : "BP_4EBFAB56C.BIN"
       }
     ],
     "file" : "m-AppleII-1",
@@ -34,7 +34,7 @@
       {
         "bytes" : 962,
         "ext" : "SLO",
-        "name" : "BP_7EAC1A3C.SLO"
+        "name" : "BP_34D9BD85.SLO"
       }
     ],
     "file" : "m-AppleII-2",
@@ -49,7 +49,7 @@
       {
         "bytes" : 1922,
         "ext" : "DLO",
-        "name" : "BP_DFD1464E.DLO"
+        "name" : "BP_8FF31ABB.DLO"
       }
     ],
     "file" : "m-AppleII-3",
@@ -64,7 +64,7 @@
       {
         "bytes" : 16384,
         "ext" : "A2FM",
-        "name" : "BP_1EBC038E.A2FM"
+        "name" : "BP_4FFA9179.A2FM"
       }
     ],
     "file" : "m-AppleII-4",
@@ -79,7 +79,7 @@
       {
         "bytes" : 8192,
         "ext" : "BIN",
-        "name" : "BP_0168A55EM.BIN"
+        "name" : "BP_201BA9E2M.BIN"
       }
     ],
     "file" : "m-AppleII-5",
@@ -94,7 +94,7 @@
       {
         "bytes" : 38400,
         "ext" : "3200",
-        "name" : "iigs_F8180B62.3200"
+        "name" : "iigs_96F804FB.3200"
       }
     ],
     "file" : "m-AppleIIGS-0",
@@ -109,7 +109,7 @@
       {
         "bytes" : 32768,
         "ext" : "shr",
-        "name" : "iigs_2824E301.shr"
+        "name" : "iigs_02D70E3B.shr"
       }
     ],
     "file" : "m-AppleIIGS-1",
@@ -124,7 +124,7 @@
       {
         "bytes" : 32768,
         "ext" : "shr",
-        "name" : "iigs_8B21717A.shr"
+        "name" : "iigs_9436FF5D.shr"
       }
     ],
     "file" : "m-AppleIIGS-2",
@@ -139,7 +139,7 @@
       {
         "bytes" : 32768,
         "ext" : "shr",
-        "name" : "iigs_660525A0.shr"
+        "name" : "iigs_058D4999.shr"
       }
     ],
     "file" : "m-AppleIIGS-3",
@@ -154,7 +154,7 @@
       {
         "bytes" : 32768,
         "ext" : "shr",
-        "name" : "iigs_B2EE0570.shr"
+        "name" : "iigs_D3F91B51.shr"
       }
     ],
     "file" : "m-AppleIIGS-4",
@@ -169,7 +169,7 @@
       {
         "bytes" : 32768,
         "ext" : "shr",
-        "name" : "iigs_9CA59ACC.shr"
+        "name" : "iigs_765D5980.shr"
       }
     ],
     "file" : "m-AppleIIGS-5",
@@ -184,7 +184,7 @@
       {
         "bytes" : 51364,
         "ext" : "iff",
-        "name" : "amiga500_15492C1C.iff"
+        "name" : "amiga500_0D868695.iff"
       }
     ],
     "file" : "m-Amiga500-0",
@@ -199,7 +199,7 @@
       {
         "bytes" : 61556,
         "ext" : "iff",
-        "name" : "amiga500_400F1BA4.iff"
+        "name" : "amiga500_106FE7B0.iff"
       }
     ],
     "file" : "m-Amiga500-1",
@@ -214,7 +214,7 @@
       {
         "bytes" : 82756,
         "ext" : "iff",
-        "name" : "amiga1200_A4395D21.iff"
+        "name" : "amiga1200_65F685AD.iff"
       }
     ],
     "file" : "m-Amiga1200-0",
@@ -229,7 +229,7 @@
       {
         "bytes" : 82180,
         "ext" : "iff",
-        "name" : "amiga1200_2E5B59BF.iff"
+        "name" : "amiga1200_1B41AD85.iff"
       }
     ],
     "file" : "m-Amiga1200-1",
@@ -244,7 +244,7 @@
       {
         "bytes" : 16512,
         "ext" : "scr",
-        "name" : "cpc_FAF7057F.scr"
+        "name" : "cpc_DEBE787F.scr"
       }
     ],
     "file" : "m-AmstradCPC-0",
@@ -259,7 +259,7 @@
       {
         "bytes" : 16512,
         "ext" : "scr",
-        "name" : "cpc_43DDB7F5.scr"
+        "name" : "cpc_61686B3D.scr"
       }
     ],
     "file" : "m-AmstradCPC-1",
@@ -274,7 +274,7 @@
       {
         "bytes" : 7682,
         "ext" : "gr8",
-        "name" : "atari800_4BDD1373.gr8"
+        "name" : "atari800_1BBF17EA.gr8"
       }
     ],
     "file" : "m-Atari800-0",
@@ -289,7 +289,7 @@
       {
         "bytes" : 7684,
         "ext" : "gr15",
-        "name" : "atari800_DDDF1EEC.gr15"
+        "name" : "atari800_D66CFC7D.gr15"
       }
     ],
     "file" : "m-Atari800-1",
@@ -304,7 +304,7 @@
       {
         "bytes" : 7696,
         "ext" : "gr9",
-        "name" : "atari800_8650A092.gr9"
+        "name" : "atari800_593B1EE2.gr9"
       }
     ],
     "file" : "m-Atari800-2",
@@ -319,7 +319,7 @@
       {
         "bytes" : 7689,
         "ext" : "gr10",
-        "name" : "atari800_28E42959.gr10"
+        "name" : "atari800_E0C1DB0B.gr10"
       }
     ],
     "file" : "m-Atari800-3",
@@ -334,7 +334,7 @@
       {
         "bytes" : 7696,
         "ext" : "gr11",
-        "name" : "atari800_D6E28026.gr11"
+        "name" : "atari800_A82634DF.gr11"
       }
     ],
     "file" : "m-Atari800-4",
@@ -349,7 +349,7 @@
       {
         "bytes" : 32034,
         "ext" : "pi1",
-        "name" : "atari_CC4BF2A2.pi1"
+        "name" : "atari_14603483.pi1"
       }
     ],
     "file" : "m-AtariST-0",
@@ -364,7 +364,7 @@
       {
         "bytes" : 32034,
         "ext" : "pi2",
-        "name" : "atari_417DA23A.pi2"
+        "name" : "atari_9794F68F.pi2"
       }
     ],
     "file" : "m-AtariST-1",
@@ -379,7 +379,7 @@
       {
         "bytes" : 32034,
         "ext" : "pi3",
-        "name" : "atari_DCC5A5D5.pi3"
+        "name" : "atari_F87C7B63.pi3"
       }
     ],
     "file" : "m-AtariST-2",
@@ -394,7 +394,7 @@
       {
         "bytes" : 20483,
         "ext" : "bbc",
-        "name" : "bbcmicro_mode0_00B1FAFA.bbc"
+        "name" : "bbcmicro_mode0_1C5D4406.bbc"
       }
     ],
     "file" : "m-BBCMicro-0",
@@ -409,7 +409,7 @@
       {
         "bytes" : 20485,
         "ext" : "bbc",
-        "name" : "bbcmicro_mode1_467695F0.bbc"
+        "name" : "bbcmicro_mode1_E7FD94A3.bbc"
       }
     ],
     "file" : "m-BBCMicro-1",
@@ -424,7 +424,7 @@
       {
         "bytes" : 20489,
         "ext" : "bbc",
-        "name" : "bbcmicro_mode2_5F48F98A.bbc"
+        "name" : "bbcmicro_mode2_B2030AD9.bbc"
       }
     ],
     "file" : "m-BBCMicro-2",
@@ -439,7 +439,7 @@
       {
         "bytes" : 10243,
         "ext" : "bbc",
-        "name" : "bbcmicro_mode4_310249F5.bbc"
+        "name" : "bbcmicro_mode4_9CBBA50C.bbc"
       }
     ],
     "file" : "m-BBCMicro-3",
@@ -454,7 +454,7 @@
       {
         "bytes" : 10245,
         "ext" : "bbc",
-        "name" : "bbcmicro_mode5_03B759AE.bbc"
+        "name" : "bbcmicro_mode5_11C78942.bbc"
       }
     ],
     "file" : "m-BBCMicro-4",
@@ -469,7 +469,7 @@
       {
         "bytes" : 9002,
         "ext" : "art",
-        "name" : "c64_C40D5B53.art"
+        "name" : "c64_8EBFF6A7.art"
       }
     ],
     "file" : "m-C64-0",
@@ -484,7 +484,7 @@
       {
         "bytes" : 10003,
         "ext" : "kla",
-        "name" : "c64_F9C18F9D.kla"
+        "name" : "c64_162353B0.kla"
       }
     ],
     "file" : "m-C64-1",
@@ -499,7 +499,7 @@
       {
         "bytes" : 2129,
         "ext" : "prg",
-        "name" : "c64_F46D93DF.prg"
+        "name" : "c64_30C2DD20.prg"
       }
     ],
     "file" : "m-C64-2",
@@ -512,9 +512,9 @@
   {
     "assets" : [
       {
-        "bytes" : 13063,
+        "bytes" : 14343,
         "ext" : "sc2",
-        "name" : "msx_sc2_F9A36854.sc2"
+        "name" : "msx_sc2_2CCABA9A.sc2"
       }
     ],
     "file" : "m-MSX-0",
@@ -529,7 +529,7 @@
       {
         "bytes" : 27175,
         "ext" : "sc5",
-        "name" : "msx_sc5_A266F81E.sc5"
+        "name" : "msx_sc5_BC869934.sc5"
       }
     ],
     "file" : "m-MSX-1",
@@ -544,7 +544,7 @@
       {
         "bytes" : 54279,
         "ext" : "sc8",
-        "name" : "msx_sc8_FDAFA51C.sc8"
+        "name" : "msx_sc8_9539F507.sc8"
       }
     ],
     "file" : "m-MSX-2",
@@ -557,9 +557,9 @@
   {
     "assets" : [
       {
-        "bytes" : 8043,
+        "bytes" : 8007,
         "ext" : "pcx",
-        "name" : "pc_cga_442E85F4.pcx"
+        "name" : "pc_cga_32AD6AB0.pcx"
       }
     ],
     "file" : "m-PC-0",
@@ -572,9 +572,9 @@
   {
     "assets" : [
       {
-        "bytes" : 16002,
+        "bytes" : 16059,
         "ext" : "pcx",
-        "name" : "pc_ega_BCA71D43.pcx"
+        "name" : "pc_ega_F9406252.pcx"
       }
     ],
     "file" : "m-PC-1",
@@ -587,9 +587,9 @@
   {
     "assets" : [
       {
-        "bytes" : 28825,
+        "bytes" : 28642,
         "ext" : "pcx",
-        "name" : "pc_ega_A495F283.pcx"
+        "name" : "pc_ega_7FDCF165.pcx"
       }
     ],
     "file" : "m-PC-2",
@@ -602,9 +602,9 @@
   {
     "assets" : [
       {
-        "bytes" : 43144,
+        "bytes" : 44707,
         "ext" : "pcx",
-        "name" : "pc_vga_E0E6FAED.pcx"
+        "name" : "pc_vga_38B69545.pcx"
       }
     ],
     "file" : "m-PC-3",
@@ -617,9 +617,9 @@
   {
     "assets" : [
       {
-        "bytes" : 5815,
+        "bytes" : 5855,
         "ext" : "ans",
-        "name" : "pc_cga_text_8AEB2832.ans"
+        "name" : "pc_cga_text_7A2E40E2.ans"
       }
     ],
     "file" : "m-PC-4",
@@ -632,9 +632,9 @@
   {
     "assets" : [
       {
-        "bytes" : 16689,
+        "bytes" : 16833,
         "ext" : "ans",
-        "name" : "pc_vesa_text_C7F506E2.ans"
+        "name" : "pc_vesa_text_6C698A4E.ans"
       }
     ],
     "file" : "m-PC-5",
@@ -649,7 +649,7 @@
       {
         "bytes" : 10000,
         "ext" : "prg",
-        "name" : "plus4_B16E778B.prg"
+        "name" : "plus4_C860725D.prg"
       }
     ],
     "file" : "m-Plus4-0",
@@ -664,7 +664,7 @@
       {
         "bytes" : 10002,
         "ext" : "prg",
-        "name" : "plus4_E19DCA23.prg"
+        "name" : "plus4_280D6416.prg"
       }
     ],
     "file" : "m-Plus4-1",
@@ -679,7 +679,7 @@
       {
         "bytes" : 6144,
         "ext" : "bin",
-        "name" : "coco_E243382B.bin"
+        "name" : "coco_D45F4C80.bin"
       }
     ],
     "file" : "m-TRS80CoCo-0",
@@ -694,7 +694,7 @@
       {
         "bytes" : 6144,
         "ext" : "bin",
-        "name" : "coco_07E7AEC6.bin"
+        "name" : "coco_0E36A33E.bin"
       }
     ],
     "file" : "m-TRS80CoCo-1",
@@ -709,7 +709,7 @@
       {
         "bytes" : 3072,
         "ext" : "bin",
-        "name" : "coco_B8C6CE52.bin"
+        "name" : "coco_BEDDFE42.bin"
       }
     ],
     "file" : "m-TRS80CoCo-2",
@@ -724,7 +724,7 @@
       {
         "bytes" : 3072,
         "ext" : "bin",
-        "name" : "coco_1459ACD7.bin"
+        "name" : "coco_03E79027.bin"
       }
     ],
     "file" : "m-TRS80CoCo-3",
@@ -739,7 +739,7 @@
       {
         "bytes" : 32000,
         "ext" : "cm3",
-        "name" : "coco_D41C6927.cm3"
+        "name" : "coco_275A6554.cm3"
       }
     ],
     "file" : "m-TRS80CoCo-4",
@@ -754,7 +754,7 @@
       {
         "bytes" : 32000,
         "ext" : "cm3",
-        "name" : "coco_A8498215.cm3"
+        "name" : "coco_CC68F5E3.cm3"
       }
     ],
     "file" : "m-TRS80CoCo-5",
@@ -769,7 +769,7 @@
       {
         "bytes" : 3116,
         "ext" : "prg",
-        "name" : "vic20_9F2CB73A.prg"
+        "name" : "vic20_92EEAC07.prg"
       }
     ],
     "file" : "m-VIC20-0",
@@ -784,7 +784,7 @@
       {
         "bytes" : 3121,
         "ext" : "prg",
-        "name" : "vic20_0C6F5DBD.prg"
+        "name" : "vic20_8D8FE79D.prg"
       }
     ],
     "file" : "m-VIC20-1",
@@ -799,7 +799,7 @@
       {
         "bytes" : 6912,
         "ext" : "scr",
-        "name" : "zx_BD3EB621.scr"
+        "name" : "zx_16F3941A.scr"
       }
     ],
     "file" : "m-ZXSpectrum-0",
@@ -808,5 +808,65 @@
     "machine" : "ZXSpectrum",
     "mode" : "Standard (256×192)",
     "w" : 512
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 16384,
+        "ext" : "col",
+        "name" : "coleco_96037800.col"
+      }
+    ],
+    "file" : "m-ColecoVision-0",
+    "h" : 192,
+    "index" : 0,
+    "machine" : "ColecoVision",
+    "mode" : "Standard (256×192)",
+    "w" : 512
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 1075,
+        "ext" : "prg",
+        "name" : "pet_69E4AE5D.prg"
+      }
+    ],
+    "file" : "m-PET-0",
+    "h" : 400,
+    "index" : 0,
+    "machine" : "PET",
+    "mode" : "40 Columns (80×50 blocks)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 2123,
+        "ext" : "prg",
+        "name" : "pet_982FC499.prg"
+      }
+    ],
+    "file" : "m-PET-1",
+    "h" : 400,
+    "index" : 1,
+    "machine" : "PET",
+    "mode" : "80 Columns (160×50 blocks)",
+    "w" : 640
+  },
+  {
+    "assets" : [
+      {
+        "bytes" : 4096,
+        "ext" : "bin",
+        "name" : "atari2600_5C789784.bin"
+      }
+    ],
+    "file" : "m-Atari2600-0",
+    "h" : 384,
+    "index" : 0,
+    "machine" : "Atari2600",
+    "mode" : "Standard (256×192)",
+    "w" : 640
   }
 ]

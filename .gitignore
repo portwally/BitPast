@@ -25,3 +25,6 @@ xcshareddata/
 
 # App Store screenshots (kept locally)
 AppStoreAssets/
+
+# Source photos for the manual (Pixabay licence: not redistributed with the repo)
+Manual/photos/

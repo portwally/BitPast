@@ -3,12 +3,14 @@ from lib import *
 from systems import *
 
 SHORTCUT = {"AppleII": "⇧⌘1", "AppleIIGS": "⇧⌘2", "Amiga500": "⇧⌘3", "Amiga1200": "⇧⌘4", "AmstradCPC": "⇧⌘5", "Atari800": "⇧⌘6", "AtariST": "⇧⌘7",
-            "BBCMicro": "⇧⌘8", "C64": "⇧⌘9", "MSX": "⇧⌘0", "PC": "⇧⌘P", "Plus4": "⇧⌘L", "TRS80CoCo": "⇧⌘T", "VIC20": "⇧⌘V", "ZXSpectrum": "⇧⌘Z"}
+            "BBCMicro": "⇧⌘8", "C64": "⇧⌘9", "MSX": "⇧⌘0", "PC": "⇧⌘P", "Plus4": "⇧⌘L", "TRS80CoCo": "⇧⌘T", "VIC20": "⇧⌘V", "ZXSpectrum": "⇧⌘Z",
+            "ColecoVision": "⇧⌘O", "PET": "⇧⌘E", "Atari2600": "⇧⌘K"}
 SPEC = {"AppleII": ("NTSC artifact colour (b2d)", "6 in Hi-Res, 16 in Double Hi-Res"), "AppleIIGS": ("Super Hi-Res", "16 per line; up to 3,200 in all"),
         "Amiga500": ("OCS/ECS chipset", "32 of 4,096; 4,096 in HAM6"), "Amiga1200": ("AGA chipset", "256 of 16.7 million; 262,144 in HAM8"),
         "AmstradCPC": ("Gate Array", "4 or 16 of 27"), "Atari800": ("ANTIC and GTIA", "2 to 16 of 128"), "AtariST": ("Shifter", "16, 4 or 2 of 512"),
         "BBCMicro": ("6845 CRTC", "2, 4 or 8"), "C64": ("VIC-II", "16"), "MSX": ("TMS9918 / V9938", "16; 16 of 512; 256"), "PC": ("CGA, EGA, VGA", "4, 16 or 256"),
-        "Plus4": ("TED", "128 (16 hues × 8 levels)"), "TRS80CoCo": ("MC6847 and GIME", "2, 4 or 16"), "VIC20": ("VIC", "16"), "ZXSpectrum": ("ULA", "15")}
+        "Plus4": ("TED", "128 (16 hues × 8 levels)"), "TRS80CoCo": ("MC6847 and GIME", "2, 4 or 16"), "VIC20": ("VIC", "16"), "ZXSpectrum": ("ULA", "15"),
+        "ColecoVision": ("TMS9928A", "15"), "PET": ("Character display (PETSCII)", "2: green or white on black"), "Atari2600": ("TIA", "2 per line, of 128")}
 PALETTE_APPENDIX = {"AppleIIGS": "IIgs Desktop", "AmstradCPC": "CPC", "Atari800": "Atari", "BBCMicro": "BBC", "C64": "C64", "MSX": "MSX", "PC": "PC", "TRS80CoCo": "CoCo", "VIC20": "VIC", "ZXSpectrum": "ZX"}
 
 def sysextras(sid):
@@ -47,17 +49,26 @@ def sysextras(sid):
         x += row("", p("Chapter 4 shows how Aspect changes a picture in medium resolution (Figure 4-2)."))
     if sid == "C64":
         x += row("", p("Chapter 5 shows Pixel Merge on a Multicolor picture (Figure 5-6)."))
+    if sid == "ColecoVision":
+        x += row("", p("Because the video chip is the same, a ColecoVision picture is the same as an MSX Screen 2 picture made with the same settings. Only the file differs: an MSX {{.sc2}} for the computer, a {{.col}} cartridge for the console."))
+        x += note("note", "The ColecoVision has no disk drive, so [[Create Disk]] is dimmed for this system. Save each picture as its own cartridge with [[Save Image… ▸ Native Format]].")
+    if sid == "PET":
+        x += note("important", "The 80-column program works only on an 80-column PET, such as the 8032. On a 40-column PET use the 40-column mode.")
+        x += row("", p("[[Monitor]] changes only the preview. The PET’s screen colour is fixed by its monitor, so the file is the same for green and white."))
+    if sid == "Atari2600":
+        x += note("note", "Cartridges need no disk, so [[Create Disk]] is dimmed for the Atari 2600. The cartridge is NTSC: 262 lines a frame. A PAL television or a PAL setting in an emulator shows it rolling or in the wrong colours.")
+        x += row("", p("With only two colours on a line, a picture with a lot happening across the screen — a face, a crowd — loses most of its detail. Pictures whose colours change from top to bottom, such as a sunset over the sea, keep theirs."))
     return x
 
 def ch6():
     ch = Chapter("ch6", 6, "The Systems")
     intro = ""
-    intro += row("", p("This chapter has one section for each of the fifteen systems, in the order of the system bar. Each section gives the system’s facts, shows BitPast with the system selected, lists every mode with its picture, its file and the best use for it, and finishes with the settings that system offers.", "lead"))
+    intro += row("", p("This chapter has one section for each of the eighteen systems, in the order of the system bar. Each section gives the system’s facts, shows BitPast with the system selected, lists every mode with its picture, its file and the best use for it, and finishes with the settings that system offers.", "lead"))
     intro += row("<b>Reading a section</b>", p("The box in the margin of each section gives the essentials: the year of introduction, the video hardware, the colours and sizes, the native files and the keyboard shortcut. The pictures of the modes were all made from one photograph, with each mode’s default settings, so you can compare them."))
     intro += row("<b>Screen shapes</b>", p("The pictures are shown on a 4:3 screen, as the machines showed them. A picture that looks narrow or wide in the preview is shown here in its true proportions."))
     rows = [[f'<span class="nm">{SYSTEMS[s]["name"]}</span>', SYSTEMS[s]["year"], SPEC[s][0], SHORTCUT[s]] for s in ORDER]
     intro += table(["System", "Introduced", "Video hardware", "Shortcut"], rows, cls="tight", widths=["32%", "16%", "36%", "16%"])
-    out = chapter_html(ch, "Fifteen machines, every mode and every setting", intro)
+    out = chapter_html(ch, "Eighteen machines, every mode and every setting", intro)
     # one section per system
     sections = ""
     for i, sid in enumerate(ORDER, 1):
@@ -149,7 +160,7 @@ def ch8():
 def ch9():
     ch = Chapter("ch9", 9, "Disk Images")
     b = ""
-    b += row("", p("A disk image is a single file that holds the contents of a whole floppy disk. Emulators load disk images directly, and floppy emulators and disk-copying tools can put them on real media. BitPast can create disk images for all fifteen systems and fill them with your converted pictures.", "lead"))
+    b += row("", p("A disk image is a single file that holds the contents of a whole floppy disk. Emulators load disk images directly, and floppy emulators and disk-copying tools can put them on real media. BitPast can create disk images for all the computers it supports and fill them with your converted pictures. The two game consoles, the ColecoVision and the Atari 2600, use cartridges instead, so [[Create Disk]] is dimmed while one of them is selected.", "lead"))
     b += ch.h2("Creating a disk image", "ch9-create")
     b += step("1", "Add your pictures and choose the system. Adjust the settings until the pictures look right.")
     b += step("2", "Select the pictures that should go on the disk. If you select none, every picture in the browser is used.")
@@ -163,6 +174,7 @@ def ch9():
     rows = [
       ["Apple II, Apple IIgs", ".PO, .2MG, .HDV", "140 KB, 800 KB, 32 MB", "ProDOS", "AppleWin, KEGS, GSport, Virtual II"],
       ["Commodore 64, VIC-20, Plus/4", ".D64, .D71, .D81", "170 KB, 340 KB, 800 KB", "CBM DOS (files are PRG type)", "VICE (x64, x128, xvic, xplus4)"],
+      ["Commodore PET", ".D64", "170 KB", "CBM DOS (files are PRG type)", "VICE (xpet)"],
       ["Amiga 500, Amiga 1200", ".ADF", "880 KB, 1.76 MB", "OFS (Original File System)", "FS-UAE, WinUAE, Amiberry"],
       ["Atari 800", ".ATR", "90 KB, 130 KB, 180 KB, 360 KB", "Atari DOS 2.0S; DOS 2.5 for 130 KB", "Altirra, Atari800"],
       ["Atari ST", ".ST", "360 KB, 720 KB, 1.44 MB", "FAT12", "Hatari, Steem"],
@@ -214,7 +226,7 @@ def ch10():
     paired = [l + r for l, r in zip(left, right)]
     b += table(["System", "Shortcut", "System", "Shortcut"], paired, widths=["30%", "20%", "30%", "20%"])
     b += table(["Command", "Shortcut"],
-               [["Graphics Mode Guide", '<span class="key">⌘?</span>'], ["Settings", '<span class="key">⌘,</span>'], ["Undo (palette editor)", '<span class="key">⌘Z</span>'],
+               [["Open Images…", '<span class="key">⌘O</span>'], ["Graphics Mode Guide", '<span class="key">⌘?</span>'], ["Settings", '<span class="key">⌘,</span>'], ["Undo (palette editor)", '<span class="key">⌘Z</span>'],
                 ["Redo (palette editor)", '<span class="key">⇧⌘Z</span>'], ["Select a range of pictures", "Shift-click the second picture"], ["Centre the picture in the preview", "Double-click the preview"]],
                widths=["50%", "50%"])
     b += ch.h2("The Graphics Mode Guide", "ch10-guide")
@@ -238,6 +250,8 @@ def ch11():
       ("The IIgs 640 pictures look very wide.", "Their pixels are twice as tall as they are wide, so the preview shows them at double height to look right. They are shown as they would be on the machine."),
       ("macOS says BitPast cannot be opened.", "This can happen with a copy downloaded from GitHub. Control-click the app, choose Open, and confirm (Chapter 2)."),
       ("A picture is missing from my disk image.", "It did not fit. Choose a larger disk size and create the disk again."),
+      ("Create Disk is dimmed.", "The ColecoVision and the Atari 2600 are game consoles: their pictures are saved as cartridges, which need no disk. Save them with Save Image… and Native Format."),
+      ("A picture is missing from Open Recent.", "Open Recent lists only pictures that can still be found. A picture that has been moved, renamed or deleted is taken off the list; add it again from its new place."),
       ("The preview takes a moment to update.", "Some conversions — HAM, the IIgs 3,200-colour mode and Per-Line SCB mode — are heavier than others. BitPast works in the background, so you can keep using the window; a Converting… indicator shows while it works."),
       ("The same picture converts differently each time.", "Only the Noise dither is random. Every other setting gives exactly the same result for the same picture and settings."),
     ]
@@ -254,7 +268,7 @@ def swatches(name, colours, cls="", meta="", per_row=None):
 def appendix_a():
     ch = Chapter("appA", "A", "Native File Formats")
     TOC[-1] = (1, "appA", "A", "Native File Formats")
-    b = row("", p("Every mode and the file BitPast writes for it. Sizes were measured with BitPast 4.6. Files that are compressed — IFF, PCX and ANSI — vary with the picture.", "lead"))
+    b = row("", p("Every mode and the file BitPast writes for it. Sizes were measured with BitPast 4.7. Files that are compressed — IFF, PCX and ANSI — vary with the picture.", "lead"))
     rows = []
     for sid in ORDER:
         s = SYSTEMS[sid]
@@ -276,7 +290,11 @@ def appendix_a():
                 ["<span class=\"file\">.pi1</span> <span class=\"file\">.pi2</span> <span class=\"file\">.pi3</span> (Atari ST)", "32,034 bytes: a 2-byte resolution word, the 16-word palette, and 32,000 bytes of bitplane data (DEGAS Elite format)."],
                 ["<span class=\"file\">.kla</span> (C64)", "10,003 bytes: a 2-byte load address, 8,000 bytes of bitmap, 1,000 bytes of screen colours, 1,000 bytes of colour memory and the background colour (Koala Painter format)."],
                 ["<span class=\"file\">.iff</span> (Amiga)", "An IFF ILBM picture: the standard Amiga picture format, with the palette and bitplanes (and the HAM flag in HAM modes)."],
-                ["<span class=\"file\">.pcx</span> (PC)", "A PC Paintbrush picture with run-length compression; the palette is stored in the file."]],
+                ["<span class=\"file\">.pcx</span> (PC)", "A PC Paintbrush picture with run-length compression; the palette is stored in the file."],
+                ["<span class=\"file\">.sc2</span> (MSX)", "14,343 bytes: a 7-byte BSAVE header, then the video memory from $0000 to $37FF as BLOAD \"name\",S expects it: the 6,144-byte pattern table, the 768-byte name table at $1800, an end-of-sprites marker at $1B00 and the 6,144-byte colour table at $2000."],
+                ["<span class=\"file\">.col</span> (ColecoVision)", "16,384 bytes: a cartridge that starts with the $55 $AA header (no title screen), a short Z80 program that sets up the video chip and copies the picture into video memory, and the picture’s pattern and colour tables."],
+                ["<span class=\"file\">.prg</span> (PET)", "A program that loads at $0401: a BASIC line, 10 SYS1037, a short 6502 routine that switches to the graphics characters and copies the picture to the screen at $8000, and the picture’s screen codes, 1 KB for 40 columns or 2 KB for 80."],
+                ["<span class=\"file\">.bin</span> (Atari 2600)", "4,096 bytes: a 4 KB NTSC cartridge. The display program draws 262 lines a frame; tables hold the playfield bits for both halves of each of the 192 lines and the two colours of each line."]],
                cls="tight", widths=["24%", "76%"])
     return chapter_html(ch, "Every file, its size and its layout", b)
 
@@ -294,13 +312,15 @@ def appendix_b():
     b += swatches("ZX Spectrum · 15 colours", zx, meta="Eight colours at normal brightness and seven at bright (bright black is black).")
     b += swatches("BBC Micro · 8 colours", P["BBCMicro"])
     b += swatches("Amstrad CPC · 27 colours", P["AmstradCPC"], cls="s", meta="Three levels each of red, green and blue.", per_row=9)
-    b += swatches("MSX1 (TMS9918) · 16 colours", P["MSX1"], meta="Index 0 is transparent and is shown as black.")
+    b += swatches("MSX1 and ColecoVision (TMS9918) · 16 colours", P["MSX1"], meta="Index 0 is transparent and is shown as black.")
     b += swatches("PC CGA · 16 colours", P["PC-CGA"])
     b += swatches("PC EGA · 64 colours", P["PC-EGA"], cls="s", meta="Two bits each of red, green and blue.", per_row=16)
     b += swatches("Apple IIgs Desktop · 16 colours", P["IIgsDesktop"], meta="The palette of the 640×200 Desktop mode (even and odd columns share these colours in two groups of four).")
     b += swatches("TRS-80 CoCo 3 · 64 colours", P["CoCo3"], cls="s", meta="Two bits each of red, green and blue.", per_row=16)
     b += swatches("Commodore Plus/4 · 128 colours", P["Plus4"], cls="xs", meta="Eight rows of brightness, from dark to light, each with the sixteen hues of the TED chip. Hue 0 is black in every row; the lightest row is almost white.", per_row=16)
     b += swatches("Atari 800 · 128 colours", P["Atari800"], cls="xs", meta="Sixteen hues, one to a row, each in eight levels of brightness. The first row is grey.", per_row=8)
+    a26 = [P["Atari2600"][hue * 8 + lum] for lum in range(8) for hue in range(16)]
+    b += swatches("Atari 2600 (NTSC) · 128 colours", a26, cls="xs", meta="Eight rows of brightness, from dark to light, each with the sixteen hues of the TIA chip. The first column is grey.", per_row=16)
     return chapter_html(ch, "The palettes of the fixed-palette systems", b)
 
 def appendix_c():
@@ -319,6 +339,7 @@ def appendix_c():
       ("Native file", "The file a machine loads: the screen memory as the hardware stores it."),
       ("Ordered dithering", "A dither that compares each pixel with a fixed pattern of thresholds, such as a Bayer matrix."),
       ("Palette", "The set of colours a picture may use. Some machines have one palette, some many."),
+      ("Playfield", "The Atari 2600’s background graphics: 40 wide blocks across the screen, set again by the program on every line."),
       ("PETSCII", "The Commodore character set, which includes graphic symbols. PETSCII pictures are made of characters rather than pixels."),
       ("SCB", "Scan Control Byte: on the Apple IIgs, a byte for each line that chooses its palette and mode."),
       ("Super Hi-Res", "The Apple IIgs’s graphics screen: 320×200 or 640×200 pixels with palettes of 16 colours from 4,096."),
@@ -335,8 +356,8 @@ def appendix_d():
     b = row("", p("BitPast is the work of Walter Tengler, with the help of the people and projects below.", "lead"))
     b += row("<b>b2d</b>", p("The Apple II conversions are made by b2d (BMP2DHR) by Bill Buckels, built into BitPast with changes for modern macOS. See appleoldies.ca/bmp2dhr."))
     b += row("<b>Fonts</b>", p("The retro appearances use the Print Char 21 and Shaston bitmap fonts included with BitPast."))
-    b += row("<b>Photographs</b>", p("The sample photographs in this guide are from Pixabay and are used under the Pixabay Content License: the bee-eater by davidclode, Nyhavn in Copenhagen by ductinh91, the hot-air balloon by guojinliang4104, the toucan by hbieser, the carnival dancer by makabera, the colour pencils by margaret8, the popsicles by motion_vfx_tlx, the flowers by naturerelax and the rainbow by sergiovisor_ph."))
-    b += row("<b>Trademarks</b>", p("Apple II, Apple IIgs and Macintosh are trademarks of Apple Inc. Amiga, Commodore 64, VIC-20, Plus/4, Atari 800, Atari ST, ZX Spectrum, Amstrad CPC, MSX, BBC Micro, IBM PC, TRS-80 and other names are trademarks of their respective owners. BitPast is an independent app and is not affiliated with or endorsed by any of them."))
+    b += row("<b>Photographs</b>", p("The sample photographs in this guide are from Pixabay and are used under the Pixabay Content License: the Easter eggs by anncapictures, the fruit basket by diapicard, Nyhavn in Copenhagen by ductinh91, the toucan by hbieser, the coloured pencils by inspiredimages, the balloons by pexels, the rainbow of paper by sergiovisor_ph, the painted houses by teefarm and the sunset above the clouds by trinhdactruong."))
+    b += row("<b>Trademarks</b>", p("Apple II, Apple IIgs and Macintosh are trademarks of Apple Inc. Amiga, Commodore 64, Commodore PET, VIC-20, Plus/4, Atari 800, Atari ST, Atari 2600, ColecoVision, ZX Spectrum, Amstrad CPC, MSX, BBC Micro, IBM PC, TRS-80 and other names are trademarks of their respective owners. BitPast is an independent app and is not affiliated with or endorsed by any of them."))
     b += row("<b>Licence</b>", p("BitPast’s user interface code is provided under the MIT License. The source code is at github.com/portwally/BitPast."))
-    b += row("<b>This guide</b>", p("Set in Apple Garamond, Myriad-style headings and Geneva, in the manner of the printed guides of the early 1990s. All pictures of converted graphics, and all screenshots, were made with BitPast version 4.6."))
+    b += row("<b>This guide</b>", p("Set in Apple Garamond, Myriad-style headings and Geneva, in the manner of the printed guides of the early 1990s. All pictures of converted graphics, and all screenshots, were made with BitPast version 4.7."))
     return chapter_html(ch, "Thanks, sources and licences", b)

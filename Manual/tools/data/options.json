@@ -1995,5 +1995,319 @@
         ]
       }
     ]
+  },
+  {
+    "id" : "ColecoVision",
+    "name" : "ColecoVision",
+    "options" : [
+      {
+        "default" : "Floyd-Steinberg",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Bayer 2x2",
+          "Bayer 4x4",
+          "Bayer 8x8"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE",
+          "CLAHE",
+          "SWAHE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Euclidean",
+          "Perceptive",
+          "Luma",
+          "Chroma",
+          "Hue"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "PET",
+    "name" : "PET",
+    "options" : [
+      {
+        "default" : "40 Columns (80×50 blocks)",
+        "key" : "mode",
+        "label" : "Mode",
+        "type" : "picker",
+        "values" : [
+          "40 Columns (80×50 blocks)",
+          "80 Columns (160×50 blocks)"
+        ]
+      },
+      {
+        "default" : "Green",
+        "key" : "monitor",
+        "label" : "Monitor",
+        "type" : "picker",
+        "values" : [
+          "Green",
+          "White"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson",
+          "Bayer 4x4",
+          "Bayer 8x8"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "threshold",
+        "label" : "Threshold",
+        "range" : [
+          0.20000000000000001,
+          0.80000000000000004
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "filter",
+        "label" : "Filter",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Lowpass",
+          "Sharpen",
+          "Emboss",
+          "Edge"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Off",
+        "key" : "invert",
+        "label" : "Invert",
+        "type" : "picker",
+        "values" : [
+          "Off",
+          "On"
+        ]
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
+  },
+  {
+    "id" : "Atari2600",
+    "name" : "Atari 2600",
+    "options" : [
+      {
+        "default" : "Floyd-Steinberg",
+        "key" : "dither",
+        "label" : "Dither",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "Floyd-Steinberg",
+          "Atkinson"
+        ]
+      },
+      {
+        "default" : "0.50",
+        "key" : "dither_amount",
+        "label" : "Dither Amount",
+        "range" : [
+          0,
+          1
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Perceptive",
+        "key" : "color_match",
+        "label" : "Color Match",
+        "type" : "picker",
+        "values" : [
+          "Perceptive",
+          "Euclidean",
+          "Luma"
+        ]
+      },
+      {
+        "default" : "None",
+        "key" : "contrast",
+        "label" : "Contrast",
+        "type" : "picker",
+        "values" : [
+          "None",
+          "HE"
+        ]
+      },
+      {
+        "default" : "1",
+        "key" : "saturation",
+        "label" : "Saturation",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "1",
+        "key" : "gamma",
+        "label" : "Gamma",
+        "range" : [
+          0.5,
+          2
+        ],
+        "type" : "slider"
+      },
+      {
+        "default" : "Stretch",
+        "key" : "fit",
+        "label" : "Fit",
+        "type" : "picker",
+        "values" : [
+          "Stretch",
+          "Contain",
+          "Cover",
+          "None"
+        ]
+      },
+      {
+        "default" : "Correct",
+        "key" : "aspect",
+        "label" : "Aspect",
+        "type" : "picker",
+        "values" : [
+          "Correct",
+          "Ignore"
+        ]
+      }
+    ]
   }
 ]

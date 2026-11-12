@@ -90,17 +90,17 @@ struct ZZManual {
     // MARK: Comparison galleries
 
     @Test func galleries() async throws {
-        let balloon = Self.photo("balloon"), toucan = Self.photo("toucan"), copenhagen = Self.photo("copenhagen")
-        let bird = Self.photo("bird"), popsicles = Self.photo("popsicles")
+        let sun = Self.photo("sun"), toucan = Self.photo("toucan"), copenhagen = Self.photo("copenhagen")
+        let houses = Self.photo("houses"), eggs = Self.photo("eggs"), balloons = Self.photo("balloons")
         let iigs256 = "256 Colors (16 Palettes)", iigs16 = "320x200 (16 Colors)"
         for scb in ["Banded", "Palette Reuse", "Per-Line"] {
-            Self.record(try await Self.convert("AppleIIGS", balloon, ["mode": iigs256, "scb_mode": scb]), as: "v-scb-\(scb)")
+            Self.record(try await Self.convert("AppleIIGS", sun, ["mode": iigs256, "scb_mode": scb]), as: "v-scb-\(scb)")
         }
         for d in ["None", "Floyd-Steinberg", "Atkinson", "Bayer 4x4", "Bayer 8x8", "Blue 16x16"] {
-            Self.record(try await Self.convert("AmstradCPC", balloon, ["mode": "Mode 1 (320×200, 4 colors)", "dither": d, "dither_amount": "1"]), as: "v-dither-\(d)")
+            Self.record(try await Self.convert("AmstradCPC", sun, ["mode": "Mode 1 (320×200, 4 colors)", "dither": d, "dither_amount": "1"]), as: "v-dither-\(d)")
         }
         for c in ["None", "HE", "CLAHE", "SWAHE"] {
-            Self.record(try await Self.convert("Amiga500", bird, ["contrast": c]), as: "v-contrast-\(c)")
+            Self.record(try await Self.convert("Amiga500", houses, ["contrast": c]), as: "v-contrast-\(c)")
         }
         for f in ["None", "Lowpass", "Median", "Sharpen", "Sigma", "Solarize", "Emboss", "Find Edges"] {
             Self.record(try await Self.convert("AppleIIGS", copenhagen, ["mode": "3200 Colors (Brooks)", "preprocess": f]), as: "v-prefilter-\(f)")
@@ -108,8 +108,8 @@ struct ZZManual {
         for c in ["Euclidean", "Perceptive", "Luma", "Chroma", "Hue"] {
             Self.record(try await Self.convert("PC", toucan, ["mode": "EGA (16 colors)", "color_match": c, "dither": "Bayer 4x4"]), as: "v-match-\(c)")
         }
-        // Fit, Aspect and position, with a portrait crop of the tree
-        let portrait = Self.crop(balloon, x: 0.25, y: 0, w: 0.5625, h: 1)   // 3:4, around the balloon
+        // Fit, Aspect and position, with a portrait crop of the balloons (round, so Aspect shows)
+        let portrait = Self.crop(balloons, x: 0.22, y: 0, w: 0.5625, h: 1)   // 3:4
         for fit in ["Stretch", "Contain", "Cover", "None"] {
             Self.record(try await Self.convert("Amiga1200", portrait, ["fit": fit]), as: "v-fit-\(fit)")
         }
@@ -122,7 +122,7 @@ struct ZZManual {
         for (name, set, mode) in [("set0", "Set 0 (Green/Yellow/Blue/Red)", "PMODE 3 (128×192, 4 colors)"),
                                   ("set1", "Set 1 (Buff/Cyan/Magenta/Orange)", "PMODE 3 (128×192, 4 colors)"),
                                   ("artifact", "Artifact (NTSC)", "PMODE 4 (256×192, 2 colors)")] {
-            Self.record(try await Self.convert("TRS80CoCo", popsicles, ["mode": mode, "colorset": set]), as: "v-coco-\(name)")
+            Self.record(try await Self.convert("TRS80CoCo", eggs, ["mode": mode, "colorset": set]), as: "v-coco-\(name)")
         }
         for pm in ["Average", "Brightest"] {
             Self.record(try await Self.convert("C64", toucan, ["mode": "Multicolor (160×200)", "pixel_merge": pm]), as: "v-merge-\(pm)")
@@ -149,6 +149,7 @@ struct ZZManual {
             "Atari800": rgb(Atari800Converter.atari800Palette),
             "IIgsDesktop": AppleIIGSConverter.iigsSystemPalette.map { [Int($0.r), Int($0.g), Int($0.b)] },
             "CoCo3": rgb(TRS80CoCoConverter.coco3Palette),
+            "Atari2600": rgb(Atari2600Converter.palette),
         ]
         Attachment.record(try JSONSerialization.data(withJSONObject: all, options: [.prettyPrinted, .sortedKeys]), named: "palettes.json")
     }

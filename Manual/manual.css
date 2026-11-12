@@ -127,6 +127,7 @@ figure { margin: 0 0 5mm; padding: 0; break-inside: avoid; page-break-inside: av
 .pxgrid.c3 { grid-template-columns: repeat(3, 1fr); }
 .pxgrid.c4 { grid-template-columns: repeat(4, 1fr); }
 .pxgrid.c5 { grid-template-columns: repeat(5, 1fr); gap: 2.6mm 2.6mm; }
+.pxgrid.c6 { grid-template-columns: repeat(6, 1fr); gap: 2.2mm 2.2mm; }
 .pxgrid figure { margin: 0; break-inside: avoid; }
 .pxgrid figcaption { font-family: var(--sans); font-size: 7.9pt; line-height: 1.25; margin-top: 1.2mm; }
 .pxgrid figcaption b { display: block; font-size: 8.4pt; }
