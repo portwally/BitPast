@@ -16,6 +16,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
     case pc = "PC"
     case msx = "MSX"
     case trs80coco = "TRS-80 CoCo"
+    case colecoVision = "ColecoVision"
     case diskImages = "Disk Images"
     case generalOptions = "General Options"
     case filters = "Preprocessing Filters"
@@ -39,6 +40,7 @@ enum HelpSection: String, CaseIterable, Identifiable {
         case .pc: return "desktopcomputer"
         case .msx: return "tv"
         case .trs80coco: return "tv"
+        case .colecoVision: return "gamecontroller"
         case .diskImages: return "externaldrive"
         case .generalOptions: return "slider.horizontal.3"
         case .filters: return "camera.filters"
@@ -53,7 +55,7 @@ struct HelpView: View {
         NavigationSplitView {
             List(selection: $selectedSection) {
                 Section("Systems") {
-                    ForEach([HelpSection.appleII, .appleIIgs, .bbcMicro, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atari800, .atariST, .amiga500, .amiga1200, .pc, .msx, .trs80coco], id: \.self) { section in
+                    ForEach([HelpSection.appleII, .appleIIgs, .bbcMicro, .c64, .vic20, .zxSpectrum, .amstradCPC, .plus4, .atari800, .atariST, .amiga500, .amiga1200, .pc, .msx, .trs80coco, .colecoVision], id: \.self) { section in
                         Label(section.rawValue, systemImage: section.iconName)
                             .tag(section)
                     }
@@ -110,6 +112,8 @@ struct HelpView: View {
             PCHelpContent()
         case .msx:
             MSXHelpContent()
+        case .colecoVision:
+            ColecoVisionHelpContent()
         case .trs80coco:
             TRS80CoCoHelpContent()
         case .diskImages:
@@ -1274,6 +1278,26 @@ struct PCHelpContent: View {
 }
 
 // MARK: - MSX Help
+
+struct ColecoVisionHelpContent: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HelpHeader(title: "ColecoVision", subtitle: "TMS9928A video chip, the same as the MSX1")
+
+            ModeHelpSection(
+                title: "Graphics II (256×192)",
+                fileFormat: ".col (16 KB cartridge)",
+                description: "The ColecoVision uses the same video chip as the MSX1, so the picture is made in the same way: 256×192 pixels, with 2 colors for every 8×1 line from the fixed 15-color palette. BitPast saves it as a cartridge that shows the picture as soon as the console starts, skipping the usual title screen.",
+                bestFor: "Colorful pictures with clear shapes; horizontal color changes work better than vertical detail",
+                options: [
+                    OptionHelp(name: "Dithering", description: "Error diffusion works well within the 8×1 color constraints."),
+                    OptionHelp(name: "Color Matching", description: "Hue or Chroma helps keep colors with the fixed palette."),
+                    OptionHelp(name: "Running it", description: "Open the .col file in an emulator such as openMSX (ColecoVision machine), blueMSX, ColEm or MAME, or copy it to a flash cartridge for a real console. There is no disk: Create Disk is not available for this system.")
+                ]
+            )
+        }
+    }
+}
 
 struct MSXHelpContent: View {
     var body: some View {

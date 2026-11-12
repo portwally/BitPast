@@ -125,6 +125,23 @@ nonisolated class MSXConverter: RetroMachine {
     // MARK: - Screen 2 (MSX1) - 256×192, 2 colors per 8×1 line
 
     private func convertScreen2(cgImage: CGImage, framing: ImageFraming, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> ConversionResult {
+        let screen = try await screen2(cgImage: cgImage, framing: framing, ditherAlg: ditherAlg, ditherAmount: ditherAmount,
+                                       contrast: contrast, filter: filter, colorMatch: colorMatch, saturation: saturation, gamma: gamma)
+
+        // Create SC2 file (BSAVE format)
+        let sc2Data = createSC2Data(patternTable: screen.patternTable, colorTable: screen.colorTable)
+        let tempDir = FileManager.default.temporaryDirectory
+        let uuid = UUID().uuidString.prefix(8)
+        let nativeUrl = tempDir.appendingPathComponent("msx_sc2_\(uuid).sc2")
+        try sc2Data.write(to: nativeUrl)
+
+        return ConversionResult(previewImage: screen.preview, fileAssets: [nativeUrl], palettes: [], pixelIndices: [], imageWidth: 256, imageHeight: 192)
+    }
+
+    /// The TMS9918 Graphics II screen (256×192, two colours per 8×1 line): its pattern
+    /// and colour tables in VRAM order (6,144 bytes each) and a preview.
+    /// Shared with the ColecoVision, which has the same video chip.
+    func screen2(cgImage: CGImage, framing: ImageFraming, ditherAlg: String, ditherAmount: Double, contrast: String, filter: String, colorMatch: String, saturation: Double, gamma: Double) async throws -> (patternTable: Data, colorTable: Data, preview: NSImage) {
         let width = 256, height = 192
         try Task.checkCancellation()
         var pixels = scaleImage(cgImage, toWidth: width, height: height, framing: framing)
@@ -195,15 +212,7 @@ nonisolated class MSXConverter: RetroMachine {
         }
 
         let previewImage = createPreviewImage(resultPixels: resultPixels, width: width, height: height, scaleY: 1.0)
-
-        // Create SC2 file (BSAVE format)
-        let sc2Data = createSC2Data(patternTable: patternTable, colorTable: colorTable)
-        let tempDir = FileManager.default.temporaryDirectory
-        let uuid = UUID().uuidString.prefix(8)
-        let nativeUrl = tempDir.appendingPathComponent("msx_sc2_\(uuid).sc2")
-        try sc2Data.write(to: nativeUrl)
-
-        return ConversionResult(previewImage: previewImage, fileAssets: [nativeUrl], palettes: [], pixelIndices: [], imageWidth: width, imageHeight: height)
+        return (patternTable, colorTable, previewImage)
     }
 
     // MARK: - Screen 5 (MSX2) - 256×212, 16 colors from 512

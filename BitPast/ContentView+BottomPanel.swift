@@ -191,7 +191,7 @@ extension ContentView {
                     title: "Create Disk",
                     isAppleII: isAppleII,
                     isC64: isC64,
-                    isDisabled: viewModel.convertedImage == nil
+                    isDisabled: viewModel.convertedImage == nil || DiskSystem(rawValue: viewModel.selectedMachineIndex) == nil
                 ) {
                     // Pre-select current system
                     selectedDiskSystemIndex = viewModel.selectedMachineIndex
@@ -253,7 +253,8 @@ extension ContentView {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
-                .disabled(viewModel.convertedImage == nil)
+                .disabled(viewModel.convertedImage == nil || DiskSystem(rawValue: viewModel.selectedMachineIndex) == nil)
+                .help(DiskSystem(rawValue: viewModel.selectedMachineIndex) == nil ? "This system loads pictures from a cartridge, not a disk" : "")
                 .sheet(isPresented: $showDiskSheet) {
                     CreateDiskSheet(
                         isPresented: $showDiskSheet,

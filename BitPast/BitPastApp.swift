@@ -191,6 +191,20 @@ struct BitPastApp: App {
                 }
                 .keyboardShortcut("Z", modifiers: [.command, .shift])
                 .disabled(ConverterViewModel.shared.machines.count <= 14)
+
+                Divider()
+
+                Button("ColecoVision") {
+                    Task { @MainActor in
+                        let vm = ConverterViewModel.shared
+                        if vm.machines.count > 15 && vm.selectedMachineIndex != 15 {
+                            vm.selectedMachineIndex = 15
+                            vm.triggerLivePreview()
+                        }
+                    }
+                }
+                .keyboardShortcut("O", modifiers: [.command, .shift])
+                .disabled(ConverterViewModel.shared.machines.count <= 15)
             }
 
             CommandGroup(replacing: .help) {
