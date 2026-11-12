@@ -4,7 +4,13 @@
 ![Language](https://img.shields.io/badge/language-Swift%20%7C%20C-orange)
 ![License](https://img.shields.io/badge/license-MIT-blue)
 
-**BitPast** is a modern, native macOS application for converting images into authentic retro computer graphic formats including **Apple II**, **Apple IIgs**, **BBC Micro**, **Commodore 64**, **VIC-20**, **ZX Spectrum**, **Amstrad CPC**, **Plus/4**, **Atari 800**, **Atari ST**, **Amiga 500**, **Amiga 1200**, **IBM PC**, **MSX**, and **TRS-80 Color Computer**.
+**BitPast** is a modern, native macOS application for converting images into authentic graphics for 18 classic computers and game consoles: **Apple II**, **Apple IIgs**, **Amiga 500**, **Amiga 1200**, **Amstrad CPC**, **Atari 800**, **Atari ST**, **Atari 2600**, **BBC Micro**, **ColecoVision**, **Commodore 64**, **Commodore PET**, **IBM PC**, **MSX**, **Plus/4**, **TRS-80 Color Computer**, **VIC-20** and **ZX Spectrum**.
+
+Every conversion follows the rules of the real hardware, and the result is saved as the machine's own file, on a disk image, or as a cartridge for the consoles.
+
+📖 **[BitPast User's Guide (PDF, 91 pages)](Manual/BitPast-Manual.pdf)** covers every system, mode and setting. · 🍎 [Mac App Store](https://apps.apple.com/us/app/bitpast/id6756894753) · 🌐 [Homepage](https://portwally.github.io/Bitpast/)
+
+![One photo, 18 machines](rsc/machines.jpg)
 
 ![Apple IIgs 3200 Color Mode](rsc/screenshot-iigs-dark.png)
 
@@ -20,10 +26,14 @@
 ## ✨ Features
 
 ### 🖥️ Modern macOS Interface
-- **Drag & Drop:** Drag multiple images directly from Finder or the web.
+- **Drag & Drop:** Drag multiple images directly from Finder or the web, or use **File > Open Images…** (⌘O).
+- **Open Recent:** The last 10 pictures in **File > Open Recent**.
 - **Batch Processing:** Load dozens of images into a grid browser and process them one by one.
 - **Live Preview:** See changes instantly as you adjust sliders for dithering, contrast, and color matching.
 - **Zoom & Pan:** Inspect every single pixel with a high-performance zoomable preview.
+- **Lock Settings:** Give single pictures their own settings for batch export.
+- **System Bar:** One click (or ⇧⌘ shortcut) per system; the bar fits any window size and scrolls when needed.
+- **Retro Themes:** GS/OS, Apple II green phosphor and Commodore 64 blue, plus light and dark.
 
 ### 🎨 Supported Systems
 
@@ -32,7 +42,7 @@ Powered by `b2d`, supporting the full range of classic graphics modes:
 - **DHGR** (Double Hi-Res): 140x192 (16 colors) or 560x192 (Monochrome).
 - **HGR** (Hi-Res): 280x192 (6 colors).
 - **LGR / DLGR**: Lo-Res and Double Lo-Res block graphics.
-- **Output:** `.BIN` files ready for hardware.
+- **Output:** `.A2FC` (DHGR), `.A2FM` (DHGR mono), `.BIN` (HGR), `.SLO` / `.DLO` (Lo-Res) files ready for hardware.
 
 #### 🌈 Apple IIgs (16-Bit)
 Powered by a **native Swift engine** featuring advanced color quantization:
@@ -60,6 +70,13 @@ Full VIC-II graphics support:
 - **PETSCII Mode:** 40×25 character-based graphics using PETSCII charset.
 - **16-color VICE/Pepto palette.**
 - **Output:** `.art` (Art Studio), `.kla` (Koala Painter), `.prg` (PETSCII executable).
+
+#### 🟩 Commodore PET
+Block graphics from the PETSCII quarter-block characters:
+- **40 Columns:** 80×50 blocks (40×25 characters), for the PET 2001, 3000 and 4000 series.
+- **80 Columns:** 160×50 blocks (80×25 characters), for the 8032.
+- **Threshold, Dither and Invert** decide which blocks are lit; **Monitor** shows green or white.
+- **Output:** `.prg` (BASIC `SYS1037` + 6502 routine that draws the picture, 1–2 KB).
 
 #### 📺 VIC-20
 Character-based graphics with full color support:
@@ -107,6 +124,12 @@ ANTIC/GTIA graphics with 128-color palette:
 - **512-color hardware palette** (8 levels R × 8 levels G × 8 levels B).
 - **Output:** `.pi1`, `.pi2`, `.pi3` (DEGAS Elite format).
 
+#### 🕹️ Atari 2600
+Playfield pictures drawn line by line by the TIA chip:
+- **40×192 blocks**, with 2 colors on every line from the 128-color NTSC palette.
+- The playfield is rewritten mid-line, so the left and right halves differ.
+- **Output:** `.bin` (4 KB NTSC cartridge for Stella or a flash cart).
+
 #### 🐚 Amiga 500 (OCS/ECS)
 Original Chip Set graphics:
 - **Standard Mode:** 320×256/320×512, 32 colors from 4096-color palette.
@@ -132,7 +155,12 @@ TMS9918 and V9938 video chip graphics:
 - **Screen 2 (MSX1):** 256×192, 2 colors per 8×1 line from 16-color palette.
 - **Screen 5 (MSX2):** 256×212, 16 colors from 512-color palette.
 - **Screen 8 (MSX2):** 256×212, 256 fixed colors (3-3-2 RGB).
-- **Output:** `.sc2`, `.sc5`, `.sc8` (BSAVE format).
+- **Output:** `.sc2`, `.sc5`, `.sc8` (BSAVE format; `.sc2` holds the full VRAM image for `BLOAD "x.sc2",S`).
+
+#### 🎮 ColecoVision
+The same TMS9928A video chip as the MSX1:
+- **Graphics II:** 256×192, 2 colors per 8×1 line from the 15-color palette.
+- **Output:** `.col` (16 KB cartridge that skips the title screen and shows the picture).
 
 #### 🖥️ TRS-80 Color Computer
 MC6847 VDG and GIME chip graphics:
@@ -169,12 +197,14 @@ MC6847 VDG and GIME chip graphics:
 ### 💾 Export Formats
 - **Modern Previews:** Export as PNG, JPG, GIF, or TIFF for web use.
 - **Native Formats:** Each system exports its authentic file format.
-- **Virtual Disk Images:** Create disk images for ALL supported systems:
+- **Cartridges:** ColecoVision (`.col`) and Atari 2600 (`.bin`) pictures run straight in an emulator or on a flash cart.
+- **Virtual Disk Images:** Create disk images for every supported computer:
 
 | System | Formats | Sizes |
 |--------|---------|-------|
 | Apple II/IIgs | .PO, .2MG, .HDV | 140KB, 800KB, 32MB |
 | Commodore 64/VIC-20/Plus4 | .D64, .D71, .D81 | 170KB, 340KB, 800KB |
+| Commodore PET | .D64 | 170KB |
 | Amiga 500/1200 | .ADF | 880KB, 1.76MB |
 | Atari 800 | .ATR | 90KB, 130KB, 180KB, 360KB |
 | Atari ST | .ST | 360KB, 720KB, 1.44MB |
@@ -187,14 +217,14 @@ MC6847 VDG and GIME chip graphics:
 
 ## 🚀 How to Use
 
-1. **Drag Images** into the left "Image Browser" panel.
+1. **Drag Images** into the left "Image Browser" panel, or click **Open Images…**.
 2. Select an image to preview it.
-3. Choose your **System** from the horizontal bar at the top (Apple II, Apple IIgs, BBC Micro, C64, VIC-20, ZX Spectrum, Amstrad CPC, Plus/4, Atari 800, Atari ST, Amiga 500, Amiga 1200, PC, MSX, TRS-80 CoCo).
+3. Choose your **System** from the horizontal bar at the top, or with ⇧⌘1–0, P, L, T, V, Z, O, E or K.
 4. Select the **Mode** and tweak **Dither**, **Contrast**, and other settings.
-5. Click **Export** in the bottom right corner.
+5. Click **Save Image…** in the bottom right corner.
    - Choose **PNG/JPG** for a visual preview.
    - Choose **Native Format** to save the raw file for the target system.
-   - Choose **Create Disk** to package converted files onto a virtual disk image for any system.
+   - Choose **Create Disk** to package converted files onto a virtual disk image (computers only; the consoles use cartridges).
 
 ## 🛠️ Technical Details
 
@@ -202,19 +232,25 @@ BitPast is built with **Swift** and **SwiftUI** for macOS.
 
 - **Frontend:** SwiftUI (Grid Views, HSplitView, Combine for debounced live previews).
 - **Backend (Apple II):** `b2d` (modified build with struct packing fixes for modern macOS ARM64/x86_64).
-- **Backend (All Others):** Native Swift implementations with authentic format output.
+- **Backend (All Others):** Native Swift implementations with authentic format output. The ColecoVision, PET and Atari 2600 files include small Z80 and 6502 programs that show the picture.
+- **Tests:** Golden fingerprints for every converter and setting, plus Z80/VDP, 6502 and cycle-counting 6502/TIA models that run the generated programs.
 - **Disk Operations:** Native Swift implementation for ProDOS volume creation and file management.
 
 ## 📦 Installation
 
+BitPast needs **macOS 15.7** or later.
+
+### From the Mac App Store
+[**Download BitPast on the Mac App Store**](https://apps.apple.com/us/app/bitpast/id6756894753)
+
 ### From Source
 1. Clone the repository.
 2. Open `BitPast.xcodeproj` in Xcode.
-3. Build and Run (Requires macOS 12.0+).
+3. Build and Run.
 
 ### From Binary Release
 
-Since this app is not distributed through the official Apple App Store and may not have been notarized by a paid Apple Developer Account, macOS might display a security warning upon the first launch.
+A copy downloaded from the GitHub Releases page may not be notarized, so macOS might display a security warning upon the first launch.
 
 You may see a message stating: "The app cannot be opened because it is from an unverified developer."
 
@@ -236,6 +272,7 @@ If this does not work then:
 ## 👏 Credits
 
 - **Bill Buckels**: For creating the original **b2d** (Bmp2DHR) command-line tool. [Visit AppleOldies.ca](https://www.appleoldies.ca/bmp2dhr/).
+- **Photographs** in the User's Guide and screenshots are from [Pixabay](https://pixabay.com) (Pixabay Content License); the photographers are listed in the guide.
 
 
 ## 📄 License
